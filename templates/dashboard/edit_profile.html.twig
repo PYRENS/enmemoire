@@ -1,0 +1,78 @@
+{% extends 'base.html.twig' %}{% block title %}Profil — {{ page.deceasedFirstName }}{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">{% endblock %}
+{% block body %}
+<div class="dashboard-wrapper">
+  {% include 'dashboard/partials/_sidebar.html.twig' %}
+  <main class="dashboard-main">
+
+    <div class="dashboard-main__header">
+      <h1 class="dashboard-main__title"><i class="bi bi-person-badge"></i> Profil du défunt</h1>
+    </div>
+
+    <div class="dashboard-card">
+      <div class="dashboard-card__header"><h3>Informations</h3></div>
+      <div class="dashboard-card__body">
+        <form action="{{ path('app_dashboard_edit_profile', {slug: page.slug}) }}" method="POST" data-disable-on-submit>
+          <input type="hidden" name="_token" value="{{ csrf_token('edit_profile_' ~ page.id) }}">
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="em-form-label">Prénom *</label>
+              <input type="text" class="em-form-control" name="first_name" value="{{ page.deceasedFirstName }}" required maxlength="100">
+            </div>
+            <div class="col-md-4">
+              <label class="em-form-label">Nom *</label>
+              <input type="text" class="em-form-control" name="last_name" value="{{ page.deceasedLastName }}" required maxlength="100">
+            </div>
+            <div class="col-md-4">
+              <label class="em-form-label">Surnom / Nom d'usage</label>
+              <input type="text" class="em-form-control" name="nickname" value="{{ page.deceasedNickname }}" maxlength="100" placeholder="Optionnel">
+            </div>
+            <div class="col-md-6">
+              <label class="em-form-label">Lieu de naissance</label>
+              <input type="text" class="em-form-control" name="birth_place" value="{{ page.deceasedBirthPlace }}" maxlength="200">
+            </div>
+            <div class="col-md-6">
+              <label class="em-form-label">Lieu de décès *</label>
+              <input type="text" class="em-form-control" name="death_place" value="{{ page.deceasedDeathPlace }}" required maxlength="200">
+            </div>
+            <div class="col-md-6">
+              <label class="em-form-label">Profession / Titre</label>
+              <input type="text" class="em-form-control" name="profession" value="{{ page.deceasedProfession }}" maxlength="200">
+            </div>
+            <div class="col-12">
+              <label class="em-form-label">Citation favorite</label>
+              <input type="text" class="em-form-control" name="quote" value="{{ page.deceasedQuote }}" maxlength="500" placeholder="Une phrase qui lui ressemblait...">
+            </div>
+
+            <div class="col-12"><hr style="border-color:var(--em-stone);"></div>
+
+            <div class="col-12">
+              <label class="em-form-label">Avis de décès / Communiqué nécrologique</label>
+              <textarea class="em-form-control" name="obituary" rows="5" maxlength="5000"
+                        placeholder="Rédigez l'avis de décès qui sera affiché sur la page...">{{ page.obituaryText }}</textarea>
+            </div>
+            <div class="col-12">
+              <label class="em-form-label">Biographie</label>
+              <textarea class="em-form-control" name="biography" rows="8" maxlength="10000"
+                        placeholder="Racontez la vie de {{ page.deceasedFirstName }}...">{{ page.biographyText }}</textarea>
+            </div>
+
+            <div class="col-12 d-flex justify-content-between align-items-center pt-2">
+              <a href="{{ path('app_dashboard_memorial', {slug: page.slug}) }}" class="em-btn em-btn--ghost">
+                <i class="bi bi-arrow-left"></i> Retour
+              </a>
+              <button type="submit" class="em-btn em-btn--primary">
+                <i class="bi bi-check-lg"></i> Enregistrer les modifications
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </main>
+</div>
+{% endblock %}
+{% block javascripts %}<script src="{{ asset('js/dashboard.js') }}"></script>{% endblock %}

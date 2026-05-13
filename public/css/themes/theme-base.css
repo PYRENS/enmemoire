@@ -1,0 +1,63 @@
+/* ==========================================================
+   theme-base.css — Variables de base communes à tous les thèmes
+   ========================================================== */
+
+[data-theme] {
+  /* Ces variables sont surchargées par chaque thème */
+  --theme-bg:           #FFFFFF;
+  --theme-bg-alt:       #F8F4EE;
+  --theme-surface:      #FFFFFF;
+  --theme-text:         #2D2D2D;
+  --theme-text-muted:   #6B7280;
+  --theme-heading:      #1B2B4B;
+  --theme-accent:       #C9A84C;
+  --theme-accent-light: #E8C97A;
+  --theme-border:       rgba(27, 43, 75, 0.12);
+  --theme-hero-overlay: rgba(27, 43, 75, 0.55);
+  --theme-card-shadow:  0 4px 16px rgba(27, 43, 75, 0.10);
+  --theme-candle-color: #FFA040;
+  --theme-flower-color: #E8C0C0;
+  --theme-dove-color:   #FFFFFF;
+
+  /* Fonts spécifiques au thème (surchargeable) */
+  --theme-font-display: var(--font-display);
+  --theme-font-body:    var(--font-body);
+}
+
+/* Zones qui appliquent le thème */
+.memorial-page-wrapper {
+  background: var(--theme-bg);
+  color: var(--theme-text);
+  font-family: var(--theme-font-body);
+}
+
+.memorial-page-wrapper h1,
+.memorial-page-wrapper h2,
+.memorial-page-wrapper h3,
+.memorial-page-wrapper h4 {
+  font-family: var(--theme-font-display);
+  color: var(--theme-heading);
+}
+
+.memorial-hero {
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.memorial-hero__overlay {
+  background: var(--theme-hero-overlay);
+}
+
+.memorial-section {
+  background: var(--theme-bg-alt);
+}
+
+.memorial-card {
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  box-shadow: var(--theme-card-shadow);
+}
+
+.memorial-accent { color: var(--theme-accent); }
+.memorial-accent-bg { background: var(--theme-accent); color: white; }

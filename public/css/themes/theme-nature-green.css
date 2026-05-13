@@ -1,0 +1,20 @@
+/* ============================
+   Thème : Nature & Sérénité (FREE)
+   ============================ */
+[data-theme="nature-green"] {
+  --theme-bg:           #F4F8F2;
+  --theme-bg-alt:       #EBF3E8;
+  --theme-surface:      #FFFFFF;
+  --theme-text:         #2C3E2D;
+  --theme-text-muted:   #5A7A5C;
+  --theme-heading:      #1E4D2B;
+  --theme-accent:       #4A8C5C;
+  --theme-accent-light: #7BBD8E;
+  --theme-border:       rgba(30, 77, 43, 0.15);
+  --theme-hero-overlay: rgba(20, 55, 30, 0.60);
+  --theme-card-shadow:  0 4px 16px rgba(30, 77, 43, 0.12);
+  --theme-font-display: 'Cormorant', Georgia, serif;
+}
+[data-theme="nature-green"] .memorial-accent { color: #2D7A45; }
+[data-theme="nature-green"] .em-btn--primary { background: #2D7A45; border-color: #2D7A45; }
+[data-theme="nature-green"] .em-btn--primary:hover { background: #4A8C5C; border-color: #4A8C5C; }

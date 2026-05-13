@@ -1,0 +1,59 @@
+{# templates/dashboard/partials/_sidebar.html.twig #}
+<aside class="dashboard-sidebar" id="dashboard-sidebar">
+  <div class="dashboard-sidebar__header">
+    {% if page is defined and page %}
+      {% if page.mainPhotoUrl %}
+        <img src="{{ asset(page.mainPhotoUrl) }}" alt="{{ page.deceasedFullName }}" class="dashboard-sidebar__photo">
+      {% else %}
+        <div class="dashboard-sidebar__photo-placeholder"><i class="bi bi-person"></i></div>
+      {% endif %}
+      <div class="dashboard-sidebar__info">
+        <strong>{{ page.deceasedFullName }}</strong>
+        <span class="dashboard-sidebar__code">{{ page.pageCode }}</span>
+      </div>
+    {% else %}
+      <div class="dashboard-sidebar__info">
+        <strong>{{ app.user.fullName }}</strong>
+        <span class="dashboard-sidebar__code">Mon espace</span>
+      </div>
+    {% endif %}
+  </div>
+  <nav class="dashboard-sidebar__nav">
+    {% set cr = app.request.attributes.get('_route') %}
+    {% set slug = page is defined ? page.slug : '' %}
+
+    {% if page is defined and page %}
+      <a href="{{ path('app_dashboard_memorial', {slug:slug}) }}" class="dashboard-nav-item {% if cr=='app_dashboard_memorial' %}active{% endif %}">
+        <i class="bi bi-grid-1x2"></i> Vue d'ensemble
+      </a>
+      <a href="{{ path('app_memorial_show', {slug:slug}) }}" target="_blank" class="dashboard-nav-item">
+        <i class="bi bi-eye"></i> Voir la page <i class="bi bi-box-arrow-up-right ms-auto" style="font-size:.7rem;"></i>
+      </a>
+      <div class="dashboard-nav-divider">Contenu</div>
+      <a href="{{ path('app_dashboard_edit_profile', {slug:slug}) }}" class="dashboard-nav-item {% if cr=='app_dashboard_edit_profile' %}active{% endif %}">
+        <i class="bi bi-person-badge"></i> Profil
+      </a>
+      <a href="{{ path('app_dashboard_timeline', {slug:slug}) }}" class="dashboard-nav-item {% if cr=='app_dashboard_timeline' %}active{% endif %}">
+        <i class="bi bi-clock-history"></i> Ligne de vie
+      </a>
+      <a href="{{ path('app_dashboard_events', {slug:slug}) }}" class="dashboard-nav-item {% if cr=='app_dashboard_events' %}active{% endif %}">
+        <i class="bi bi-calendar-event"></i> Événements
+      </a>
+      <div class="dashboard-nav-divider">Modération</div>
+      <a href="{{ path('app_dashboard_moderate', {slug:slug}) }}" class="dashboard-nav-item {% if cr=='app_dashboard_moderate' %}active{% endif %}">
+        <i class="bi bi-shield-check"></i> Modérer
+        {% if pending is defined and (pending.condolences|default(0) + pending.testimonials|default(0) + pending.guestbooks|default(0)) > 0 %}
+          <span class="dashboard-pending-badge">{{ (pending.condolences|default(0) + pending.testimonials|default(0) + pending.guestbooks|default(0)) }}</span>
+        {% endif %}
+      </a>
+      <div class="dashboard-nav-divider">Gestion</div>
+      <a href="{{ path('app_dashboard_moderators', {slug:slug}) }}" class="dashboard-nav-item {% if cr=='app_dashboard_moderators' %}active{% endif %}">
+        <i class="bi bi-people"></i> Modérateurs
+      </a>
+    {% endif %}
+
+    <a href="{{ path('app_dashboard') }}" class="dashboard-nav-item {% if cr=='app_dashboard' %}active{% endif %}">
+      <i class="bi bi-house"></i> Mes pages
+    </a>
+  </nav>
+</aside>

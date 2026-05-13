@@ -1,0 +1,93 @@
+{% extends 'base.html.twig' %}
+{% block title %}Connexion — EnMémoire.com{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/auth.css') }}">{% endblock %}
+
+{% block body %}
+<div class="auth-wrapper">
+  <div class="auth-visual">
+    <div class="auth-visual__overlay"></div>
+    <div class="auth-visual__content">
+      <div class="auth-visual__flame">🕯️</div>
+      <h2>Préservez la mémoire<br>de ceux que vous aimez</h2>
+      <p>Créez un espace mémoriel numérique, partagez des souvenirs et restez connectés à travers les distances.</p>
+      <div class="auth-visual__stats">
+        <div><strong>∞</strong><span>Souvenirs conservés</span></div>
+        <div><strong>🌍</strong><span>Portée mondiale</span></div>
+        <div><strong>🔒</strong><span>Sécurisé</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-panel">
+    <div class="auth-panel__inner">
+      <a href="{{ path('app_home') }}" class="auth-logo">
+        🕯️ <span>En<strong>Mémoire</strong>.com</span>
+      </a>
+
+      <h1 class="auth-title">Bon retour</h1>
+      <p class="auth-subtitle">Connectez-vous à votre compte</p>
+
+      {% if error %}
+        <div class="auth-alert auth-alert--error">
+          <i class="bi bi-exclamation-circle"></i>
+          {{ error.messageKey|trans(error.messageData, 'security') }}
+        </div>
+      {% endif %}
+
+      <form method="POST" action="{{ path('app_login') }}" class="auth-form" data-disable-on-submit>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+        <div class="auth-field">
+          <label class="auth-label" for="email">Adresse email</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-envelope auth-input-icon"></i>
+            <input type="email" id="email" name="email"
+                   class="auth-input" autocomplete="email"
+                   value="{{ last_username }}" required autofocus
+                   placeholder="votre@email.com">
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="password">
+            Mot de passe
+            <a href="{{ path('app_forgot_password') }}" class="auth-label__link">Oublié ?</a>
+          </label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-lock auth-input-icon"></i>
+            <input type="password" id="password" name="password"
+                   class="auth-input" autocomplete="current-password"
+                   required placeholder="••••••••">
+            <button type="button" class="auth-toggle-pw" aria-label="Afficher le mot de passe">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="auth-remember">
+          <label class="auth-check">
+            <input type="checkbox" name="_remember_me">
+            <span class="auth-check__box"></span>
+            Se souvenir de moi (30 jours)
+          </label>
+        </div>
+
+        <button type="submit" class="auth-submit">
+          <i class="bi bi-box-arrow-in-right"></i>
+          Se connecter
+        </button>
+      </form>
+
+      <div class="auth-divider"><span>ou</span></div>
+
+      <p class="auth-switch">
+        Pas encore de compte ?
+        <a href="{{ path('app_register') }}">Créer un compte gratuitement</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}<script src="{{ asset('js/auth.js') }}"></script>{% endblock %}

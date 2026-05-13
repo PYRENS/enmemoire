@@ -1,0 +1,74 @@
+{% extends 'base.html.twig' %}{% block title %}Ligne de vie — {{ page.deceasedFirstName }}{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">{% endblock %}
+{% block body %}
+<div class="dashboard-wrapper">
+  {% include 'dashboard/partials/_sidebar.html.twig' %}
+  <main class="dashboard-main">
+    <div class="dashboard-main__header">
+      <h1 class="dashboard-main__title"><i class="bi bi-clock-history"></i> Ligne de vie</h1>
+    </div>
+
+    {# Formulaire d'ajout #}
+    <div class="timeline-form-panel mb-4">
+      <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Ajouter une étape</h3>
+      <form action="{{ path('app_dashboard_timeline_add', {slug: page.slug}) }}" method="POST" data-disable-on-submit>
+        <input type="hidden" name="_token" value="{{ csrf_token('timeline_' ~ page.id) }}">
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="em-form-label">Titre de l'étape *</label>
+            <input type="text" class="em-form-control" name="title" placeholder="Ex : Naissance à Kinshasa" required maxlength="255">
+          </div>
+          <div class="col-md-3">
+            <label class="em-form-label">Date *</label>
+            <input type="date" class="em-form-control" name="event_date" required>
+          </div>
+          <div class="col-md-2">
+            <label class="em-form-label">Précision</label>
+            <select class="em-form-control" name="precision">
+              <option value="day">Jour</option>
+              <option value="month">Mois</option>
+              <option value="year">Année</option>
+            </select>
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="em-btn em-btn--primary w-100"><i class="bi bi-plus-lg"></i> Ajouter</button>
+          </div>
+          <div class="col-12">
+            <label class="em-form-label">Description (optionnel)</label>
+            <textarea class="em-form-control" name="description" rows="2" placeholder="Détails..." maxlength="1000"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    {# Liste #}
+    <div class="timeline-list">
+      {% for entry in timeline %}
+      <div class="timeline-admin-item">
+        <div class="timeline-admin-item__date">
+          {% if entry.eventDatePrecision == 'year' %}{{ entry.eventDate|date('Y') }}
+          {% elseif entry.eventDatePrecision == 'month' %}{{ entry.eventDate|date('m/Y') }}
+          {% else %}{{ entry.eventDate|date('d/m/Y') }}{% endif %}
+        </div>
+        <div class="timeline-admin-item__content">
+          <h4>{{ entry.title }}</h4>
+          {% if entry.description %}<p>{{ entry.description }}</p>{% endif %}
+        </div>
+        <div class="timeline-admin-item__actions">
+          <form action="{{ path('app_dashboard_timeline_delete', {slug: page.slug, id: entry.id}) }}" method="POST">
+            <input type="hidden" name="_token" value="{{ csrf_token('timeline_delete_' ~ entry.id) }}">
+            <button type="submit" class="btn-reject" data-delete-timeline title="Supprimer">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% else %}
+        <div class="dashboard-empty"><p>Aucune étape dans la ligne de vie. Ajoutez les moments importants de sa vie.</p></div>
+      {% endfor %}
+    </div>
+  </main>
+</div>
+{% endblock %}
+{% block javascripts %}<script src="{{ asset('js/dashboard.js') }}"></script>{% endblock %}

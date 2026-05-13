@@ -1,0 +1,115 @@
+/* ==========================================================
+   qrcode.css — Pages QR Code
+   ========================================================== */
+
+.qr-header { text-align: center; margin-bottom: 2.5rem; }
+.qr-back { color: var(--em-muted); text-decoration: none; font-size: .875rem; display: inline-flex; align-items: center; gap: .4rem; margin-bottom: 1rem; }
+.qr-back:hover { color: var(--em-navy); }
+.qr-title { font-family: var(--font-display); font-size: 2rem; color: var(--em-navy); margin-bottom: .35rem; }
+.qr-subtitle { color: var(--em-muted); font-size: .95rem; }
+
+.qr-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+/* Carte QR principale */
+.qr-card--main {
+  background: white;
+  border-radius: var(--em-radius-xl);
+  border: 1px solid var(--em-stone);
+  padding: 2rem;
+  text-align: center;
+  box-shadow: var(--em-shadow);
+  position: sticky;
+  top: calc(var(--header-height) + 1rem);
+}
+
+/* Cadre décoratif */
+.qr-frame {
+  position: relative;
+  display: inline-block;
+  padding: 12px;
+  margin-bottom: 1rem;
+}
+
+.qr-frame__corner {
+  position: absolute;
+  width: 20px; height: 20px;
+  border-color: var(--em-gold);
+  border-style: solid;
+}
+.qr-frame__corner--tl { top: 0; left: 0; border-width: 3px 0 0 3px; }
+.qr-frame__corner--tr { top: 0; right: 0; border-width: 3px 3px 0 0; }
+.qr-frame__corner--bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; }
+.qr-frame__corner--br { bottom: 0; right: 0; border-width: 0 3px 3px 0; }
+
+.qr-image {
+  width: 220px; height: 220px;
+  border-radius: 8px;
+  display: block;
+}
+
+.qr-code-label {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: var(--em-cream); padding: .4rem 1rem;
+  border-radius: 20px; font-family: monospace;
+  font-size: .85rem; color: var(--em-navy);
+  font-weight: 600; margin-bottom: .5rem;
+}
+
+.qr-scan-hint { font-size: .8rem; color: var(--em-muted); }
+
+/* Panel actions */
+.qr-section-title {
+  font-size: .9rem; font-weight: 600; color: var(--em-navy);
+  text-transform: uppercase; letter-spacing: .05em;
+  margin-bottom: 1rem;
+}
+
+.qr-download-cards { display: flex; flex-direction: column; gap: .75rem; }
+
+.qr-download-card {
+  display: flex; align-items: center; gap: 1rem;
+  background: white; border: 1px solid var(--em-stone);
+  border-radius: var(--em-radius); padding: .85rem 1rem;
+  transition: var(--em-transition);
+}
+.qr-download-card:hover { border-color: var(--em-gold-light); box-shadow: var(--em-shadow-sm); }
+
+.qr-download-card__icon {
+  width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+  background: rgba(27,43,75,.06); color: var(--em-navy);
+  display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+}
+.qr-download-card__icon--gold  { background: rgba(201,168,76,.1); color: var(--em-gold); }
+.qr-download-card__icon--navy  { background: var(--em-navy); color: white; }
+
+.qr-download-card__info { flex: 1; }
+.qr-download-card__info strong { display: block; font-size: .9rem; color: var(--em-navy); }
+.qr-download-card__info small  { font-size: .78rem; color: var(--em-muted); }
+
+/* Utilisations */
+.qr-usages { display: flex; flex-direction: column; gap: .85rem; }
+.qr-usage { display: flex; align-items: flex-start; gap: .85rem; }
+.qr-usage__icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+.qr-usage strong { display: block; font-size: .9rem; color: var(--em-navy); margin-bottom: 2px; }
+.qr-usage p { font-size: .82rem; color: var(--em-muted); margin: 0; line-height: 1.5; }
+
+/* Lien direct */
+.qr-link-box { margin-top: 1.5rem; }
+.qr-link-label { font-size: .8rem; font-weight: 600; color: var(--em-navy); margin-bottom: .4rem; display: block; }
+.qr-link-copy { display: flex; gap: .5rem; }
+.qr-link-input {
+  flex: 1; padding: .5rem .75rem; border: 1.5px solid var(--em-stone);
+  border-radius: var(--em-radius-sm); font-size: .8rem; color: var(--em-muted);
+  background: var(--em-cream); font-family: monospace;
+}
+
+/* Responsive */
+@media (max-width: 767px) {
+  .qr-layout { grid-template-columns: 1fr; }
+  .qr-card--main { position: static; }
+}

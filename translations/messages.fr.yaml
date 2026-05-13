@@ -1,0 +1,29 @@
+nav:
+    home: Accueil
+    search: Rechercher
+    obituaries: Avis de décès
+    shop: Boutique
+    create_memorial: Créer un mémorial
+    login: Connexion
+    register: Créer un compte
+    dashboard: Mon espace
+    profile: Mon profil
+    admin: Administration
+    logout: Déconnexion
+
+footer:
+    tagline: "« Parce que certains souvenirs méritent de durer éternellement. »"
+    platform: Plateforme
+    help: Aide
+    newsletter: Newsletter
+    newsletter_desc: Restez informé de nos nouveautés et conseils
+    newsletter_placeholder: votre@email.com
+    how_it_works: Comment ça marche ?
+    pricing: Nos formules
+    faq: FAQ
+    contact: Contact
+    support: Support
+    terms: CGU
+    privacy: Confidentialité
+    cookies: Cookies
+    rights: Tous droits réservés

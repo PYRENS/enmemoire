@@ -1,0 +1,18 @@
+<div class="memorial-condolence" id="condolence-{{ condolence.id }}">
+  <div class="memorial-condolence__header">
+    <div class="memorial-condolence__avatar">
+      {% if condolence.isAnonymous %}
+        <i class="bi bi-incognito" style="font-size:.9rem;"></i>
+      {% else %}
+        {{ condolence.user.firstName|first|upper }}
+      {% endif %}
+    </div>
+    <div>
+      <div class="memorial-condolence__name">
+        {% if condolence.isAnonymous %}Anonyme{% else %}{{ condolence.user.fullName }}{% endif %}
+      </div>
+      <div class="memorial-msg-date">{{ condolence.createdAt|date('d/m/Y à H:i') }}</div>
+    </div>
+  </div>
+  <p class="memorial-condolence__text">{{ condolence.message|nl2br }}</p>
+</div>

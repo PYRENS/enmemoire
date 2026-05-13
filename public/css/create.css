@@ -1,0 +1,500 @@
+/* ==========================================================
+   create.css — Wizard création page mémorielle + Paiement
+   ========================================================== */
+
+/* ----------------------------------------------------------
+   WRAPPER & CARTE
+   ---------------------------------------------------------- */
+.wizard-wrapper {
+  background: #F4F6F9;
+  min-height: calc(100vh - var(--header-height));
+}
+
+.wizard-card {
+  background: white;
+  border-radius: var(--em-radius-xl);
+  box-shadow: var(--em-shadow-lg);
+  overflow: hidden;
+}
+
+.wizard-card__header {
+  background: linear-gradient(135deg, #1B2B4B 0%, #2C4270 100%);
+  padding: 2.5rem 2rem 2rem;
+  text-align: center;
+  color: white;
+}
+
+.wizard-step-icon {
+  font-size: 2.8rem;
+  margin-bottom: 1rem;
+  display: block;
+  animation: float-icon 3s ease-in-out infinite;
+}
+
+@keyframes float-icon {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+.wizard-title {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 300;
+  color: white;
+  margin-bottom: .35rem;
+}
+
+.wizard-subtitle {
+  color: rgba(255,255,255,.7);
+  font-size: .9rem;
+  margin: 0;
+}
+
+.wizard-form {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.wizard-alert {
+  margin: 0 2rem 1.5rem;
+  padding: .85rem 1rem;
+  background: rgba(185,28,28,.08);
+  border: 1px solid rgba(185,28,28,.2);
+  border-radius: var(--em-radius-sm);
+  color: #991B1B;
+  font-size: .875rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+/* ----------------------------------------------------------
+   PROGRESS BAR
+   ---------------------------------------------------------- */
+.wizard-progress {
+  margin-bottom: 2rem;
+}
+
+.wizard-progress__steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.wizard-progress__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .4rem;
+}
+
+.wizard-progress__circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--em-stone);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--em-muted);
+  transition: var(--em-transition);
+}
+
+.wizard-progress__step.active .wizard-progress__circle {
+  background: var(--em-navy);
+  border-color: var(--em-navy);
+  color: white;
+  box-shadow: 0 4px 12px rgba(27,43,75,.3);
+}
+
+.wizard-progress__step.done .wizard-progress__circle {
+  background: var(--em-gold);
+  border-color: var(--em-gold);
+  color: white;
+}
+
+.wizard-progress__label {
+  font-size: .72rem;
+  color: var(--em-muted);
+  font-weight: 500;
+  letter-spacing: .04em;
+}
+
+.wizard-progress__step.active .wizard-progress__label { color: var(--em-navy); font-weight: 700; }
+.wizard-progress__step.done  .wizard-progress__label  { color: var(--em-gold); }
+
+.wizard-progress__line {
+  flex: 1;
+  height: 2px;
+  background: var(--em-stone);
+  margin: 0 .5rem;
+  margin-bottom: 1.4rem;
+  transition: var(--em-transition);
+  max-width: 80px;
+}
+
+.wizard-progress__line.done { background: var(--em-gold); }
+
+/* ----------------------------------------------------------
+   CHAMPS FORMULAIRE
+   ---------------------------------------------------------- */
+.wf-group { margin-bottom: 1.1rem; }
+
+.wf-label {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--em-navy);
+  margin-bottom: .4rem;
+}
+
+.wf-optional {
+  font-weight: 400;
+  font-size: .75rem;
+  color: var(--em-muted);
+}
+
+.wf-input {
+  width: 100%;
+  padding: .72rem 1rem;
+  border: 1.5px solid var(--em-stone);
+  border-radius: var(--em-radius-sm);
+  font-family: var(--font-body);
+  font-size: .95rem;
+  color: var(--em-charcoal);
+  background: white;
+  transition: var(--em-transition);
+  outline: none;
+  appearance: none;
+}
+
+.wf-input:focus {
+  border-color: var(--em-navy);
+  box-shadow: 0 0 0 3px rgba(27,43,75,.08);
+}
+
+.wf-input::placeholder { color: var(--em-muted); }
+textarea.wf-input { resize: vertical; min-height: 90px; }
+
+.wf-hint {
+  font-size: .75rem;
+  color: var(--em-muted);
+  margin-top: .25rem;
+  display: block;
+}
+
+/* Radios visibilité */
+.wf-radio-group { display: flex; gap: .75rem; flex-wrap: wrap; }
+
+.wf-radio {
+  flex: 1; min-width: 180px;
+  display: flex; align-items: center; gap: .75rem;
+  padding: .85rem 1rem;
+  border: 1.5px solid var(--em-stone);
+  border-radius: var(--em-radius);
+  cursor: pointer;
+  transition: var(--em-transition);
+  font-size: .875rem;
+  color: var(--em-muted);
+}
+
+.wf-radio input { display: none; }
+.wf-radio i     { font-size: 1.2rem; flex-shrink: 0; }
+.wf-radio div strong { display: block; font-size: .875rem; color: var(--em-charcoal); }
+.wf-radio div small  { font-size: .75rem; color: var(--em-muted); }
+
+.wf-radio:hover  { border-color: var(--em-navy); }
+.wf-radio.active {
+  border-color: var(--em-navy);
+  background: rgba(27,43,75,.04);
+  color: var(--em-navy);
+}
+.wf-radio.active i { color: var(--em-navy); }
+
+/* ----------------------------------------------------------
+   FORMULES
+   ---------------------------------------------------------- */
+.formula-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.formula-card {
+  background: white;
+  border: 2px solid var(--em-stone);
+  border-radius: var(--em-radius-lg);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: var(--em-transition);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.formula-card:hover { border-color: var(--em-gold-light); box-shadow: var(--em-shadow); }
+
+.formula-card--featured {
+  border-color: var(--em-gold);
+  box-shadow: 0 4px 20px rgba(201,168,76,.15);
+}
+
+.formula-card--selected {
+  border-color: var(--em-gold) !important;
+  background: rgba(201,168,76,.04);
+  box-shadow: 0 4px 20px rgba(201,168,76,.25) !important;
+}
+
+.formula-card__badge {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--em-gold); color: white; font-size: .7rem; font-weight: 700;
+  padding: .25rem .85rem; border-radius: 20px; white-space: nowrap;
+  letter-spacing: .05em;
+}
+
+.formula-card__header { text-align: center; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--em-stone); }
+.formula-card__header h3 { font-family: var(--font-display); font-size: 1.3rem; color: var(--em-navy); margin-bottom: .4rem; }
+.formula-card__price { display: flex; align-items: baseline; justify-content: center; gap: .25rem; margin-bottom: .25rem; }
+.formula-price    { font-size: 2rem; font-weight: 700; color: var(--em-navy); font-family: var(--font-display); }
+.formula-currency { font-size: .85rem; color: var(--em-muted); }
+.formula-duration { font-size: .78rem; color: var(--em-muted); }
+
+.formula-features {
+  list-style: none; padding: 0; margin: 0 0 1rem; flex: 1;
+  display: flex; flex-direction: column; gap: .5rem;
+}
+.formula-features li { font-size: .82rem; color: var(--em-charcoal); display: flex; align-items: center; gap: .4rem; }
+.formula-features .bi-check-circle-fill { color: var(--em-success); font-size: .85rem; flex-shrink: 0; }
+
+.formula-card__select-btn {
+  display: flex; align-items: center; justify-content: center; gap: .5rem;
+  font-size: .85rem; font-weight: 600; color: var(--em-navy); padding: .6rem;
+  border-radius: var(--em-radius-sm); border: 1px solid var(--em-stone);
+  transition: var(--em-transition); margin-top: auto;
+}
+.formula-card:hover .formula-card__select-btn { background: var(--em-cream); }
+.formula-card--selected .formula-card__select-btn { background: rgba(201,168,76,.1); border-color: var(--em-gold); }
+
+/* ----------------------------------------------------------
+   THÈMES
+   ---------------------------------------------------------- */
+.theme-grid {
+  display: flex; gap: .75rem; flex-wrap: wrap;
+  padding: 0 2rem 2rem;
+}
+
+.theme-option {
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  padding: .75rem; border: 2px solid var(--em-stone);
+  border-radius: var(--em-radius); cursor: pointer; transition: var(--em-transition);
+  min-width: 90px;
+}
+.theme-option:hover { border-color: var(--em-gold-light); }
+.theme-option--active { border-color: var(--em-gold); background: rgba(201,168,76,.05); }
+
+.theme-preview {
+  width: 60px; height: 40px; border-radius: 6px;
+  border: 1px solid rgba(0,0,0,.1);
+}
+.theme-preview--classic-white { background: linear-gradient(135deg, #fff 0%, #f9fafb 100%); }
+.theme-preview--nature-green  { background: linear-gradient(135deg, #2D7A4F 0%, #4CAF50 100%); }
+.theme-preview--ocean-blue    { background: linear-gradient(135deg, #1E5FA8 0%, #42a5f5 100%); }
+.theme-preview--sunset-warm   { background: linear-gradient(135deg, #B45309 0%, #F59E0B 100%); }
+.theme-preview--night-stars   { background: linear-gradient(135deg, #0E1628 0%, #1B2B4B 100%); }
+.theme-preview--african-gold  { background: linear-gradient(135deg, #7C2D12 0%, #C9A84C 100%); }
+
+.theme-name { font-size: .75rem; font-weight: 500; color: var(--em-charcoal); text-align: center; }
+.theme-badge { font-size: .65rem; padding: 1px 6px; border-radius: 8px; }
+.theme-badge--free { background: rgba(45,122,79,.1); color: var(--em-success); }
+.theme-badge--paid { background: rgba(201,168,76,.1); color: var(--em-gold); }
+
+/* ----------------------------------------------------------
+   PAIEMENT
+   ---------------------------------------------------------- */
+.order-summary {
+  background: rgba(255,255,255,.1);
+  border-radius: var(--em-radius);
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+}
+.order-summary__item { display: flex; justify-content: space-between; font-size: .875rem; margin-bottom: .4rem; color: rgba(255,255,255,.8); }
+.order-summary__total { display: flex; justify-content: space-between; font-size: 1rem; font-weight: 600; color: white; border-top: 1px solid rgba(255,255,255,.2); padding-top: .6rem; margin-top: .4rem; }
+.order-total-amount { color: var(--em-gold-light); font-size: 1.15rem; font-family: var(--font-display); }
+
+.currency-btn {
+  display: inline-flex; align-items: center; padding: .45rem 1rem;
+  border: 1.5px solid var(--em-stone); border-radius: 20px;
+  font-size: .875rem; font-weight: 500; color: var(--em-muted);
+  cursor: pointer; transition: var(--em-transition);
+}
+.currency-btn:hover  { border-color: var(--em-navy); color: var(--em-navy); }
+.currency-btn.active { border-color: var(--em-navy); background: var(--em-navy); color: white; }
+
+.payment-zone { padding: 1.5rem 2rem 0; }
+.payment-zone__title {
+  font-size: .8rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--em-muted);
+  display: flex; align-items: center; gap: .4rem;
+  margin-bottom: .75rem; padding-bottom: .5rem;
+  border-bottom: 1px solid var(--em-stone);
+}
+
+.payment-providers { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1rem; }
+
+.payment-provider {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .85rem 1rem; border: 1.5px solid var(--em-stone);
+  border-radius: var(--em-radius); cursor: pointer; transition: var(--em-transition);
+}
+.payment-provider:hover { border-color: var(--em-navy); background: rgba(27,43,75,.02); }
+.payment-provider--selected { border-color: var(--em-gold) !important; background: rgba(201,168,76,.04) !important; }
+
+.payment-provider__icon {
+  width: 44px; height: 44px; border-radius: var(--em-radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.25rem; flex-shrink: 0;
+}
+.payment-provider__icon--stripe       { background: #F0F0FF; color: #635BFF; }
+.payment-provider__icon--paypal       { background: #EEF6FF; color: #003087; }
+.payment-provider__icon--mobile       { background: rgba(45,122,79,.1); color: var(--em-success); }
+.payment-provider__icon--virement     { background: rgba(27,43,75,.08); color: var(--em-navy); }
+
+.payment-provider__info { flex: 1; }
+.payment-provider__info strong { display: block; font-size: .9rem; color: var(--em-charcoal); }
+.payment-provider__info small  { font-size: .75rem; color: var(--em-muted); }
+
+.payment-provider__check { color: transparent; font-size: 1.1rem; transition: var(--em-transition); }
+.payment-provider--selected .payment-provider__check { color: var(--em-gold); }
+
+.payment-security {
+  margin: 1rem 2rem 0;
+  display: flex; align-items: center; gap: .5rem;
+  font-size: .78rem; color: var(--em-muted);
+  padding: .6rem 1rem; background: var(--em-cream);
+  border-radius: var(--em-radius-sm);
+}
+.payment-security .bi { color: var(--em-success); }
+
+/* ----------------------------------------------------------
+   SANDBOX
+   ---------------------------------------------------------- */
+.sandbox-header { padding: 2rem; text-align: center; }
+.sandbox-badge {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3);
+  color: #92400E; border-radius: 20px; padding: .3rem 1rem;
+  font-size: .75rem; font-weight: 600; margin-bottom: 1.5rem;
+}
+.sandbox-provider-icon { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
+.sandbox-title { font-family: var(--font-display); font-size: 1.75rem; color: var(--em-navy); margin-bottom: .35rem; }
+.sandbox-subtitle { color: var(--em-muted); font-size: .9rem; }
+
+.sandbox-order {
+  margin: 0 2rem 1.5rem;
+  border: 1px solid var(--em-stone); border-radius: var(--em-radius);
+  overflow: hidden;
+}
+.sandbox-order__row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .75rem 1rem; border-bottom: 1px solid var(--em-stone);
+  font-size: .9rem;
+}
+.sandbox-order__row:last-child { border-bottom: none; }
+.sandbox-amount { color: var(--em-gold); font-size: 1.1rem; font-family: var(--font-display); font-weight: 700; }
+.sandbox-status {
+  padding: .2rem .6rem; border-radius: 12px;
+  background: rgba(245,158,11,.1); color: #92400E; font-size: .78rem; font-weight: 600;
+}
+
+.sandbox-actions { padding: 0 2rem 1.5rem; }
+.sandbox-note {
+  margin: 0 2rem 2rem;
+  padding: 1rem; background: var(--em-cream); border-radius: var(--em-radius-sm);
+  font-size: .8rem; color: var(--em-muted); line-height: 1.6;
+}
+.sandbox-note code { background: rgba(27,43,75,.08); padding: 1px 5px; border-radius: 3px; font-size: .8rem; }
+
+/* ----------------------------------------------------------
+   INSTRUCTIONS
+   ---------------------------------------------------------- */
+.instructions-amount-box {
+  margin: 0 2rem 1.5rem;
+  background: linear-gradient(135deg, #1B2B4B, #2C4270);
+  border-radius: var(--em-radius); padding: 1.5rem; text-align: center;
+}
+.instructions-amount-label { color: rgba(255,255,255,.6); font-size: .8rem; margin-bottom: .5rem; }
+.instructions-amount { font-size: 2.5rem; font-family: var(--font-display); font-weight: 700; color: white; }
+.instructions-currency { font-size: 1rem; color: rgba(255,255,255,.7); margin-left: .25rem; }
+.instructions-ref { color: rgba(255,255,255,.7); font-size: .85rem; margin-top: .5rem; display: flex; align-items: center; justify-content: center; gap: .5rem; }
+
+.copy-btn { background: none; border: none; color: rgba(255,255,255,.7); cursor: pointer; padding: 2px 4px; border-radius: 4px; }
+.copy-btn:hover { color: white; background: rgba(255,255,255,.1); }
+
+.instructions-steps { padding: 0 2rem 1.5rem; display: flex; flex-direction: column; gap: .75rem; }
+.instructions-step { display: flex; align-items: flex-start; gap: .75rem; }
+.instructions-step__num {
+  width: 26px; height: 26px; flex-shrink: 0;
+  background: var(--em-gold); color: white; border-radius: 50%;
+  font-size: .8rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 1px;
+}
+.instructions-step__text { font-size: .9rem; color: var(--em-charcoal); line-height: 1.5; }
+
+.bank-details { margin: 0 2rem 1.5rem; }
+.bank-details h3 { font-size: 1rem; font-weight: 600; color: var(--em-navy); margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem; }
+.bank-details__grid { border: 1px solid var(--em-stone); border-radius: var(--em-radius); overflow: hidden; }
+.bank-detail-row {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .65rem 1rem; border-bottom: 1px solid var(--em-stone); font-size: .875rem;
+}
+.bank-detail-row:last-child { border-bottom: none; }
+.bank-detail-row span { color: var(--em-muted); min-width: 100px; }
+.bank-detail-row strong { flex: 1; font-family: monospace; }
+
+.instructions-confirm-section { padding: 0 2rem 1.5rem; }
+.instructions-confirm-section h3 { font-size: 1.1rem; font-weight: 600; color: var(--em-navy); margin-bottom: .5rem; }
+.instructions-confirm-section p { font-size: .875rem; color: var(--em-muted); margin-bottom: 1rem; }
+
+.confirm-form { display: flex; flex-direction: column; gap: 0; }
+
+.instructions-note {
+  margin: 0 2rem 2rem;
+  padding: 1rem; background: var(--em-cream);
+  border-radius: var(--em-radius-sm);
+  font-size: .8rem; color: var(--em-muted); line-height: 1.65;
+}
+
+/* ----------------------------------------------------------
+   ACTIONS WIZARD
+   ---------------------------------------------------------- */
+.wizard-actions {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.5rem 2rem; border-top: 1px solid var(--em-stone);
+  background: var(--em-cream); gap: 1rem;
+  border-radius: 0 0 var(--em-radius-xl) var(--em-radius-xl);
+}
+
+/* ----------------------------------------------------------
+   RESPONSIVE
+   ---------------------------------------------------------- */
+@media (max-width: 575px) {
+  .wizard-card__header { padding: 2rem 1.25rem 1.5rem; }
+  .wizard-form, .payment-zone { padding: 1.25rem; }
+  .formula-grid { grid-template-columns: 1fr; padding: 1.25rem; }
+  .theme-grid { padding: 0 1.25rem 1.25rem; }
+  .wizard-actions { flex-direction: column; }
+  .wizard-actions .em-btn { width: 100%; justify-content: center; }
+  .sandbox-order, .sandbox-actions, .sandbox-note { margin-left: 1.25rem; margin-right: 1.25rem; }
+  .instructions-amount-box, .instructions-steps, .bank-details, .instructions-confirm-section, .instructions-note { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .wizard-progress__line { max-width: 40px; }
+}

@@ -1,0 +1,154 @@
+{% extends 'base.html.twig' %}
+{% block title %}QR Code — {{ page.deceasedFullName }} — EnMémoire.com{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/qrcode.css') }}">{% endblock %}
+
+{% block body %}
+<div class="em-section">
+  <div class="container" style="max-width:800px;">
+
+    {# En-tête #}
+    <div class="qr-header">
+      <a href="{{ path('app_memorial_show', {slug: page.slug}) }}" class="qr-back">
+        <i class="bi bi-arrow-left"></i> Retour à la page mémorielle
+      </a>
+      <h1 class="qr-title">QR Code mémoriel</h1>
+      <p class="qr-subtitle">
+        De <strong>{{ page.deceasedFullName }}</strong>
+        · {{ page.deceasedBirthDate|date('Y') }} — {{ page.deceasedDeathDate|date('Y') }}
+      </p>
+    </div>
+
+    <div class="qr-layout">
+
+      {# QR Code principal #}
+      <div class="qr-card qr-card--main">
+        <div class="qr-frame">
+          <div class="qr-frame__corner qr-frame__corner--tl"></div>
+          <div class="qr-frame__corner qr-frame__corner--tr"></div>
+          <div class="qr-frame__corner qr-frame__corner--bl"></div>
+          <div class="qr-frame__corner qr-frame__corner--br"></div>
+          <img src="{{ plaque.qr_url }}"
+               alt="QR Code mémoriel de {{ page.deceasedFullName }}"
+               class="qr-image" id="qr-img"
+               onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={{ plaque.memorial_url|url_encode }}&ecc=H'">
+        </div>
+        <div class="qr-code-label">
+          <i class="bi bi-upc-scan"></i>
+          {{ page.pageCode }}
+        </div>
+        <p class="qr-scan-hint">Scannez pour accéder à la page mémorielle</p>
+      </div>
+
+      {# Actions téléchargement #}
+      <div class="qr-actions-panel">
+
+        <h3 class="qr-section-title">Télécharger</h3>
+
+        <div class="qr-download-cards">
+
+          <div class="qr-download-card">
+            <div class="qr-download-card__icon">
+              <i class="bi bi-file-image"></i>
+            </div>
+            <div class="qr-download-card__info">
+              <strong>Image PNG</strong>
+              <small>400×400 px — Pour impression courante</small>
+            </div>
+            <a href="{{ path('app_qrcode_download_png', {slug: page.slug}) }}"
+               class="em-btn em-btn--outline em-btn--sm" download>
+              <i class="bi bi-download"></i> PNG
+            </a>
+          </div>
+
+          <div class="qr-download-card">
+            <div class="qr-download-card__icon qr-download-card__icon--gold">
+              <i class="bi bi-vector-pen"></i>
+            </div>
+            <div class="qr-download-card__info">
+              <strong>Fichier SVG</strong>
+              <small>Vectoriel haute résolution — Pour gravure laser</small>
+            </div>
+            <a href="{{ path('app_qrcode_download_svg', {slug: page.slug}) }}"
+               class="em-btn em-btn--gold em-btn--sm" download>
+              <i class="bi bi-download"></i> SVG
+            </a>
+          </div>
+
+          <div class="qr-download-card">
+            <div class="qr-download-card__icon qr-download-card__icon--navy">
+              <i class="bi bi-printer"></i>
+            </div>
+            <div class="qr-download-card__info">
+              <strong>Plaquette imprimable</strong>
+              <small>Mise en page prête pour impression ou gravure</small>
+            </div>
+            <a href="{{ path('app_qrcode_plaquette', {slug: page.slug}) }}"
+               class="em-btn em-btn--primary em-btn--sm" target="_blank">
+              <i class="bi bi-file-earmark-pdf"></i> Ouvrir
+            </a>
+          </div>
+
+        </div>
+
+        <h3 class="qr-section-title" style="margin-top:2rem;">Utilisations recommandées</h3>
+
+        <div class="qr-usages">
+          <div class="qr-usage">
+            <div class="qr-usage__icon">🪦</div>
+            <div>
+              <strong>Pierre tombale</strong>
+              <p>Gravez le QR Code en SVG sur la pierre. Scannez pour accéder à la page mémorielle.</p>
+            </div>
+          </div>
+          <div class="qr-usage">
+            <div class="qr-usage__icon">📋</div>
+            <div>
+              <strong>Faire-part & programme</strong>
+              <p>Imprimez en PNG sur les faire-parts d'obsèques ou programmes funéraires.</p>
+            </div>
+          </div>
+          <div class="qr-usage">
+            <div class="qr-usage__icon">🖼️</div>
+            <div>
+              <strong>Cadre commémoratif</strong>
+              <p>Intégrez dans un cadre photo avec portrait du défunt.</p>
+            </div>
+          </div>
+          <div class="qr-usage">
+            <div class="qr-usage__icon">💌</div>
+            <div>
+              <strong>Partage numérique</strong>
+              <p>Partagez par WhatsApp, email ou réseaux sociaux.</p>
+            </div>
+          </div>
+        </div>
+
+        {# Lien direct #}
+        <div class="qr-link-box">
+          <label class="qr-link-label"><i class="bi bi-link-45deg"></i> Lien direct</label>
+          <div class="qr-link-copy">
+            <input type="text" value="{{ plaque.memorial_url }}" readonly class="qr-link-input" id="memorial-url">
+            <button type="button" class="em-btn em-btn--outline em-btn--sm" onclick="copyLink()">
+              <i class="bi bi-clipboard" id="copy-icon"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function copyLink() {
+  const input = document.getElementById('memorial-url');
+  navigator.clipboard.writeText(input.value).then(() => {
+    const icon = document.getElementById('copy-icon');
+    icon.className = 'bi bi-check-lg';
+    setTimeout(() => { icon.className = 'bi bi-clipboard'; }, 2000);
+  });
+}
+</script>
+{% endblock %}

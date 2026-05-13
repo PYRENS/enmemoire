@@ -1,0 +1,146 @@
+{% extends 'base.html.twig' %}
+{% block title %}Modération — {{ page.deceasedFullName }}{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">{% endblock %}
+
+{% block body %}
+<div class="dashboard-wrapper">
+  {% include 'dashboard/partials/_sidebar.html.twig' %}
+  <main class="dashboard-main">
+
+    <div class="dashboard-main__header">
+      <div>
+        <h1 class="dashboard-main__title"><i class="bi bi-shield-check"></i> Modération</h1>
+        <p class="text-muted">Publications en attente de validation pour <strong>{{ page.deceasedFullName }}</strong></p>
+      </div>
+    </div>
+
+    {# Résumé #}
+    <div class="d-flex gap-3 mb-4 flex-wrap">
+      <div class="em-badge em-badge--pending py-2 px-3">
+        <i class="bi bi-chat-heart"></i> {{ pending.condolences }} condoléance(s) en attente
+      </div>
+      <div class="em-badge em-badge--pending py-2 px-3">
+        <i class="bi bi-quote"></i> {{ pending.testimonials }} témoignage(s) en attente
+      </div>
+      <div class="em-badge em-badge--pending py-2 px-3">
+        <i class="bi bi-book"></i> {{ pending.guestbooks }} signature(s) en attente
+      </div>
+    </div>
+
+    {# Onglets #}
+    <div class="moderation-tabs">
+      <button class="moderation-tab-btn" data-target="panel-condolences">
+        <i class="bi bi-chat-heart"></i> Condoléances
+        {% if pending.condolences > 0 %}<span class="dashboard-pending-badge">{{ pending.condolences }}</span>{% endif %}
+      </button>
+      <button class="moderation-tab-btn" data-target="panel-testimonials">
+        <i class="bi bi-quote"></i> Témoignages
+        {% if pending.testimonials > 0 %}<span class="dashboard-pending-badge">{{ pending.testimonials }}</span>{% endif %}
+      </button>
+      <button class="moderation-tab-btn" data-target="panel-guestbooks">
+        <i class="bi bi-book"></i> Livre d'or
+        {% if pending.guestbooks > 0 %}<span class="dashboard-pending-badge">{{ pending.guestbooks }}</span>{% endif %}
+      </button>
+    </div>
+
+    {# Panel condoléances #}
+    <div id="panel-condolences" class="moderation-panel">
+      {% if condolences|length %}
+        {% for item in condolences %}
+        <div class="moderation-item">
+          <div class="moderation-item__avatar">
+            {{ item.user.firstName|first|upper }}{{ item.user.lastName|first|upper }}
+          </div>
+          <div class="moderation-item__body">
+            <div class="moderation-item__header">
+              <strong>{{ item.isAnonymous ? 'Anonyme' : item.user.fullName }}</strong>
+              <small class="text-muted">{{ item.createdAt|date('d/m/Y à H:i') }}</small>
+            </div>
+            <p class="moderation-item__text">{{ item.message|nl2br }}</p>
+            <div class="moderation-item__actions">
+              <form action="{{ path('app_dashboard_moderate_condolence', {slug: page.slug, id: item.id, action: 'approve'}) }}" method="POST">
+                <input type="hidden" name="_token" value="{{ csrf_token('moderate_' ~ item.id) }}">
+                <button type="submit" class="btn-approve"><i class="bi bi-check-lg"></i> Approuver</button>
+              </form>
+              <form action="{{ path('app_dashboard_moderate_condolence', {slug: page.slug, id: item.id, action: 'reject'}) }}" method="POST">
+                <input type="hidden" name="_token" value="{{ csrf_token('moderate_' ~ item.id) }}">
+                <button type="submit" class="btn-reject"><i class="bi bi-x-lg"></i> Rejeter</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="dashboard-empty"><i class="bi bi-check-circle" style="font-size:2rem;color:var(--em-success);opacity:.4;"></i><p>Aucune condoléance en attente.</p></div>
+      {% endif %}
+    </div>
+
+    {# Panel témoignages #}
+    <div id="panel-testimonials" class="moderation-panel" style="display:none">
+      {% if testimonials|length %}
+        {% for item in testimonials %}
+        <div class="moderation-item">
+          <div class="moderation-item__avatar">{{ item.user.firstName|first|upper }}{{ item.user.lastName|first|upper }}</div>
+          <div class="moderation-item__body">
+            <div class="moderation-item__header">
+              <div>
+                <strong>{{ item.user.fullName }}</strong>
+                {% if item.relationToDeceased %}<span class="memorial-relation">{{ item.relationToDeceased }}</span>{% endif %}
+                {% if item.title %}<em class="ms-2 text-muted">« {{ item.title }} »</em>{% endif %}
+              </div>
+              <small class="text-muted">{{ item.createdAt|date('d/m/Y à H:i') }}</small>
+            </div>
+            <p class="moderation-item__text">{{ item.content|nl2br }}</p>
+            <div class="moderation-item__actions">
+              <form action="{{ path('app_dashboard_moderate_testimonial', {slug: page.slug, id: item.id, action: 'approve'}) }}" method="POST">
+                <input type="hidden" name="_token" value="{{ csrf_token('moderate_' ~ item.id) }}">
+                <button type="submit" class="btn-approve"><i class="bi bi-check-lg"></i> Approuver</button>
+              </form>
+              <form action="{{ path('app_dashboard_moderate_testimonial', {slug: page.slug, id: item.id, action: 'reject'}) }}" method="POST">
+                <input type="hidden" name="_token" value="{{ csrf_token('moderate_' ~ item.id) }}">
+                <button type="submit" class="btn-reject"><i class="bi bi-x-lg"></i> Rejeter</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="dashboard-empty"><i class="bi bi-check-circle" style="font-size:2rem;color:var(--em-success);opacity:.4;"></i><p>Aucun témoignage en attente.</p></div>
+      {% endif %}
+    </div>
+
+    {# Panel livre d'or #}
+    <div id="panel-guestbooks" class="moderation-panel" style="display:none">
+      {% if guestbooks|length %}
+        {% for item in guestbooks %}
+        <div class="moderation-item">
+          <div class="moderation-item__avatar">{{ item.user.firstName|first|upper }}{{ item.user.lastName|first|upper }}</div>
+          <div class="moderation-item__body">
+            <div class="moderation-item__header">
+              <strong>{{ item.user.fullName }}</strong>
+              <small class="text-muted">{{ item.signedAt|date('d/m/Y à H:i') }}</small>
+            </div>
+            {% if item.signatureText %}<p class="moderation-item__text">{{ item.signatureText|nl2br }}</p>{% endif %}
+            <div class="moderation-item__actions">
+              <form action="#" method="POST">
+                <input type="hidden" name="_token" value="{{ csrf_token('moderate_' ~ item.id) }}">
+                <button type="submit" class="btn-approve"><i class="bi bi-check-lg"></i> Approuver</button>
+              </form>
+              <form action="#" method="POST">
+                <input type="hidden" name="_token" value="{{ csrf_token('moderate_' ~ item.id) }}">
+                <button type="submit" class="btn-reject"><i class="bi bi-x-lg"></i> Rejeter</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="dashboard-empty"><i class="bi bi-check-circle" style="font-size:2rem;color:var(--em-success);opacity:.4;"></i><p>Aucune signature en attente.</p></div>
+      {% endif %}
+    </div>
+
+  </main>
+</div>
+{% endblock %}
+{% block javascripts %}<script src="{{ asset('js/dashboard.js') }}"></script>{% endblock %}

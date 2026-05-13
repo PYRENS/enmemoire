@@ -1,0 +1,248 @@
+{% extends 'base.html.twig' %}
+{% block title %}Créer un compte — EnMémoire.com{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/auth.css') }}">{% endblock %}
+
+{% block body %}
+<div class="auth-wrapper auth-wrapper--register">
+
+  {# Visuel gauche #}
+  <div class="auth-visual">
+    <div class="auth-visual__overlay"></div>
+    <div class="auth-visual__content">
+      <div class="auth-visual__flame">🌹</div>
+      <h2>Créez un mémorial<br>qui dure éternellement</h2>
+      <ul class="auth-visual__features">
+        <li><i class="bi bi-check-circle-fill"></i> Page mémorielle personnalisée</li>
+        <li><i class="bi bi-check-circle-fill"></i> Partage international de l'avis de décès</li>
+        <li><i class="bi bi-check-circle-fill"></i> QR Code imprimable ou gravable</li>
+        <li><i class="bi bi-check-circle-fill"></i> Galerie photos et vidéos</li>
+        <li><i class="bi bi-check-circle-fill"></i> Condoléances depuis le monde entier</li>
+      </ul>
+    </div>
+  </div>
+
+  {# Formulaire #}
+  <div class="auth-panel auth-panel--wide">
+    <div class="auth-panel__inner">
+
+      <a href="{{ path('app_home') }}" class="auth-logo">
+        🕯️ <span>En<strong>Mémoire</strong>.com</span>
+      </a>
+
+      <h1 class="auth-title">Créer un compte</h1>
+      <p class="auth-subtitle">Gratuit · Sans carte bancaire requise</p>
+
+      {% if error %}
+        <div class="auth-alert auth-alert--error">
+          <i class="bi bi-exclamation-circle"></i>
+          <span>{{ error|raw }}</span>
+        </div>
+      {% endif %}
+
+      <form method="POST" action="{{ path('app_register') }}"
+            class="auth-form" id="register-form" data-disable-on-submit>
+        <input type="hidden" name="_token" value="{{ csrf_token('register') }}">
+
+        {# Prénom + Nom #}
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="auth-field">
+              <label class="auth-label" for="first_name">Prénom *</label>
+              <div class="auth-input-wrap">
+                <i class="bi bi-person auth-input-icon" aria-hidden="true"></i>
+                <input type="text" id="first_name" name="first_name"
+                       class="auth-input" required autocomplete="given-name"
+                       value="{{ form.first_name ?? '' }}"
+                       placeholder="Jean">
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="auth-field">
+              <label class="auth-label" for="last_name">Nom *</label>
+              <div class="auth-input-wrap">
+                <i class="bi bi-person auth-input-icon" aria-hidden="true"></i>
+                <input type="text" id="last_name" name="last_name"
+                       class="auth-input" required autocomplete="family-name"
+                       value="{{ form.last_name ?? '' }}"
+                       placeholder="Mutombo">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# Email #}
+        <div class="auth-field">
+          <label class="auth-label" for="reg_email">Adresse email *</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-envelope auth-input-icon" aria-hidden="true"></i>
+            <input type="email" id="reg_email" name="email"
+                   class="auth-input" required autocomplete="email"
+                   value="{{ form.email ?? '' }}"
+                   placeholder="votre@email.com">
+          </div>
+        </div>
+
+        {# Canal OTP #}
+        <div class="auth-field">
+          <label class="auth-label">Mode de vérification *</label>
+          <div class="auth-otp-channels">
+            <label class="auth-channel {% if (form.otp_channel ?? 'email') == 'email' %}active{% endif %}"
+                   id="channel-email-label">
+              <input type="radio" name="otp_channel" value="email" id="channel-email"
+                     {% if (form.otp_channel ?? 'email') == 'email' %}checked{% endif %}>
+              <i class="bi bi-envelope-fill"></i>
+              <span>Email</span>
+            </label>
+            <label class="auth-channel {% if (form.otp_channel ?? '') == 'whatsapp' %}active{% endif %}"
+                   id="channel-wa-label">
+              <input type="radio" name="otp_channel" value="whatsapp" id="channel-wa"
+                     {% if (form.otp_channel ?? '') == 'whatsapp' %}checked{% endif %}>
+              <i class="bi bi-whatsapp"></i>
+              <span>WhatsApp</span>
+            </label>
+          </div>
+        </div>
+
+        {# WhatsApp (conditionnel) #}
+        <div class="auth-field" id="whatsapp-field"
+             style="{{ (form.otp_channel ?? 'email') == 'whatsapp' ? '' : 'display:none' }}">
+          <label class="auth-label" for="phone">Numéro WhatsApp *</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-whatsapp auth-input-icon" aria-hidden="true"></i>
+            <input type="tel" id="phone" name="phone_whatsapp"
+                   class="auth-input" autocomplete="tel"
+                   value="{{ form.phone_whatsapp ?? '' }}"
+                   placeholder="+243 81X XXX XXXX">
+          </div>
+          <span class="auth-hint">Format international, ex : +243812345678</span>
+        </div>
+
+        {# Mot de passe + Confirmation #}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="auth-field">
+              <label class="auth-label" for="reg_password">
+                Mot de passe *
+                <small style="font-weight:400;color:#6B7280;">(8 car. min.)</small>
+              </label>
+              <div class="auth-input-wrap">
+                <i class="bi bi-lock auth-input-icon" aria-hidden="true"></i>
+                <input type="password" id="reg_password" name="password"
+                       class="auth-input" required autocomplete="new-password"
+                       minlength="8" placeholder="••••••••">
+                <button type="button" class="auth-toggle-pw" aria-label="Afficher le mot de passe">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+              <div class="auth-pw-strength" id="pw-strength">
+                <div class="auth-pw-strength__bar" id="pw-bar"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="auth-field">
+              <label class="auth-label" for="reg_password_confirm">Confirmer *</label>
+              <div class="auth-input-wrap">
+                <i class="bi bi-lock-fill auth-input-icon" aria-hidden="true"></i>
+                <input type="password" id="reg_password_confirm" name="password_confirm"
+                       class="auth-input" required autocomplete="new-password"
+                       placeholder="••••••••">
+              </div>
+              <div id="pw-match-msg" style="font-size:.78rem;margin-top:4px;min-height:18px;"></div>
+            </div>
+          </div>
+        </div>
+
+        {# ✅ FIX select langue : pas de auth-input-wrap (pas d'icône) #}
+        <div class="auth-field">
+          <label class="auth-label" for="locale">Langue préférée</label>
+          <select name="locale" id="locale" class="auth-input">
+            <option value="fr" {% if (form.locale ?? 'fr') == 'fr' %}selected{% endif %}>🇫🇷 Français</option>
+            <option value="en" {% if (form.locale ?? '') == 'en' %}selected{% endif %}>🇬🇧 English</option>
+          </select>
+        </div>
+
+        {# CGU — styles inline pour garantir le rendu sur tous les écrans #}
+        <div style="margin:.75rem 0 1.25rem;font-size:.82rem;color:#2D2D2D;">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;text-align:left;">
+            <input type="checkbox" name="cgu" id="cgu" required
+                   style="display:none;"
+                   {% if form.cgu is defined %}checked{% endif %}>
+            <span id="cgu-box"
+                  style="width:18px;height:18px;min-width:18px;border:1.5px solid #E8E0D4;
+                         border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;
+                         align-items:center;justify-content:center;transition:all .2s;
+                         background:white;">
+            </span>
+            <span style="line-height:1.55;display:inline;">
+              J'accepte les
+              <a href="{{ path('app_legal_terms') }}" target="_blank" rel="noopener"
+                 style="color:#1B2B4B;font-weight:600;text-decoration:underline;">Conditions Générales d'Utilisation</a>
+              et la
+              <a href="{{ path('app_privacy') }}" target="_blank" rel="noopener"
+                 style="color:#1B2B4B;font-weight:600;text-decoration:underline;">Politique de Confidentialité</a>
+            </span>
+          </label>
+        </div>
+
+        <button type="submit" class="auth-submit" id="register-submit" disabled>
+          <i class="bi bi-person-plus" style="flex-shrink:0;"></i>
+          <span class="d-none d-sm-inline">Créer mon compte et recevoir le code</span>
+          <span class="d-inline d-sm-none">Créer mon compte</span>
+        </button>
+      </form>
+
+      <p class="auth-switch mt-3">
+        Déjà un compte ? <a href="{{ path('app_login') }}">Se connecter</a>
+      </p>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script src="{{ asset('js/auth.js') }}"></script>
+<script>
+(function(){
+  // Checkbox CGU inline
+  var cgu    = document.getElementById('cgu');
+  var box    = document.getElementById('cgu-box');
+  var submit = document.getElementById('register-submit');
+
+  function updateCgu() {
+    if (!box) return;
+    if (cgu && cgu.checked) {
+      box.style.background    = '#1B2B4B';
+      box.style.borderColor   = '#1B2B4B';
+      box.innerHTML           = '<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>';
+      if (submit) submit.disabled = false;
+    } else {
+      box.style.background    = 'white';
+      box.style.borderColor   = '#E8E0D4';
+      box.innerHTML           = '';
+      if (submit) submit.disabled = true;
+    }
+  }
+
+  if (box) {
+    box.closest('label').addEventListener('click', function() {
+      if (cgu) { cgu.checked = !cgu.checked; updateCgu(); }
+    });
+  }
+  updateCgu();
+
+  // Boutons langue
+  var fr = document.getElementById('lang-fr-label');
+  var en = document.getElementById('lang-en-label');
+  var activeS   = 'flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;border-radius:8px;transition:all .2s;user-select:none;border:2px solid #1B2B4B;background:rgba(27,43,75,.06);font-weight:600;color:#1B2B4B;';
+  var inactiveS = 'flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;border-radius:8px;transition:all .2s;user-select:none;border:1.5px solid #E8E0D4;color:#6B7280;';
+  if (fr && en) {
+    fr.addEventListener('click', function(){ fr.setAttribute('style',activeS); en.setAttribute('style',inactiveS); });
+    en.addEventListener('click', function(){ en.setAttribute('style',activeS); fr.setAttribute('style',inactiveS); });
+  }
+})();
+</script>
+{% endblock %}

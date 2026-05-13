@@ -1,0 +1,545 @@
+{% extends 'base.html.twig' %}
+
+{% set memorial_theme = page.theme ? page.theme.slug : 'classic-white' %}
+
+{% block title %}{{ page.deceasedFullName }} — {{ page.deceasedBirthDate|date('Y') }}–{{ page.deceasedDeathDate|date('Y') }} — EnMémoire.com{% endblock %}
+
+{% block meta_description %}Page mémorielle de {{ page.deceasedFullName }}, né(e) le {{ page.deceasedBirthDate|date('d/m/Y') }} et décédé(e) le {{ page.deceasedDeathDate|date('d/m/Y') }}.{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('css/memorial.css') }}">
+<link rel="stylesheet" href="{{ asset('css/themes/theme-' ~ memorial_theme ~ '.css') }}">
+{% endblock %}
+
+{% block body %}
+
+{# ── HERO / EN-TÊTE DE LA PAGE ────────────────────────────── #}
+<section class="memorial-hero theme-hero">
+
+  {# Photo de couverture #}
+  {% if page.mainPhotoUrl %}
+  <div class="memorial-cover" style="background-image:url('{{ asset(page.mainPhotoUrl) }}')"></div>
+  {% else %}
+  <div class="memorial-cover memorial-cover--default"></div>
+  {% endif %}
+
+  <div class="memorial-hero__content container-xl">
+
+    {# Photo du défunt #}
+    <div class="memorial-portrait">
+      {% if page.mainPhotoUrl %}
+        <img src="{{ asset(page.mainPhotoUrl) }}" alt="{{ page.deceasedFullName }}" class="memorial-portrait__img">
+      {% else %}
+        <div class="memorial-portrait__placeholder">
+          <i class="bi bi-person-fill"></i>
+        </div>
+      {% endif %}
+    </div>
+
+    {# Identité #}
+    <div class="memorial-identity">
+      <h1 class="memorial-name">{{ page.deceasedFullName }}</h1>
+      {% if page.deceasedNickname %}
+        <p class="memorial-nickname">« {{ page.deceasedNickname }} »</p>
+      {% endif %}
+      <p class="memorial-dates">
+        <span>{{ page.deceasedBirthDate|date('d/m/Y') }}</span>
+        <span class="memorial-dates__sep">—</span>
+        <span>{{ page.deceasedDeathDate|date('d/m/Y') }}</span>
+      </p>
+      {% if page.deceasedDeathPlace %}
+      <p class="memorial-place">
+        <i class="bi bi-geo-alt"></i> {{ page.deceasedDeathPlace }}
+      </p>
+      {% endif %}
+      {% if page.deceasedProfession %}
+      <p class="memorial-profession">{{ page.deceasedProfession }}</p>
+      {% endif %}
+    </div>
+
+    {# Stats rapides #}
+    <div class="memorial-stats">
+      <div class="memorial-stat">
+        <strong>{{ stats.visits ?? 0 }}</strong>
+        <span>Visites</span>
+      </div>
+      <div class="memorial-stat">
+        <strong>{{ stats.condolences ?? 0 }}</strong>
+        <span>Condoléances</span>
+      </div>
+      <div class="memorial-stat">
+        <strong>{{ stats.photos ?? 0 }}</strong>
+        <span>Photos</span>
+      </div>
+    </div>
+
+    {# Actions rapides #}
+    <div class="memorial-hero__actions">
+      {% if app.user and not userHasSigned %}
+      <button type="button" class="em-btn em-btn--primary" onclick="openTab('guestbook')">
+        <i class="bi bi-pen"></i> Signer le livre d'or
+      </button>
+      {% endif %}
+      <button type="button" class="em-btn em-btn--outline" onclick="openTab('condolences')">
+        <i class="bi bi-chat-heart"></i> Laisser un message
+      </button>
+      <a href="{{ path('app_qrcode_show', {slug: page.slug}) }}" class="em-btn em-btn--ghost">
+        <i class="bi bi-qr-code"></i> QR Code
+      </a>
+      {% if isModerator %}
+      <a href="{{ path('app_dashboard_memorial', {slug: page.slug}) }}" class="em-btn em-btn--ghost">
+        <i class="bi bi-gear"></i> Gérer
+      </a>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+
+{# ── ANNONCES ÉPINGLÉES ───────────────────────────────────── #}
+{% if announcements %}
+<section class="memorial-announcements container-xl">
+  {% for ann in announcements %}
+  <div class="memorial-announcement {% if ann.isPinned %}memorial-announcement--pinned{% endif %}">
+    <i class="bi bi-megaphone-fill"></i>
+    <div>
+      <strong>{{ ann.title }}</strong>
+      <p>{{ ann.content }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{# ── CITATION DU DÉFUNT ───────────────────────────────────── #}
+{% if page.deceasedQuote %}
+<section class="memorial-quote-section">
+  <div class="container-xl">
+    <blockquote class="memorial-quote theme-quote">
+      <span class="memorial-quote__mark">"</span>
+      {{ page.deceasedQuote }}
+      <span class="memorial-quote__mark">"</span>
+      <cite>— {{ page.deceasedFullName }}</cite>
+    </blockquote>
+  </div>
+</section>
+{% endif %}
+
+{# ── NAVIGATION ONGLETS ───────────────────────────────────── #}
+<div class="memorial-tabs-wrap" id="memorial-tabs">
+  <div class="container-xl">
+    <div class="memorial-tabs">
+      <button class="memorial-tab active" onclick="openTab('obituary')"    id="tab-obituary">
+        <i class="bi bi-file-text"></i> Avis de décès
+      </button>
+      <button class="memorial-tab" onclick="openTab('timeline')"   id="tab-timeline">
+        <i class="bi bi-hourglass-split"></i> Biographie
+      </button>
+      <button class="memorial-tab" onclick="openTab('gallery')"    id="tab-gallery">
+        <i class="bi bi-images"></i> Galerie <span class="tab-count">{{ gallery|length }}</span>
+      </button>
+      <button class="memorial-tab" onclick="openTab('condolences')" id="tab-condolences">
+        <i class="bi bi-chat-heart"></i> Condoléances <span class="tab-count">{{ condolences|length }}</span>
+      </button>
+      <button class="memorial-tab" onclick="openTab('testimonials')" id="tab-testimonials">
+        <i class="bi bi-quote"></i> Témoignages <span class="tab-count">{{ testimonials|length }}</span>
+      </button>
+      <button class="memorial-tab" onclick="openTab('guestbook')"   id="tab-guestbook">
+        <i class="bi bi-book"></i> Livre d'or <span class="tab-count">{{ guestbooks|length }}</span>
+      </button>
+      {% if events %}
+      <button class="memorial-tab" onclick="openTab('events')"     id="tab-events">
+        <i class="bi bi-calendar-event"></i> Événements
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ── CONTENU DES ONGLETS ──────────────────────────────────── #}
+<div class="container-xl memorial-content">
+
+  {# AVIS DE DÉCÈS #}
+  <div class="memorial-panel active" id="panel-obituary">
+    {% if page.obituaryText %}
+    <div class="memorial-obituary">
+      <h2>Avis de décès</h2>
+      <div class="memorial-obituary__text">{{ page.obituaryText|nl2br }}</div>
+    </div>
+    {% else %}
+    <div class="memorial-empty-panel">
+      <i class="bi bi-file-text"></i>
+      <p>L'avis de décès sera publié prochainement.</p>
+    </div>
+    {% endif %}
+
+    {# Gadgets / Hommages virtuels #}
+    <div class="memorial-gadgets">
+      <h3>Déposer un hommage</h3>
+      {% if app.user %}
+      <div class="memorial-gadgets__row">
+        <button class="gadget-btn" data-action="deposit_flower" title="Déposer une fleur">🌹</button>
+        <button class="gadget-btn" data-action="light_candle"   title="Allumer une bougie">🕯️</button>
+        <button class="gadget-btn" data-action="release_dove"   title="Lâcher une colombe">🕊️</button>
+      </div>
+      <p class="memorial-gadgets__hint">
+        {% if app.request.attributes.get('_route') is not null %}
+          <a href="/boutique/portefeuille">Mon portefeuille</a>
+        {% endif %}
+      </p>
+      {% else %}
+      <p class="memorial-gadgets__hint">
+        <a href="{{ path('app_login') }}">Connectez-vous</a> pour déposer un hommage.
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# BIOGRAPHIE / LIGNE DE VIE #}
+  <div class="memorial-panel" id="panel-timeline">
+    {% if lifeTimeline %}
+    <h2>Biographie</h2>
+    <div class="memorial-timeline">
+      {% for event in lifeTimeline %}
+      <div class="memorial-timeline__item">
+        <div class="memorial-timeline__date">{{ event.eventDate|date('Y') }}</div>
+        <div class="memorial-timeline__dot"></div>
+        <div class="memorial-timeline__content">
+          <h4>{{ event.title }}</h4>
+          {% if event.description %}<p>{{ event.description }}</p>{% endif %}
+          {% if event.location %}<small><i class="bi bi-geo-alt"></i> {{ event.location }}</small>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="memorial-empty-panel">
+      <i class="bi bi-hourglass-split"></i>
+      <p>La biographie sera complétée prochainement.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  {# GALERIE #}
+  <div class="memorial-panel" id="panel-gallery">
+    {% if gallery %}
+    <h2>Galerie photos</h2>
+    <div class="memorial-gallery">
+      {% for media in gallery %}
+      <a href="{{ asset(media.fileUrl) }}" class="memorial-gallery__item" target="_blank">
+        <img src="{{ asset(media.thumbnailUrl ?? media.fileUrl) }}"
+             alt="{{ media.caption ?? 'Photo de ' ~ page.deceasedFullName }}"
+             loading="lazy">
+        {% if media.caption %}
+        <div class="memorial-gallery__caption">{{ media.caption }}</div>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="memorial-empty-panel">
+      <i class="bi bi-images"></i>
+      <p>La galerie sera alimentée prochainement.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  {# CONDOLÉANCES #}
+  <div class="memorial-panel" id="panel-condolences">
+    <h2>Condoléances</h2>
+
+    {% if app.user %}
+    <div class="memorial-form-card" id="condolence-form-wrap">
+      <h3>Laisser un message de condoléance</h3>
+      <form id="condolence-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('condolence_' ~ page.id) }}">
+        <textarea name="message" class="memorial-textarea"
+                  placeholder="Vos pensées et condoléances…" rows="4" required maxlength="2000"></textarea>
+        <div class="memorial-form-footer">
+          <label class="memorial-check">
+            <input type="checkbox" name="anonymous"> Publier anonymement
+          </label>
+          <button type="submit" class="em-btn em-btn--primary" id="condolence-submit">
+            <i class="bi bi-send"></i> Publier
+          </button>
+        </div>
+      </form>
+    </div>
+    {% else %}
+    <div class="memorial-login-prompt">
+      <a href="{{ path('app_login') }}" class="em-btn em-btn--primary">
+        <i class="bi bi-person"></i> Se connecter pour laisser une condoléance
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="memorial-messages" id="condolences-list">
+      {% for c in condolences %}
+      {% include 'memorial/partials/_condolence_item.html.twig' with {condolence: c} %}
+      {% else %}
+      <div class="memorial-empty-panel">
+        <i class="bi bi-chat-heart"></i>
+        <p>Soyez le premier à laisser un message de condoléance.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# TÉMOIGNAGES #}
+  <div class="memorial-panel" id="panel-testimonials">
+    <h2>Témoignages</h2>
+
+    {% if app.user %}
+    <div class="memorial-form-card">
+      <h3>Partager un souvenir</h3>
+      <form id="testimonial-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('testimonial_' ~ page.id) }}">
+        <input type="text" name="title" class="memorial-input" placeholder="Titre (optionnel)" maxlength="255">
+        <input type="text" name="relation" class="memorial-input"
+               placeholder="Votre lien avec {{ page.deceasedFirstName }} (ex: ami, collègue…)" maxlength="100">
+        <textarea name="content" class="memorial-textarea"
+                  placeholder="Partagez votre souvenir…" rows="5" required maxlength="3000"></textarea>
+        <div class="memorial-form-footer">
+          <button type="submit" class="em-btn em-btn--primary">
+            <i class="bi bi-quote"></i> Partager
+          </button>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
+    <div class="memorial-messages">
+      {% for t in testimonials %}
+      <div class="memorial-testimonial">
+        <div class="memorial-testimonial__header">
+          <div class="memorial-testimonial__avatar">{{ t.user.firstName|first|upper }}</div>
+          <div>
+            <strong>{{ t.user.fullName }}</strong>
+            {% if t.relationToDeceased %}<small> · {{ t.relationToDeceased }}</small>{% endif %}
+            <div class="memorial-msg-date">{{ t.createdAt|date('d/m/Y') }}</div>
+          </div>
+        </div>
+        {% if t.title %}<h4 class="memorial-testimonial__title">{{ t.title }}</h4>{% endif %}
+        <p class="memorial-testimonial__content">{{ t.content|nl2br }}</p>
+      </div>
+      {% else %}
+      <div class="memorial-empty-panel">
+        <i class="bi bi-quote"></i>
+        <p>Partagez vos souvenirs de {{ page.deceasedFirstName }}.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# LIVRE D'OR #}
+  <div class="memorial-panel" id="panel-guestbook">
+    <h2>Livre d'or</h2>
+
+    {% if app.user and not userHasSigned %}
+    <div class="memorial-form-card">
+      <h3>Signer le livre d'or</h3>
+      <form id="guestbook-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('guestbook_' ~ page.id) }}">
+        <textarea name="signature_text" class="memorial-textarea"
+                  placeholder="Votre message de soutien (optionnel)…" rows="3" maxlength="500"></textarea>
+        <div class="memorial-form-footer">
+          <button type="submit" class="em-btn em-btn--primary">
+            <i class="bi bi-pen"></i> Signer
+          </button>
+        </div>
+      </form>
+    </div>
+    {% elseif userHasSigned %}
+    <div class="memorial-signed">
+      <i class="bi bi-check-circle-fill"></i> Vous avez signé ce livre d'or.
+    </div>
+    {% endif %}
+
+    <div class="memorial-guestbook">
+      {% for g in guestbooks %}
+      <div class="memorial-guestbook__entry">
+        <div class="memorial-guestbook__avatar">{{ g.user.firstName|first|upper }}</div>
+        <div class="memorial-guestbook__content">
+          <strong>{{ g.user.fullName }}</strong>
+          <span class="memorial-guestbook__date">· {{ g.signedAt|date('d/m/Y') }}</span>
+          {% if g.signatureText %}<p>{{ g.signatureText }}</p>{% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="memorial-empty-panel">
+        <i class="bi bi-book"></i>
+        <p>Le livre d'or attend vos signatures.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ÉVÉNEMENTS #}
+  {% if events %}
+  <div class="memorial-panel" id="panel-events">
+    <h2>Événements</h2>
+    <div class="memorial-events">
+      {% for event in events %}
+      <div class="memorial-event-card">
+        <div class="memorial-event-card__date">
+          <span class="memorial-event-card__day">{{ event.eventDate|date('d') }}</span>
+          <span class="memorial-event-card__month">{{ event.eventDate|date('M')|upper }}</span>
+        </div>
+        <div class="memorial-event-card__info">
+          <h4>{{ event.title }}</h4>
+          <p>{{ event.eventDate|date('H:i') }}
+            {% if event.location %} · <i class="bi bi-geo-alt"></i> {{ event.location }}{% endif %}
+          </p>
+          {% if event.description %}<p class="text-muted">{{ event.description }}</p>{% endif %}
+        </div>
+        {% if event.isLiveStream %}
+        <span class="memorial-live-badge"><i class="bi bi-broadcast"></i> Live</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>{# /.container #}
+
+{# ── PIED DE PAGE MÉMORIEL ────────────────────────────────── #}
+<footer class="memorial-footer theme-footer">
+  <div class="container-xl">
+    <div class="memorial-footer__content">
+      <div class="memorial-footer__qr">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data={{ app.request.schemeAndHttpHost }}/memorial/{{ page.slug }}&ecc=H"
+             alt="QR Code" width="80" height="80" style="border-radius:4px;">
+        <div>
+          <strong>{{ page.pageCode }}</strong>
+          <a href="{{ path('app_qrcode_show', {slug: page.slug}) }}" class="memorial-footer__qr-link">
+            <i class="bi bi-qr-code"></i> Télécharger le QR Code
+          </a>
+        </div>
+      </div>
+      <div class="memorial-footer__share">
+        <strong>Partager cette page</strong>
+        <div class="memorial-footer__share-btns">
+          <a href="https://wa.me/?text={{ ('En mémoire de ' ~ page.deceasedFullName ~ ' : ' ~ app.request.uri)|url_encode }}"
+             target="_blank" class="memorial-share-btn memorial-share-btn--whatsapp">
+            <i class="bi bi-whatsapp"></i> WhatsApp
+          </a>
+          <a href="https://www.facebook.com/sharer/sharer.php?u={{ app.request.uri|url_encode }}"
+             target="_blank" class="memorial-share-btn memorial-share-btn--facebook">
+            <i class="bi bi-facebook"></i> Facebook
+          </a>
+          <button onclick="copyPageLink()" class="memorial-share-btn memorial-share-btn--copy" id="copy-page-btn">
+            <i class="bi bi-link-45deg"></i> Copier le lien
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+{% endblock %}
+
+{% block javascripts %}
+<script src="{{ asset('js/memorial.js') }}"></script>
+<script>
+const MEMORIAL_SLUG = '{{ page.slug }}';
+
+// Onglets
+function openTab(name) {
+  document.querySelectorAll('.memorial-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.memorial-tab').forEach(t => t.classList.remove('active'));
+  const panel = document.getElementById('panel-' + name);
+  const tab   = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  if (tab)   tab.classList.add('active');
+  document.getElementById('memorial-tabs').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+}
+
+// Copier le lien
+function copyPageLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    const btn = document.getElementById('copy-page-btn');
+    btn.innerHTML = '<i class="bi bi-check-lg"></i> Copié !';
+    setTimeout(() => { btn.innerHTML = '<i class="bi bi-link-45deg"></i> Copier le lien'; }, 2000);
+  });
+}
+
+// Formulaire condoléance
+document.getElementById('condolence-form')?.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn  = document.getElementById('condolence-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass"></i> Envoi…';
+
+  const resp = await fetch(`/memorial/${MEMORIAL_SLUG}/condolence`, {
+    method: 'POST',
+    body:   new FormData(this),
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  });
+  const data = await resp.json();
+
+  if (data.error) {
+    alert(data.error);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-send"></i> Publier';
+    return;
+  }
+
+  if (data.html) {
+    document.getElementById('condolences-list').insertAdjacentHTML('afterbegin', data.html);
+  }
+
+  this.reset();
+  btn.innerHTML = '<i class="bi bi-check-lg"></i> Publié !';
+  setTimeout(() => { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send"></i> Publier'; }, 2500);
+});
+
+// Formulaire témoignage
+document.getElementById('testimonial-form')?.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const resp = await fetch(`/memorial/${MEMORIAL_SLUG}/testimonial`, {
+    method: 'POST', body: new FormData(this),
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  });
+  const data = await resp.json();
+  if (data.error) { alert(data.error); return; }
+  this.reset();
+  alert(data.message);
+});
+
+// Formulaire livre d'or
+document.getElementById('guestbook-form')?.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const resp = await fetch(`/memorial/${MEMORIAL_SLUG}/guestbook`, {
+    method: 'POST', body: new FormData(this),
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  });
+  const data = await resp.json();
+  if (data.error) { alert(data.error); return; }
+  this.closest('.memorial-form-card').innerHTML = '<div class="memorial-signed"><i class="bi bi-check-circle-fill"></i> ' + data.message + '</div>';
+});
+
+// Gadgets
+document.querySelectorAll('.gadget-btn').forEach(btn => {
+  btn.addEventListener('click', async function() {
+    const action = this.dataset.action;
+    const form   = new FormData();
+    form.append('_token', '{{ csrf_token("gadget_deposit") }}');
+    form.append('gadget_id', '1'); // TODO: sélecteur gadget dynamique
+    form.append('action', action);
+
+    const resp = await fetch(`/boutique/deposer/${MEMORIAL_SLUG}`, {
+      method: 'POST', body: form,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await resp.json();
+    if (data.success) {
+      this.style.transform = 'scale(1.4)';
+      setTimeout(() => { this.style.transform = ''; }, 400);
+    } else {
+      alert(data.error || 'Gadget indisponible.');
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,31 @@
+/* ============================
+   Thème : Afrique Dorée (PAID)
+   ============================ */
+[data-theme="african-gold"] {
+  --theme-bg:           #1C1008;
+  --theme-bg-alt:       #241408;
+  --theme-surface:      #2C1A0A;
+  --theme-text:         #F0E0C8;
+  --theme-text-muted:   #A8906C;
+  --theme-heading:      #F5D89A;
+  --theme-accent:       #D4A017;
+  --theme-accent-light: #E8C050;
+  --theme-border:       rgba(212, 160, 23, 0.25);
+  --theme-hero-overlay: rgba(15, 8, 2, 0.65);
+  --theme-card-shadow:  0 4px 20px rgba(0, 0, 0, 0.45);
+}
+/* Motif kente en arrière-plan */
+[data-theme="african-gold"] .memorial-section {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(212, 160, 23, 0.05) 0px, rgba(212, 160, 23, 0.05) 2px,
+    transparent 2px, transparent 20px
+  ),
+  repeating-linear-gradient(
+    0deg,
+    rgba(212, 160, 23, 0.05) 0px, rgba(212, 160, 23, 0.05) 2px,
+    transparent 2px, transparent 20px
+  );
+}
+[data-theme="african-gold"] .memorial-card { background: var(--theme-surface); border: 1px solid rgba(212,160,23,0.3); }
+[data-theme="african-gold"] h1,[data-theme="african-gold"] h2,[data-theme="african-gold"] h3 { color: #F5D89A; }

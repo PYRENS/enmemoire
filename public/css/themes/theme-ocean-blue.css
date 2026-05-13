@@ -1,0 +1,17 @@
+/* ============================
+   Thème : Océan Bleu (FREE)
+   ============================ */
+[data-theme="ocean-blue"] {
+  --theme-bg:           #F0F5FA;
+  --theme-bg-alt:       #E4EEF7;
+  --theme-surface:      #FFFFFF;
+  --theme-text:         #1A2E44;
+  --theme-text-muted:   #4A6785;
+  --theme-heading:      #0D3159;
+  --theme-accent:       #1E6FA8;
+  --theme-accent-light: #5B9FCC;
+  --theme-border:       rgba(13, 49, 89, 0.12);
+  --theme-hero-overlay: rgba(8, 30, 58, 0.65);
+  --theme-card-shadow:  0 4px 20px rgba(13, 49, 89, 0.12);
+}
+[data-theme="ocean-blue"] .memorial-accent { color: #1E6FA8; }

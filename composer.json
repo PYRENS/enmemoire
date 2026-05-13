@@ -1,4 +1,6 @@
 {
+    "name": "enmemoire/platform",
+    "description": "EnMémoire.com — Plateforme Mémorielle Numérique",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",
@@ -7,25 +9,25 @@
         "php": ">=8.2",
         "ext-ctype": "*",
         "ext-iconv": "*",
-        "doctrine/doctrine-bundle": "^2.18",
+        "doctrine/doctrine-bundle": "^2.18.2",
         "doctrine/doctrine-migrations-bundle": "^3.7",
-        "doctrine/orm": "^3.6",
-        "phpdocumentor/reflection-docblock": "^6.0",
-        "phpstan/phpdoc-parser": "^2.3",
+        "doctrine/orm": "^3.6.4",
+        "phpdocumentor/reflection-docblock": "^6.0.3",
+        "phpstan/phpdoc-parser": "^2.3.2",
         "symfony/asset": "7.4.*",
         "symfony/asset-mapper": "7.4.*",
         "symfony/console": "7.4.*",
         "symfony/doctrine-messenger": "7.4.*",
         "symfony/dotenv": "7.4.*",
         "symfony/expression-language": "7.4.*",
-        "symfony/flex": "^2",
+        "symfony/flex": "^2.10",
         "symfony/form": "7.4.*",
         "symfony/framework-bundle": "7.4.*",
         "symfony/http-client": "7.4.*",
         "symfony/intl": "7.4.*",
         "symfony/mailer": "7.4.*",
         "symfony/mime": "7.4.*",
-        "symfony/monolog-bundle": "^3.0|^4.0",
+        "symfony/monolog-bundle": "^3.0|^4.0.2",
         "symfony/notifier": "7.4.*",
         "symfony/process": "7.4.*",
         "symfony/property-access": "7.4.*",
@@ -41,11 +43,22 @@
         "symfony/validator": "7.4.*",
         "symfony/web-link": "7.4.*",
         "symfony/yaml": "7.4.*",
-        "twig/extra-bundle": "^2.12|^3.0",
-        "twig/twig": "^2.12|^3.0"
+        "twig/extra-bundle": "^2.12|^3.24",
+        "twig/twig": "^2.12|^3.24",
+        "ext-intl": "*",
+        "doctrine/dbal": "^3.10.5",
+        "endroid/qr-code-bundle": "^5.0.2",
+        "knplabs/knp-paginator-bundle": "^6.10",
+        "scheb/2fa-bundle": "^7.13.1",
+        "scheb/2fa-email": "^7.13.1",
+        "symfony/messenger": "7.4.*",
+        "symfony/uid": "7.4.*",
+        "twig/intl-extra": "^3.24",
+        "vich/uploader-bundle": "^2.9.2"
     },
     "config": {
         "allow-plugins": {
+            "endroid/installer": true,
             "php-http/discovery": true,
             "symfony/flex": true,
             "symfony/runtime": true
@@ -96,12 +109,13 @@
         }
     },
     "require-dev": {
-        "phpunit/phpunit": "^12.5",
+        "phpunit/phpunit": "^12.5.24",
         "symfony/browser-kit": "7.4.*",
         "symfony/css-selector": "7.4.*",
         "symfony/debug-bundle": "7.4.*",
-        "symfony/maker-bundle": "^1.0",
+        "symfony/maker-bundle": "^1.67",
         "symfony/stopwatch": "7.4.*",
-        "symfony/web-profiler-bundle": "7.4.*"
+        "symfony/web-profiler-bundle": "7.4.*",
+        "symfony/phpunit-bridge": "^7.4.8"
     }
 }

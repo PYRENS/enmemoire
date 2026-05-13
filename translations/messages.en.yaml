@@ -1,0 +1,29 @@
+nav:
+    home: Home
+    search: Search
+    obituaries: Obituaries
+    shop: Shop
+    create_memorial: Create a memorial
+    login: Sign in
+    register: Create account
+    dashboard: My space
+    profile: My profile
+    admin: Administration
+    logout: Sign out
+
+footer:
+    tagline: "\"Because some memories deserve to last forever.\""
+    platform: Platform
+    help: Help
+    newsletter: Newsletter
+    newsletter_desc: Stay informed about our updates and tips
+    newsletter_placeholder: your@email.com
+    how_it_works: How it works
+    pricing: Pricing
+    faq: FAQ
+    contact: Contact
+    support: Support
+    terms: Terms
+    privacy: Privacy
+    cookies: Cookies
+    rights: All rights reserved

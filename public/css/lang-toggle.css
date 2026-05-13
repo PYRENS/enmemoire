@@ -1,0 +1,64 @@
+/* ==============================================
+   Sélecteur de langue — flag-icons
+   À ajouter à la fin de public/css/app.css
+   ============================================== */
+
+.em-lang-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(27, 43, 75, 0.05);
+  border: 1px solid rgba(27, 43, 75, 0.12);
+  border-radius: 20px;
+  padding: 3px 6px;
+}
+
+.em-lang-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--em-muted);
+  text-decoration: none;
+  padding: 3px 7px;
+  border-radius: 14px;
+  transition: var(--em-transition);
+  line-height: 1;
+}
+
+.em-lang-btn:hover {
+  color: var(--em-navy);
+  text-decoration: none;
+  background: rgba(27, 43, 75, 0.06);
+}
+
+.em-lang-btn--active {
+  color: var(--em-navy);
+  font-weight: 700;
+  background: white;
+  box-shadow: 0 1px 4px rgba(27, 43, 75, 0.15);
+}
+
+.em-lang-btn .fi {
+  /* flag-icons : forcer taille cohérente */
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 2px;
+  /* Optionnel : bord subtil autour du drapeau */
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.em-lang-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.em-lang-sep {
+  color: var(--em-stone);
+  font-size: 0.65rem;
+  padding: 0 1px;
+  user-select: none;
+}

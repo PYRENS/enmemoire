@@ -1,0 +1,140 @@
+{% extends 'base.html.twig' %}
+{% block title %}Choisir une formule — Étape 2{% endblock %}
+{% block body_class %}create-memorial-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/create.css') }}">{% endblock %}
+
+{% block body %}
+<div class="wizard-wrapper">
+  <div class="container" style="max-width:900px;padding-top:3rem;padding-bottom:4rem;">
+
+    {% include 'memorial/create/_progress.html.twig' with {step: 2} %}
+
+    <div class="wizard-card">
+      <div class="wizard-card__header">
+        <div class="wizard-step-icon">📋</div>
+        <h1 class="wizard-title">Choisissez votre formule</h1>
+        <p class="wizard-subtitle">
+          Pour <strong>{{ step1_data.first_name }} {{ step1_data.last_name }}</strong> —
+          Vous pourrez changer de formule à tout moment.
+        </p>
+      </div>
+
+      {% if error %}
+        <div class="wizard-alert"><i class="bi bi-exclamation-circle"></i> {{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="{{ path('app_memorial_create_step2') }}"
+            class="wizard-form" id="step2-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('memorial_create_step2') }}">
+        <input type="hidden" name="formula_id" id="selected-formula-id" value="">
+        <input type="hidden" name="theme_id" id="selected-theme-id" value="1">
+
+        {# Formules #}
+        <div class="formula-grid">
+          {% for formula in formulas %}
+          <div class="formula-card {% if formula.slug == 'souvenir' %}formula-card--featured{% endif %}"
+               data-formula-id="{{ formula.id }}"
+               onclick="selectFormula({{ formula.id }})">
+
+            {% if formula.slug == 'souvenir' %}
+              <div class="formula-card__badge">Le plus choisi</div>
+            {% endif %}
+
+            <div class="formula-card__header">
+              <h3>{{ formula.name }}</h3>
+              <div class="formula-card__price">
+                <span class="formula-price">{{ formula.price }}</span>
+                <span class="formula-currency">{{ formula.currency }}</span>
+              </div>
+              <div class="formula-duration">
+                {% if formula.isPerpetual %}♾️ Perpétuel{% else %}📅 {{ formula.durationYears }} an(s){% endif %}
+              </div>
+            </div>
+
+            <ul class="formula-features">
+              <li><i class="bi bi-check-circle-fill"></i> Page mémorielle complète</li>
+              <li><i class="bi bi-check-circle-fill"></i> Avis de décès international</li>
+              <li><i class="bi bi-check-circle-fill"></i> Condoléances et livre d'or</li>
+              <li><i class="bi bi-check-circle-fill"></i> QR Code mémoriel</li>
+              {% if formula.hasVideo %}
+              <li><i class="bi bi-check-circle-fill"></i> Upload vidéos</li>
+              {% endif %}
+              {% if formula.hasLive %}
+              <li><i class="bi bi-check-circle-fill"></i> Diffusion live</li>
+              {% endif %}
+              {% if formula.hasPremiumThemes %}
+              <li><i class="bi bi-check-circle-fill"></i> Thèmes premium inclus</li>
+              {% endif %}
+              {% if formula.hasAdvancedStats %}
+              <li><i class="bi bi-check-circle-fill"></i> Statistiques avancées</li>
+              {% endif %}
+              <li><i class="bi bi-check-circle-fill"></i> Jusqu'à {{ formula.maxEvents }} événement(s)</li>
+            </ul>
+
+            <div class="formula-card__select-btn">
+              <span class="formula-select-indicator">
+                <i class="bi bi-circle formula-unselected"></i>
+                <i class="bi bi-check-circle-fill formula-selected" style="display:none;color:#C9A84C;"></i>
+              </span>
+              Choisir {{ formula.name }}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        {# Thème de base #}
+        <div class="mt-4">
+          <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--em-navy);margin-bottom:1rem;">
+            Choisissez un thème de base <span style="font-size:.85rem;font-weight:400;color:var(--em-muted);">(modifiable après création)</span>
+          </h3>
+          <div class="theme-grid">
+            {% for theme in themes %}
+            <label class="theme-option {% if theme.sortOrder == 1 %}theme-option--active{% endif %}"
+                   onclick="selectTheme({{ theme.id }}, this)">
+              <input type="radio" name="theme_id_display" style="display:none;"
+                     {% if theme.sortOrder == 1 %}checked{% endif %}>
+              <div class="theme-preview theme-preview--{{ theme.slug }}"></div>
+              <span class="theme-name">{{ theme.name }}</span>
+              <span class="theme-badge theme-badge--free">Gratuit</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="wizard-actions">
+          <a href="{{ path('app_memorial_create_back', {step: 1}) }}" class="em-btn em-btn--ghost">
+            <i class="bi bi-arrow-left"></i> Retour
+          </a>
+          <button type="submit" class="em-btn em-btn--primary em-btn--lg" id="step2-submit" disabled>
+            Continuer vers le paiement <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function selectFormula(id) {
+  document.querySelectorAll('.formula-card').forEach(function(c) {
+    c.classList.remove('formula-card--selected');
+    c.querySelector('.formula-unselected').style.display = 'inline';
+    c.querySelector('.formula-selected').style.display   = 'none';
+  });
+  var card = document.querySelector('[data-formula-id="' + id + '"]');
+  card.classList.add('formula-card--selected');
+  card.querySelector('.formula-unselected').style.display = 'none';
+  card.querySelector('.formula-selected').style.display   = 'inline';
+  document.getElementById('selected-formula-id').value = id;
+  document.getElementById('step2-submit').disabled = false;
+}
+
+function selectTheme(id, label) {
+  document.querySelectorAll('.theme-option').forEach(function(t) { t.classList.remove('theme-option--active'); });
+  label.classList.add('theme-option--active');
+  document.getElementById('selected-theme-id').value = id;
+}
+</script>
+{% endblock %}

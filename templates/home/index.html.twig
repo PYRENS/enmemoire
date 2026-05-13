@@ -1,0 +1,285 @@
+{% extends 'base.html.twig' %}
+{% block title %}EnMémoire.com — Plateforme Mémorielle Numérique{% endblock %}
+{% block meta_robots %}index, follow{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/home.css') }}">{% endblock %}
+
+{% block body %}
+
+{# ===================================================== #}
+{# HERO                                                  #}
+{# ===================================================== #}
+<section class="home-hero">
+  <div class="home-hero__bg" aria-hidden="true">
+    <div class="home-hero__particle" style="--x:15%;--y:20%;--s:1.2;--d:3s;"></div>
+    <div class="home-hero__particle" style="--x:75%;--y:35%;--s:0.8;--d:5s;"></div>
+    <div class="home-hero__particle" style="--x:45%;--y:70%;--s:1.5;--d:4s;"></div>
+    <div class="home-hero__particle" style="--x:85%;--y:65%;--s:0.9;--d:6s;"></div>
+    <div class="home-hero__particle" style="--x:30%;--y:50%;--s:1.1;--d:3.5s;"></div>
+  </div>
+
+  <div class="container-xl home-hero__content">
+    <div class="row align-items-center min-vh-80">
+      <div class="col-lg-6" data-animate>
+        <div class="home-hero__badge">🕯️ Mémoire numérique · RDC & Diaspora</div>
+        <h1 class="home-hero__title">
+          Préservez la mémoire<br>
+          <span class="home-hero__title--accent">de ceux que vous aimez</span>
+        </h1>
+        <p class="home-hero__desc">
+          Créez un espace mémoriel numérique pour honorer un proche disparu.
+          Partagez l'avis de décès, collectez les hommages et conservez les souvenirs
+          depuis n'importe quel coin du monde.
+        </p>
+
+        <div class="home-hero__actions">
+          <a href="{{ path('app_register') }}" class="em-btn em-btn--gold em-btn--lg">
+            <i class="bi bi-plus-circle"></i>
+            Créer une page mémorielle
+          </a>
+          <a href="{{ path('app_how_it_works') }}" class="em-btn em-btn--outline em-btn--lg">
+            <i class="bi bi-play-circle"></i>
+            Comment ça marche ?
+          </a>
+        </div>
+
+        <div class="home-hero__trust">
+          <div class="home-hero__trust-item">
+            <i class="bi bi-shield-check"></i> RGPD & SSL
+          </div>
+          <div class="home-hero__trust-item">
+            <i class="bi bi-translate"></i> FR & EN
+          </div>
+          <div class="home-hero__trust-item">
+            <i class="bi bi-globe2"></i> Portée mondiale
+          </div>
+          <div class="home-hero__trust-item">
+            <i class="bi bi-phone"></i> Mobile first
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6 d-none d-lg-flex justify-content-center align-items-center" data-animate>
+        <div class="home-hero__card-demo">
+          <div class="home-hero__demo-page">
+            <div class="home-hero__demo-photo">👩🏾</div>
+            <div class="home-hero__demo-info">
+              <strong>Olga Mumbere</strong>
+              <span>1978 — 2024 · Kinshasa</span>
+            </div>
+            <div class="home-hero__demo-stats">
+              <div><strong>248</strong><small>Visites</small></div>
+              <div><strong>56</strong><small>Messages</small></div>
+              <div><strong>12</strong><small>Photos</small></div>
+            </div>
+            <div class="home-hero__demo-actions">
+              <span>🌹</span><span>🕯️</span><span>🕊️</span>
+              <span class="home-hero__demo-qr">⬛</span>
+            </div>
+          </div>
+          <div class="home-hero__demo-notif">
+            <i class="bi bi-chat-heart-fill"></i>
+            <span>Jean a laissé un message de condoléance</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Recherche rapide #}
+  <div class="home-search-bar">
+    <div class="container-xl">
+      <form action="{{ path('app_memorial_search') }}" method="GET" class="home-search-form">
+        <i class="bi bi-search home-search-form__icon"></i>
+        <input type="search" name="q" class="home-search-form__input"
+               placeholder="Rechercher un défunt par son nom…"
+               autocomplete="off" id="hero-search">
+        <button type="submit" class="em-btn em-btn--primary">Rechercher</button>
+      </form>
+      <div id="hero-autocomplete" class="home-autocomplete"></div>
+    </div>
+  </div>
+</section>
+
+{# ===================================================== #}
+{# AVANTAGES                                             #}
+{# ===================================================== #}
+<section class="em-section em-section--cream">
+  <div class="container-xl">
+    <div class="text-center mb-5" data-animate>
+      <h2>Pourquoi EnMémoire.com ?</h2>
+      <p class="text-muted">Une alternative numérique aux mémoriaux éphémères</p>
+    </div>
+    <div class="row g-4">
+      {% set features = [
+        {icon:'globe2', title:'Portée internationale', desc:'Partagez l\'avis de décès et rassemblez famille et amis dans le monde entier, sans contrainte géographique.', color:'blue'},
+        {icon:'camera', title:'Médias conservés', desc:'Photos et vidéos stockées durablement. Vos souvenirs sont protégés et accessibles à tout moment.', color:'green'},
+        {icon:'qr-code', title:'QR Code mémoriel', desc:'Générez un QR Code à imprimer ou graver sur une plaque funéraire. Un scan suffit pour accéder au mémorial.', color:'gold'},
+        {icon:'broadcast', title:'Diffusion live', desc:'Retransmettez les obsèques en direct pour ceux qui ne peuvent pas se déplacer.', color:'purple'},
+        {icon:'diagram-3', title:'Arbre familial', desc:'Reliez les pages mémorielles entre proches et créez un lien de parenté numérique durable.', color:'coral'},
+        {icon:'phone', title:'100% mobile', desc:'Conçu pour les smartphones. Depuis Kinshasa, Paris ou Montréal, l\'accès est fluide et rapide.', color:'navy'},
+      ] %}
+      {% for f in features %}
+      <div class="col-md-6 col-lg-4" data-animate>
+        <div class="home-feature-card">
+          <div class="home-feature-card__icon home-feature-card__icon--{{ f.color }}">
+            <i class="bi bi-{{ f.icon }}"></i>
+          </div>
+          <h3>{{ f.title }}</h3>
+          <p>{{ f.desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ===================================================== #}
+{# COMMENT ÇA MARCHE                                     #}
+{# ===================================================== #}
+<section class="em-section">
+  <div class="container-xl">
+    <div class="text-center mb-5" data-animate>
+      <h2>3 étapes simples</h2>
+      <p class="text-muted">De l'inscription à la page mémorielle en quelques minutes</p>
+    </div>
+    <div class="home-steps">
+      <div class="home-step" data-animate>
+        <div class="home-step__number">1</div>
+        <div class="home-step__icon">👤</div>
+        <h3>Créez votre compte</h3>
+        <p>Inscription gratuite en 2 minutes. Vérification par email ou WhatsApp.</p>
+      </div>
+      <div class="home-step__arrow">→</div>
+      <div class="home-step" data-animate>
+        <div class="home-step__number">2</div>
+        <div class="home-step__icon">🕯️</div>
+        <h3>Créez la page mémorielle</h3>
+        <p>Renseignez les informations du défunt, choisissez une formule et un thème.</p>
+      </div>
+      <div class="home-step__arrow">→</div>
+      <div class="home-step" data-animate>
+        <div class="home-step__number">3</div>
+        <div class="home-step__icon">🌍</div>
+        <h3>Partagez dans le monde</h3>
+        <p>Partagez le lien et le QR Code. Famille et amis du monde entier peuvent participer.</p>
+      </div>
+    </div>
+    <div class="text-center mt-5">
+      <a href="{{ path('app_register') }}" class="em-btn em-btn--primary em-btn--lg">
+        <i class="bi bi-arrow-right-circle"></i> Commencer gratuitement
+      </a>
+    </div>
+  </div>
+</section>
+
+{# ===================================================== #}
+{# FORMULES                                              #}
+{# ===================================================== #}
+<section class="em-section em-section--cream" id="formules">
+  <div class="container-xl">
+    <div class="text-center mb-5" data-animate>
+      <h2>Nos formules</h2>
+      <p class="text-muted">Choisissez selon vos besoins et votre budget</p>
+    </div>
+    <div class="row g-4 justify-content-center">
+      {% set plans = [
+        {name:'Essentielle', price:'19,99', currency:'USD', duration:'1 an', highlight:false,
+         features:['Page mémorielle complète','Avis de décès international','Condoléances et livre d\'or','5 thèmes gratuits','QR Code mémoriel','Galerie 5 photos']},
+        {name:'Souvenir', price:'49,99', currency:'USD', duration:'3 ans', highlight:true,
+         features:['Tout Essentielle +','Ligne de vie biographique','Galerie photos illimitée','Upload vidéos','3 événements (obsèques...)','Statistiques de base']},
+        {name:'Héritage', price:'99,99', currency:'USD', duration:'Perpétuel', highlight:false,
+         features:['Tout Souvenir +','Diffusion live','10 thèmes premium','QR Code gravable HD','Événements illimités','Statistiques avancées']},
+      ] %}
+      {% for plan in plans %}
+      <div class="col-md-6 col-lg-4" data-animate>
+        <div class="home-plan {% if plan.highlight %}home-plan--featured{% endif %}">
+          {% if plan.highlight %}<div class="home-plan__badge">Le plus choisi</div>{% endif %}
+          <div class="home-plan__header">
+            <h3>{{ plan.name }}</h3>
+            <div class="home-plan__price">
+              <span class="home-plan__amount">{{ plan.price }}</span>
+              <span class="home-plan__currency">{{ plan.currency }}</span>
+            </div>
+            <div class="home-plan__duration">{{ plan.duration }}</div>
+          </div>
+          <ul class="home-plan__features">
+            {% for f in plan.features %}
+            <li><i class="bi bi-check-circle-fill"></i> {{ f }}</li>
+            {% endfor %}
+          </ul>
+          <a href="{{ path('app_register') }}" class="em-btn {% if plan.highlight %}em-btn--gold{% else %}em-btn--outline{% endif %} w-100">
+            Choisir {{ plan.name }}
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ===================================================== #}
+{# MÉMORIAUX RÉCENTS                                     #}
+{# ===================================================== #}
+{% if recentMemorials|length %}
+<section class="em-section">
+  <div class="container-xl">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="mb-1">Mémoriaux récents</h2>
+        <p class="text-muted mb-0">Rejoignez la communauté et rendez hommage</p>
+      </div>
+      <a href="{{ path('app_obituaries') }}" class="em-btn em-btn--ghost">
+        Voir tous <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+    <div class="home-memorials-grid">
+      {% for memorial in recentMemorials %}
+      <a href="{{ path('app_memorial_show', {slug: memorial.slug}) }}" class="home-memorial-card" data-animate>
+        <div class="home-memorial-card__photo">
+          {% if memorial.mainPhotoUrl %}
+            <img src="{{ asset(memorial.mainPhotoUrl) }}" alt="{{ memorial.deceasedFullName }}" loading="lazy">
+          {% else %}
+            <div class="home-memorial-card__placeholder">👤</div>
+          {% endif %}
+          <div class="home-memorial-card__overlay">
+            <span><i class="bi bi-eye"></i> Voir le mémorial</span>
+          </div>
+        </div>
+        <div class="home-memorial-card__info">
+          <strong>{{ memorial.deceasedFullName }}</strong>
+          <span>{{ memorial.deceasedBirthDate|date('Y') }} — {{ memorial.deceasedDeathDate|date('Y') }}</span>
+          {% if memorial.deceasedDeathPlace %}
+            <small><i class="bi bi-geo-alt"></i> {{ memorial.deceasedDeathPlace }}</small>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ===================================================== #}
+{# CTA FINAL                                             #}
+{# ===================================================== #}
+<section class="home-cta">
+  <div class="container-xl text-center" data-animate>
+    <div class="home-cta__flame">🕯️</div>
+    <h2>Certains souvenirs méritent<br>de durer éternellement</h2>
+    <p>Rejoignez EnMémoire.com et offrez à votre proche un hommage numérique digne de sa mémoire.</p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap">
+      <a href="{{ path('app_register') }}" class="em-btn em-btn--gold em-btn--lg">
+        <i class="bi bi-plus-circle"></i> Créer une page mémorielle
+      </a>
+      <a href="{{ path('app_memorial_search') }}" class="em-btn em-btn--outline em-btn--lg" style="border-color:rgba(255,255,255,.4);color:white;">
+        <i class="bi bi-search"></i> Rechercher un défunt
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block javascripts %}
+<script src="{{ asset('js/home.js') }}"></script>
+{% endblock %}

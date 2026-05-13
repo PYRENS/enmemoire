@@ -1,0 +1,166 @@
+{% extends 'base.html.twig' %}
+{% block title %}Paiement — Étape 3{% endblock %}
+{% block body_class %}create-memorial-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/create.css') }}">{% endblock %}
+
+{% block body %}
+<div class="wizard-wrapper">
+  <div class="container" style="max-width:760px;padding-top:3rem;padding-bottom:4rem;">
+
+    {% include 'memorial/create/_progress.html.twig' with {step: 3} %}
+
+    <div class="wizard-card">
+      <div class="wizard-card__header">
+        <div class="wizard-step-icon">💳</div>
+        <h1 class="wizard-title">Paiement</h1>
+
+        {# Récap commande #}
+        <div class="order-summary">
+          <div class="order-summary__item">
+            <span>Page mémorielle — <strong>{{ step1_data.first_name }} {{ step1_data.last_name }}</strong></span>
+          </div>
+          <div class="order-summary__item">
+            <span>Formule <strong>{{ formula.name }}</strong></span>
+            <span>{% if formula.isPerpetual %}Perpétuel{% else %}{{ formula.durationYears }} an(s){% endif %}</span>
+          </div>
+          <div class="order-summary__total">
+            <span>Total</span>
+            <span class="order-total-amount">{{ formula.price }} {{ formula.currency }}</span>
+          </div>
+        </div>
+      </div>
+
+      {% if error %}
+        <div class="wizard-alert"><i class="bi bi-exclamation-circle"></i> {{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="{{ path('app_memorial_create_step3') }}"
+            class="wizard-form" id="payment-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('memorial_create_step3') }}">
+        <input type="hidden" name="provider" id="selected-provider" value="">
+        <input type="hidden" name="currency" id="selected-currency" value="USD">
+
+        {# Devise #}
+        <div class="wf-group">
+          <label class="wf-label">Devise</label>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+            {% for cur in ['USD', 'EUR', 'CDF'] %}
+            <label class="currency-btn {% if cur == 'USD' %}active{% endif %}"
+                   onclick="selectCurrency('{{ cur }}', this)">
+              <input type="radio" name="currency_display" style="display:none;"
+                     {% if cur == 'USD' %}checked{% endif %}>
+              {{ cur }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        {# Moyens de paiement — International #}
+        <div class="payment-zone">
+          <div class="payment-zone__title">
+            <i class="bi bi-globe2"></i> International (Europe & Monde)
+          </div>
+          <div class="payment-providers">
+            {% for key, provider in providersByZone.international %}
+            <label class="payment-provider" data-provider="{{ key }}"
+                   onclick="selectProvider('{{ key }}', this)">
+              <input type="radio" name="provider_display" style="display:none;">
+              <div class="payment-provider__icon payment-provider__icon--{{ key }}">
+                <i class="bi {{ provider.icon }}"></i>
+              </div>
+              <div class="payment-provider__info">
+                <strong>{{ provider.label }}</strong>
+                {% if key == 'stripe' %}<small>Visa, Mastercard, CB</small>{% endif %}
+                {% if key == 'paypal' %}<small>Compte PayPal ou carte</small>{% endif %}
+                {% if key == 'virement' %}<small>Délai 2-5 jours ouvrés</small>{% endif %}
+              </div>
+              <div class="payment-provider__check">
+                <i class="bi bi-check-circle-fill"></i>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        {# Moyens de paiement — RDC / Afrique #}
+        <div class="payment-zone">
+          <div class="payment-zone__title">
+            <i class="bi bi-phone"></i> Mobile Money (RDC & Afrique)
+          </div>
+          <div class="payment-providers">
+            {% for key, provider in providersByZone.rdc %}
+            <label class="payment-provider" data-provider="{{ key }}"
+                   onclick="selectProvider('{{ key }}', this)">
+              <input type="radio" name="provider_display" style="display:none;">
+              <div class="payment-provider__icon payment-provider__icon--mobile">
+                <i class="bi {{ provider.icon }}"></i>
+              </div>
+              <div class="payment-provider__info">
+                <strong>{{ provider.label }}</strong>
+                <small>
+                  {% if key == 'airtel' %}Airtel Congo, RDC{% endif %}
+                  {% if key == 'mpesa' %}Vodacom M-PESA, RDC{% endif %}
+                  {% if key == 'orange_money' %}Orange RDC{% endif %}
+                  {% if key == 'pawapay' %}Multi-opérateurs Afrique{% endif %}
+                </small>
+              </div>
+              <div class="payment-provider__check">
+                <i class="bi bi-check-circle-fill"></i>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        {# Sécurité #}
+        <div class="payment-security">
+          <i class="bi bi-shield-lock-fill"></i>
+          <span>Paiement 100% sécurisé · SSL · Données chiffrées</span>
+        </div>
+
+        <div class="wizard-actions">
+          <a href="{{ path('app_memorial_create_back', {step: 2}) }}" class="em-btn em-btn--ghost">
+            <i class="bi bi-arrow-left"></i> Retour
+          </a>
+          <button type="submit" class="em-btn em-btn--gold em-btn--lg" id="pay-btn" disabled>
+            <i class="bi bi-lock-fill"></i>
+            <span id="pay-btn-label">Choisissez un moyen de paiement</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+var providerLabels = {
+  stripe:       'Payer par carte bancaire',
+  paypal:       'Payer avec PayPal',
+  airtel:       'Payer via Airtel Money',
+  mpesa:        'Payer via M-PESA',
+  orange_money: 'Payer via Orange Money',
+  pawapay:      'Payer via PawaPay',
+  virement:     'Confirmer le virement',
+};
+
+function selectProvider(key, label) {
+  document.querySelectorAll('.payment-provider').forEach(function(p) {
+    p.classList.remove('payment-provider--selected');
+  });
+  label.classList.add('payment-provider--selected');
+  document.getElementById('selected-provider').value = key;
+
+  var btn = document.getElementById('pay-btn');
+  btn.disabled = false;
+  document.getElementById('pay-btn-label').textContent = providerLabels[key] || 'Payer maintenant';
+}
+
+function selectCurrency(cur, label) {
+  document.querySelectorAll('.currency-btn').forEach(function(b) { b.classList.remove('active'); });
+  label.classList.add('active');
+  document.getElementById('selected-currency').value = cur;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,419 @@
+{% extends 'base.html.twig' %}
+{% block title %}Dashboard — {{ page.deceasedFullName }} — EnMémoire.com{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="dashboard-wrapper">
+
+  {# Sidebar #}
+  <aside class="dashboard-sidebar" id="dashboard-sidebar">
+    <div class="dashboard-sidebar__header">
+      {% if page.mainPhotoUrl %}
+        <img src="{{ asset(page.mainPhotoUrl) }}" alt="{{ page.deceasedFullName }}" class="dashboard-sidebar__photo">
+      {% else %}
+        <div class="dashboard-sidebar__photo-placeholder"><i class="bi bi-person"></i></div>
+      {% endif %}
+      <div class="dashboard-sidebar__info">
+        <strong>{{ page.deceasedFullName }}</strong>
+        <span class="dashboard-sidebar__code">{{ page.pageCode }}</span>
+      </div>
+    </div>
+
+    <nav class="dashboard-sidebar__nav">
+      {% set currentRoute = app.request.attributes.get('_route') %}
+
+      <a href="{{ path('app_dashboard_memorial', {slug: page.slug}) }}"
+         class="dashboard-nav-item {% if currentRoute == 'app_dashboard_memorial' %}active{% endif %}">
+        <i class="bi bi-grid-1x2"></i> Vue d'ensemble
+      </a>
+
+      <a href="{{ path('app_memorial_show', {slug: page.slug}) }}" target="_blank"
+         class="dashboard-nav-item">
+        <i class="bi bi-eye"></i> Voir la page publique
+        <i class="bi bi-box-arrow-up-right ms-auto" style="font-size:.75rem;"></i>
+      </a>
+
+      <div class="dashboard-nav-divider">Contenu</div>
+
+      <a href="{{ path('app_dashboard_edit_profile', {slug: page.slug}) }}"
+         class="dashboard-nav-item {% if currentRoute == 'app_dashboard_edit_profile' %}active{% endif %}">
+        <i class="bi bi-person-badge"></i> Profil du défunt
+      </a>
+
+      <a href="{{ path('app_dashboard_timeline', {slug: page.slug}) }}"
+         class="dashboard-nav-item {% if currentRoute == 'app_dashboard_timeline' %}active{% endif %}">
+        <i class="bi bi-clock-history"></i> Ligne de vie
+      </a>
+
+      <a href="{{ path('app_dashboard_events', {slug: page.slug}) }}"
+         class="dashboard-nav-item {% if currentRoute == 'app_dashboard_events' %}active{% endif %}">
+        <i class="bi bi-calendar-event"></i> Événements
+      </a>
+
+      <a href="#" class="dashboard-nav-item">
+        <i class="bi bi-images"></i> Galerie médias
+      </a>
+
+      <div class="dashboard-nav-divider">Modération</div>
+
+      <a href="{{ path('app_dashboard_moderate', {slug: page.slug}) }}"
+         class="dashboard-nav-item {% if currentRoute == 'app_dashboard_moderate' %}active{% endif %}">
+        <i class="bi bi-shield-check"></i> Modérer les publications
+        {% if pending is defined and (pending.condolences|default(0) + pending.testimonials|default(0) + pending.guestbooks|default(0)) > 0 %}
+          <span class="dashboard-pending-badge">{{ (pending.condolences|default(0) + pending.testimonials|default(0) + pending.guestbooks|default(0)) }}</span>
+        {% endif %}
+      </a>
+
+      <div class="dashboard-nav-divider">Gestion</div>
+
+      <a href="{{ path('app_dashboard_moderators', {slug: page.slug}) }}"
+         class="dashboard-nav-item {% if currentRoute == 'app_dashboard_moderators' %}active{% endif %}">
+        <i class="bi bi-people"></i> Modérateurs
+      </a>
+
+      <a href="#" class="dashboard-nav-item" data-bs-toggle="modal" data-bs-target="#themeModal">
+        <i class="bi bi-palette"></i> Changer le thème
+      </a>
+
+      <a href="#" class="dashboard-nav-item" data-bs-toggle="modal" data-bs-target="#connectionModal">
+        <i class="bi bi-diagram-3"></i> Rapprochement familial
+      </a>
+
+      <a href="#" class="dashboard-nav-item" data-bs-toggle="modal" data-bs-target="#thankyouModal">
+        <i class="bi bi-heart"></i> Message de remerciement
+      </a>
+    </nav>
+  </aside>
+
+  {# Contenu principal #}
+  <main class="dashboard-main">
+
+    {# Header de page #}
+    <div class="dashboard-main__header">
+      <div>
+        <h1 class="dashboard-main__title">En mémoire de {{ page.deceasedFullName }}</h1>
+        <p class="dashboard-main__subtitle text-muted">
+          {{ page.deceasedBirthDate|date('d/m/Y') }} — {{ page.deceasedDeathDate|date('d/m/Y') }}
+          · Formule <strong>{{ page.formula.name }}</strong>
+          · Thème <strong>{{ page.theme.name }}</strong>
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{ path('app_memorial_show', {slug: page.slug}) }}" class="em-btn em-btn--outline em-btn--sm" target="_blank">
+          <i class="bi bi-eye"></i> Voir la page
+        </a>
+        <button class="em-btn em-btn--ghost em-btn--sm" data-copy-link="{{ url('app_memorial_show', {slug: page.slug}) }}">
+          <i class="bi bi-share"></i> Partager
+        </button>
+      </div>
+    </div>
+
+    {# KPI Cards #}
+    <div class="dashboard-kpis">
+      <div class="dashboard-kpi">
+        <div class="dashboard-kpi__icon dashboard-kpi__icon--blue"><i class="bi bi-eye"></i></div>
+        <div class="dashboard-kpi__value">{{ stats.visits }}</div>
+        <div class="dashboard-kpi__label">Visites</div>
+      </div>
+      <div class="dashboard-kpi">
+        <div class="dashboard-kpi__icon dashboard-kpi__icon--green"><i class="bi bi-chat-heart"></i></div>
+        <div class="dashboard-kpi__value">{{ stats.condolences }}</div>
+        <div class="dashboard-kpi__label">Condoléances</div>
+      </div>
+      <div class="dashboard-kpi">
+        <div class="dashboard-kpi__icon dashboard-kpi__icon--purple"><i class="bi bi-quote"></i></div>
+        <div class="dashboard-kpi__value">{{ stats.testimonials }}</div>
+        <div class="dashboard-kpi__label">Témoignages</div>
+      </div>
+      <div class="dashboard-kpi">
+        <div class="dashboard-kpi__icon dashboard-kpi__icon--gold"><i class="bi bi-book"></i></div>
+        <div class="dashboard-kpi__value">{{ stats.guestbooks }}</div>
+        <div class="dashboard-kpi__label">Signatures</div>
+      </div>
+      <div class="dashboard-kpi">
+        <div class="dashboard-kpi__icon dashboard-kpi__icon--coral"><i class="bi bi-images"></i></div>
+        <div class="dashboard-kpi__value">{{ stats.photos }}</div>
+        <div class="dashboard-kpi__label">Photos</div>
+      </div>
+      <div class="dashboard-kpi">
+        <div class="dashboard-kpi__icon dashboard-kpi__icon--navy"><i class="bi bi-calendar-event"></i></div>
+        <div class="dashboard-kpi__value">{{ stats.events }}</div>
+        <div class="dashboard-kpi__label">Événements</div>
+      </div>
+    </div>
+
+    {# Alertes publications en attente #}
+    {% if pending is defined and (pending.condolences|default(0) + pending.testimonials|default(0) + pending.guestbooks|default(0)) > 0 %}
+    <div class="dashboard-alert dashboard-alert--warning">
+      <i class="bi bi-hourglass-split"></i>
+      <strong>{{ (pending.condolences|default(0) + pending.testimonials|default(0) + pending.guestbooks|default(0)) }} publication(s) en attente de modération</strong>
+      <a href="{{ path('app_dashboard_moderate', {slug: page.slug}) }}" class="em-btn em-btn--primary em-btn--sm ms-auto">
+        Modérer maintenant
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="row g-4 mt-2">
+
+      {# Infos rapides #}
+      <div class="col-lg-6">
+        <div class="dashboard-card">
+          <div class="dashboard-card__header">
+            <h3><i class="bi bi-info-circle"></i> Informations de la page</h3>
+          </div>
+          <div class="dashboard-card__body">
+            <div class="dashboard-info-grid">
+              <div class="dashboard-info-row">
+                <span class="dashboard-info-label">Code page</span>
+                <span class="dashboard-info-value">
+                  <code>{{ page.pageCode }}</code>
+                  <button class="btn-icon ms-1" data-copy-link="{{ page.pageCode }}" title="Copier">
+                    <i class="bi bi-copy"></i>
+                  </button>
+                </span>
+              </div>
+              <div class="dashboard-info-row">
+                <span class="dashboard-info-label">Lien public</span>
+                <span class="dashboard-info-value">
+                  <a href="{{ path('app_memorial_show', {slug: page.slug}) }}" class="text-truncate" style="max-width:180px;display:inline-block;">
+                    enmemoire.com/memorial/{{ page.slug }}
+                  </a>
+                  <button class="btn-icon ms-1" data-copy-link="{{ url('app_memorial_show', {slug: page.slug}) }}" title="Copier">
+                    <i class="bi bi-copy"></i>
+                  </button>
+                </span>
+              </div>
+              <div class="dashboard-info-row">
+                <span class="dashboard-info-label">Formule</span>
+                <span class="dashboard-info-value">{{ page.formula.name }}</span>
+              </div>
+              <div class="dashboard-info-row">
+                <span class="dashboard-info-label">Expire le</span>
+                <span class="dashboard-info-value">
+                  {% if page.expiresAt %}{{ page.expiresAt|date('d/m/Y') }}
+                  {% else %}<em>Perpétuel</em>{% endif %}
+                </span>
+              </div>
+              <div class="dashboard-info-row">
+                <span class="dashboard-info-label">Visibilité</span>
+                <span class="dashboard-info-value">
+                  {% if page.public %}
+                    <span class="em-badge em-badge--active"><i class="bi bi-globe"></i> Publique</span>
+                  {% else %}
+                    <span class="em-badge em-badge--pending"><i class="bi bi-lock"></i> Privée</span>
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# QR Code #}
+      <div class="col-lg-6">
+        <div class="dashboard-card">
+          <div class="dashboard-card__header">
+            <h3><i class="bi bi-qr-code"></i> QR Code mémoriel</h3>
+          </div>
+          <div class="dashboard-card__body text-center">
+            {% if page.qrCodeUrl %}
+              <img src="{{ asset(page.qrCodeUrl) }}" alt="QR Code" width="160" class="mb-3">
+              <p class="text-muted small">Imprimez ou gravez ce QR code sur une plaque funéraire.</p>
+              <a href="{{ asset(page.qrCodeUrl) }}" download class="em-btn em-btn--primary em-btn--sm">
+                <i class="bi bi-download"></i> Télécharger (PNG)
+              </a>
+            {% else %}
+              <div class="dashboard-empty">
+                <i class="bi bi-qr-code" style="font-size:3rem;opacity:.2;"></i>
+                <p>QR Code non encore généré.</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {# Modérateurs #}
+      <div class="col-lg-6">
+        <div class="dashboard-card">
+          <div class="dashboard-card__header">
+            <h3><i class="bi bi-people"></i> Modérateurs</h3>
+            <a href="{{ path('app_dashboard_moderators', {slug: page.slug}) }}" class="dashboard-card__link">Gérer</a>
+          </div>
+          <div class="dashboard-card__body">
+            <ul class="dashboard-mods-list">
+              {% for mod in moderators %}
+              <li class="dashboard-mod-item">
+                <div class="dashboard-mod-avatar">{{ mod.user.firstName|first|upper }}</div>
+                <div>
+                  <strong>{{ mod.user.fullName }}</strong>
+                  {% if mod.isOwner %}<span class="em-badge em-badge--info ms-1">Propriétaire</span>{% endif %}
+                  <small class="d-block text-muted">{{ mod.user.email }}</small>
+                </div>
+                <code class="dashboard-mod-code ms-auto">{{ mod.moderatorCode }}</code>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {# Événements à venir #}
+      <div class="col-lg-6">
+        <div class="dashboard-card">
+          <div class="dashboard-card__header">
+            <h3><i class="bi bi-calendar-event"></i> Prochains événements</h3>
+            <a href="{{ path('app_dashboard_events', {slug: page.slug}) }}" class="dashboard-card__link">Gérer</a>
+          </div>
+          <div class="dashboard-card__body">
+            {% set upcoming = events|filter(e => e.status == 'upcoming' or e.status == 'live') %}
+            {% if upcoming|length %}
+              {% for event in upcoming|slice(0, 3) %}
+              <div class="dashboard-event-item {% if event.isLive %}dashboard-event-item--live{% endif %}">
+                <div>
+                  <strong>{{ event.title }}</strong>
+                  {% if event.isLive %}<span class="em-badge em-badge--active">EN DIRECT</span>{% endif %}
+                  <small class="d-block text-muted">{{ event.eventDate|date('d/m/Y à H:i') }}</small>
+                </div>
+                <span class="dashboard-event-type">
+                  {% if event.type == 'funeral' %}⚰️
+                  {% elseif event.type == 'commemoration' %}🕊️
+                  {% else %}📌{% endif %}
+                </span>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="dashboard-empty">
+                <p>Aucun événement à venir.</p>
+                <a href="{{ path('app_dashboard_events', {slug: page.slug}) }}" class="em-btn em-btn--outline em-btn--sm">
+                  <i class="bi bi-plus"></i> Créer un événement
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>{# /.row #}
+  </main>
+
+</div>{# /.dashboard-wrapper #}
+
+{# ============================================================ #}
+{# MODALS DASHBOARD                                             #}
+{# ============================================================ #}
+
+{# Modal Thème #}
+<div class="modal fade" id="themeModal" tabindex="-1" aria-labelledby="themeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="themeModalLabel"><i class="bi bi-palette"></i> Choisir un thème</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ path('app_dashboard_theme', {slug: page.slug}) }}" method="POST">
+        <div class="modal-body">
+          <input type="hidden" name="_token" value="{{ csrf_token('theme_' ~ page.id) }}">
+          <div class="theme-picker-grid">
+            {% for theme in themes is defined ? themes : [] %}
+            <label class="theme-picker-item {% if theme.id == page.theme.id %}theme-picker-item--active{% endif %}
+                                             {% if theme.isPaid and not page.formula.hasPremiumThemes %}theme-picker-item--locked{% endif %}">
+              <input type="radio" name="theme_id" value="{{ theme.id }}"
+                     {% if theme.id == page.theme.id %}checked{% endif %}
+                     {% if theme.isPaid and not page.formula.hasPremiumThemes %}disabled{% endif %}>
+              <div class="theme-picker-preview theme-preview--{{ theme.slug }}"></div>
+              <span class="theme-picker-name">{{ theme.name }}</span>
+              {% if theme.isPaid %}
+                <span class="theme-picker-badge {% if page.formula.hasPremiumThemes %}theme-picker-badge--available{% else %}theme-picker-badge--locked{% endif %}">
+                  {% if page.formula.hasPremiumThemes %}✓ Inclus{% else %}🔒 Premium{% endif %}
+                </span>
+              {% elseif theme.isSpecial %}
+                <span class="theme-picker-badge theme-picker-badge--special">⭐ Spécial</span>
+              {% else %}
+                <span class="theme-picker-badge theme-picker-badge--free">Gratuit</span>
+              {% endif %}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="em-btn em-btn--primary">Appliquer le thème</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# Modal Rapprochement familial #}
+<div class="modal fade" id="connectionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-diagram-3"></i> Rapprochement familial</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ path('app_dashboard_connection_request', {slug: page.slug}) }}" method="POST">
+        <div class="modal-body">
+          <input type="hidden" name="_token" value="{{ csrf_token('connection_' ~ page.id) }}">
+          <p class="text-muted small">Entrez le code de la page mémorielle cible (visible sur sa page publique).</p>
+          <div class="em-form-group">
+            <label class="em-form-label">Code de la page cible</label>
+            <input type="text" class="em-form-control" name="target_page_code"
+                   placeholder="ex: MEM-X7K2P" maxlength="12" required pattern="MEM-[A-Z0-9]{5}">
+            <span class="em-form-error">Format : MEM-XXXXX</span>
+          </div>
+          <div class="em-form-group">
+            <label class="em-form-label">Lien de parenté (vue depuis {{ page.deceasedFirstName }})</label>
+            <select class="em-form-control" name="relation_from" required>
+              <option value="">— Choisir —</option>
+              <option>Père</option><option>Mère</option><option>Fils</option><option>Fille</option>
+              <option>Frère</option><option>Sœur</option><option>Époux</option><option>Épouse</option>
+              <option>Grand-père</option><option>Grand-mère</option><option>Petit-fils</option><option>Petite-fille</option>
+              <option>Oncle</option><option>Tante</option><option>Neveu</option><option>Nièce</option>
+              <option>Cousin</option><option>Cousine</option><option>Autre</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="em-btn em-btn--primary">Envoyer la demande</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# Modal Remerciement #}
+<div class="modal fade" id="thankyouModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-heart"></i> Message de remerciement</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ path('app_dashboard_thankyou', {slug: page.slug}) }}" method="POST">
+        <div class="modal-body">
+          <input type="hidden" name="_token" value="{{ csrf_token('thankyou_' ~ page.id) }}">
+          <p class="text-muted small">Ce message apparaît en bas de la page mémorielle, signé de la famille.</p>
+          <textarea class="em-form-control" name="message" rows="5"
+                    placeholder="Au nom de toute la famille, nous vous remercions sincèrement..."
+                    maxlength="1000">{{ page.thankYouMessage }}</textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="em-btn em-btn--primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script src="{{ asset('js/dashboard.js') }}"></script>
+{% endblock %}

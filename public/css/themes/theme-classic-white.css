@@ -1,0 +1,16 @@
+/* ============================
+   Thème : Classique Blanc (FREE)
+   ============================ */
+[data-theme="classic-white"] {
+  --theme-bg:           #FAFAFA;
+  --theme-bg-alt:       #F5F5F5;
+  --theme-surface:      #FFFFFF;
+  --theme-text:         #333333;
+  --theme-text-muted:   #777777;
+  --theme-heading:      #1B2B4B;
+  --theme-accent:       #C9A84C;
+  --theme-accent-light: #E8D49A;
+  --theme-border:       rgba(0, 0, 0, 0.08);
+  --theme-hero-overlay: rgba(27, 43, 75, 0.52);
+  --theme-card-shadow:  0 2px 12px rgba(0, 0, 0, 0.08);
+}

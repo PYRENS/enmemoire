@@ -1,0 +1,200 @@
+{% extends 'base.html.twig' %}
+{% block title %}Statistiques — {{ page.deceasedFullName }}{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/stats.css') }}">{% endblock %}
+
+{% block body %}
+<div class="container-xl" style="padding-top:2.5rem;padding-bottom:4rem;">
+
+  <div class="stats-header">
+    <a href="{{ path('app_dashboard_memorial', {slug: page.slug}) }}" class="stats-back">
+      <i class="bi bi-arrow-left"></i> Dashboard
+    </a>
+    <div>
+      <h1>📊 Statistiques</h1>
+      <p class="text-muted">{{ page.deceasedFullName }}</p>
+    </div>
+    <div class="stats-period">
+      <button onclick="loadChart(7)"  class="stats-period-btn active" id="btn-7">7j</button>
+      <button onclick="loadChart(30)" class="stats-period-btn" id="btn-30">30j</button>
+      <button onclick="loadChart(90)" class="stats-period-btn" id="btn-90">90j</button>
+    </div>
+  </div>
+
+  {# KPIs #}
+  <div class="stats-kpis">
+    <div class="stats-kpi">
+      <i class="bi bi-eye stats-kpi__icon stats-kpi__icon--blue"></i>
+      <div class="stats-kpi__value">{{ stats.total_visits|number_format(0, ',', ' ') }}</div>
+      <div class="stats-kpi__label">Visites totales</div>
+      <div class="stats-kpi__sub">{{ stats.visits_today }} aujourd'hui · {{ stats.visits_this_week }} cette semaine</div>
+    </div>
+    <div class="stats-kpi">
+      <i class="bi bi-people stats-kpi__icon stats-kpi__icon--green"></i>
+      <div class="stats-kpi__value">{{ stats.unique_visitors|number_format(0, ',', ' ') }}</div>
+      <div class="stats-kpi__label">Visiteurs uniques</div>
+      <div class="stats-kpi__sub">Personnes distinctes</div>
+    </div>
+    <div class="stats-kpi">
+      <i class="bi bi-chat-heart stats-kpi__icon stats-kpi__icon--gold"></i>
+      <div class="stats-kpi__value">{{ stats.condolences }}</div>
+      <div class="stats-kpi__label">Condoléances</div>
+      <div class="stats-kpi__sub">
+        {% if stats.pending_condolences > 0 %}
+          <span style="color:var(--em-warning);">{{ stats.pending_condolences }} en attente</span>
+        {% else %}
+          Toutes approuvées
+        {% endif %}
+      </div>
+    </div>
+    <div class="stats-kpi">
+      <i class="bi bi-graph-up stats-kpi__icon stats-kpi__icon--purple"></i>
+      <div class="stats-kpi__value">{{ stats.engagement_rate }}%</div>
+      <div class="stats-kpi__label">Taux d'engagement</div>
+      <div class="stats-kpi__sub">Messages / Visites</div>
+    </div>
+    <div class="stats-kpi">
+      <i class="bi bi-book stats-kpi__icon stats-kpi__icon--navy"></i>
+      <div class="stats-kpi__value">{{ stats.guestbook_signed }}</div>
+      <div class="stats-kpi__label">Livre d'or</div>
+      <div class="stats-kpi__sub">Signatures</div>
+    </div>
+    <div class="stats-kpi">
+      <i class="bi bi-images stats-kpi__icon stats-kpi__icon--coral"></i>
+      <div class="stats-kpi__value">{{ stats.photos }}</div>
+      <div class="stats-kpi__label">Photos</div>
+      <div class="stats-kpi__sub">{{ stats.testimonials }} témoignages</div>
+    </div>
+  </div>
+
+  {# Graphique visites #}
+  <div class="stats-card" style="margin-bottom:1.5rem;">
+    <div class="stats-card__header">
+      <h3><i class="bi bi-bar-chart-line"></i> Visites & Condoléances</h3>
+      <span class="text-muted" style="font-size:.8rem;" id="chart-period-label">30 derniers jours</span>
+    </div>
+    <div class="stats-card__body">
+      <canvas id="visits-chart" style="max-height:280px;"></canvas>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+
+    {# Jours les plus actifs #}
+    <div class="stats-card">
+      <div class="stats-card__header">
+        <h3><i class="bi bi-trophy"></i> Jours les plus actifs</h3>
+      </div>
+      <div class="stats-card__body">
+        {% if stats.top_days %}
+          {% for day in stats.top_days %}
+          <div class="stats-bar-row">
+            <span class="stats-bar-label">{{ day.day|date('d/m/Y') }}</span>
+            <div class="stats-bar-wrap">
+              <div class="stats-bar" style="width:{{ (day.visits / stats.top_days[0].visits * 100)|round }}%"></div>
+            </div>
+            <span class="stats-bar-value">{{ day.visits }}</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted" style="font-size:.875rem;text-align:center;padding:1rem;">Pas encore de données</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Résumé interactions #}
+    <div class="stats-card">
+      <div class="stats-card__header">
+        <h3><i class="bi bi-activity"></i> Interactions</h3>
+      </div>
+      <div class="stats-card__body">
+        {% for label, value, icon, color in [
+          ['Condoléances',    stats.condolences,        'chat-heart', 'gold'],
+          ['Témoignages',     stats.testimonials,       'quote',      'blue'],
+          ['Signatures',      stats.guestbook_signed,   'book',       'green'],
+          ['Gadgets déposés', stats.gadget_interactions,'gift',       'purple'],
+        ] %}
+        <div class="stats-interaction-row">
+          <div class="stats-interaction-icon stats-interaction-icon--{{ color }}">
+            <i class="bi bi-{{ icon }}"></i>
+          </div>
+          <span class="stats-interaction-label">{{ label }}</span>
+          <strong class="stats-interaction-value">{{ value }}</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const SLUG = '{{ page.slug }}';
+let chart = null;
+
+async function loadChart(days) {
+  // Mettre à jour les boutons
+  document.querySelectorAll('.stats-period-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`btn-${days}`)?.classList.add('active');
+  document.getElementById('chart-period-label').textContent = days + ' derniers jours';
+
+  const data = await fetch(`/dashboard/stats/${SLUG}/chart?days=${days}`).then(r => r.json());
+
+  const labels      = data.map(d => d.date);
+  const visits      = data.map(d => d.visits);
+  const condolences = data.map(d => d.condolences);
+
+  if (chart) {
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = visits;
+    chart.data.datasets[1].data = condolences;
+    chart.update();
+    return;
+  }
+
+  chart = new Chart(document.getElementById('visits-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Visites',
+          data: visits,
+          borderColor: '#1B2B4B',
+          backgroundColor: 'rgba(27,43,75,.08)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+        },
+        {
+          label: 'Condoléances',
+          data: condolences,
+          borderColor: '#C9A84C',
+          backgroundColor: 'rgba(201,168,76,.08)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+      }
+    }
+  });
+}
+
+loadChart(30);
+</script>
+{% endblock %}

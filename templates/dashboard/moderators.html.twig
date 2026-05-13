@@ -1,0 +1,101 @@
+{% extends 'base.html.twig' %}{% block title %}Modérateurs — {{ page.deceasedFirstName }}{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">{% endblock %}
+{% block body %}
+<div class="dashboard-wrapper">
+  {% include 'dashboard/partials/_sidebar.html.twig' %}
+  <main class="dashboard-main">
+    <div class="dashboard-main__header">
+      <h1 class="dashboard-main__title"><i class="bi bi-people"></i> Modérateurs</h1>
+    </div>
+
+    {# Liste des modérateurs #}
+    <div class="moderators-grid mb-4">
+      {% for mod in moderators %}
+      <div class="moderator-card">
+        <div class="moderator-card__header">
+          <div class="moderator-card__avatar">{{ mod.user.firstName|first|upper }}{{ mod.user.lastName|first|upper }}</div>
+          <div>
+            <div class="moderator-card__name">
+              {{ mod.user.fullName }}
+              {% if mod.isOwner %}<span class="em-badge em-badge--info ms-1">Propriétaire</span>{% endif %}
+            </div>
+            <div class="moderator-card__email">{{ mod.user.email }}</div>
+          </div>
+        </div>
+        <div class="moderator-card__code">
+          <i class="bi bi-key"></i>
+          <span>Code : </span>
+          <code>{{ mod.moderatorCode }}</code>
+          <button class="btn-icon ms-auto copy-mod-code" data-code="{{ mod.moderatorCode }}" title="Copier">
+            <i class="bi bi-copy"></i>
+          </button>
+        </div>
+        <small class="text-muted">Depuis le {{ mod.acceptedAt ? mod.acceptedAt|date('d/m/Y') : 'En attente' }}</small>
+      </div>
+      {% endfor %}
+    </div>
+
+    {# Inviter un modérateur #}
+    {% if moderators|length < 3 %}
+    <div class="dashboard-card mb-4">
+      <div class="dashboard-card__header"><h3><i class="bi bi-person-plus"></i> Inviter un modérateur</h3></div>
+      <div class="dashboard-card__body">
+        <p class="text-muted small mb-3">Vous pouvez avoir au maximum <strong>3 modérateurs</strong> par page. Actuellement : {{ moderators|length }}/3.</p>
+        <form action="{{ path('app_dashboard_moderator_invite', {slug: page.slug}) }}" method="POST" class="row g-3">
+          <input type="hidden" name="_token" value="{{ csrf_token('mod_invite_' ~ page.id) }}">
+          <div class="col-md-8">
+            <label class="em-form-label">Email de l'utilisateur à inviter</label>
+            <input type="email" class="em-form-control" name="email" placeholder="email@exemple.com" required autocomplete="off">
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="em-btn em-btn--primary w-100">
+              <i class="bi bi-send"></i> Envoyer l'invitation
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <div class="dashboard-alert dashboard-alert--warning mb-4">
+      <i class="bi bi-people-fill"></i> Nombre maximum de modérateurs atteint (3/3).
+    </div>
+    {% endif %}
+
+    {# Ma liste de confiance #}
+    {% if currentMod %}
+    <div class="trust-list-section">
+      <h3 style="font-size:1rem;font-weight:600;margin-bottom:.5rem;"><i class="bi bi-shield-check"></i> Ma liste de confiance</h3>
+      <p class="text-muted small">Les utilisateurs dans votre liste de confiance verront leurs publications publiées automatiquement.</p>
+
+      <form id="trust-add-form" data-slug="{{ page.slug }}" class="d-flex gap-2 mt-3">
+        <input type="hidden" name="_token" value="{{ csrf_token('trust_' ~ page.id) }}">
+        <input type="email" class="em-form-control" name="email" placeholder="Ajouter un email de confiance..." required autocomplete="off">
+        <button type="submit" class="em-btn em-btn--primary em-btn--sm" style="white-space:nowrap;">
+          <i class="bi bi-plus-lg"></i> Ajouter
+        </button>
+      </form>
+
+      <ul class="trust-list mt-3" id="trust-list">
+        {% if trustList|length %}
+          {% for trust in trustList %}
+          <li class="trust-list-item">
+            <span class="trust-list-item__name">
+              <i class="bi bi-check-circle text-success"></i>
+              {{ trust.trustedUser.fullName }}
+              <small class="text-muted">&lt;{{ trust.trustedUser.email }}&gt;</small>
+            </span>
+            <small class="text-muted">{{ trust.addedAt|date('d/m/Y') }}</small>
+          </li>
+          {% endfor %}
+        {% else %}
+          <li class="trust-empty text-muted small" style="padding:.75rem;">Aucun utilisateur de confiance pour l'instant.</li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+
+  </main>
+</div>
+{% endblock %}
+{% block javascripts %}<script src="{{ asset('js/dashboard.js') }}"></script>{% endblock %}

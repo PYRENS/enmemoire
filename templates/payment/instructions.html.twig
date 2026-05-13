@@ -1,0 +1,139 @@
+{% extends 'base.html.twig' %}
+{% block title %}Instructions de paiement — EnMémoire.com{% endblock %}
+{% block body_class %}create-memorial-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/create.css') }}">{% endblock %}
+
+{% block body %}
+<div class="wizard-wrapper">
+  <div class="container" style="max-width:600px;padding-top:3rem;padding-bottom:4rem;">
+    <div class="wizard-card">
+
+      <div class="wizard-card__header">
+        <div class="wizard-step-icon">
+          {% if instructions.provider == 'virement' %}🏦{% else %}📱{% endif %}
+        </div>
+        <h1 class="wizard-title">Instructions de paiement</h1>
+        <p class="wizard-subtitle">
+          Paiement via <strong>{{ instructions.provider_label }}</strong> —
+          Référence : <strong>{{ instructions.reference }}</strong>
+        </p>
+      </div>
+
+      {# Récap montant #}
+      <div class="instructions-amount-box">
+        <div class="instructions-amount-label">Montant à envoyer</div>
+        <div class="instructions-amount">
+          {{ instructions.amount }}
+          <span class="instructions-currency">{{ instructions.currency }}</span>
+        </div>
+        <div class="instructions-ref">
+          Référence : <strong>{{ instructions.reference }}</strong>
+          <button type="button" class="copy-btn"
+                  onclick="copyRef('{{ instructions.reference }}')"
+                  title="Copier la référence">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+      </div>
+
+      {# Étapes #}
+      <div class="instructions-steps">
+        {% for i, step in instructions.instructions %}
+        <div class="instructions-step">
+          <div class="instructions-step__num">{{ loop.index }}</div>
+          <div class="instructions-step__text">{{ step }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {# Coordonnées bancaires si virement #}
+      {% if instructions.provider == 'virement' and instructions.bank_details is defined %}
+      <div class="bank-details">
+        <h3><i class="bi bi-bank"></i> Coordonnées bancaires</h3>
+        <div class="bank-details__grid">
+          <div class="bank-detail-row">
+            <span>IBAN</span>
+            <strong>{{ instructions.bank_details.iban }}</strong>
+            <button type="button" class="copy-btn" onclick="copyRef('{{ instructions.bank_details.iban }}')">
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+          <div class="bank-detail-row">
+            <span>BIC</span>
+            <strong>{{ instructions.bank_details.bic }}</strong>
+          </div>
+          <div class="bank-detail-row">
+            <span>Bénéficiaire</span>
+            <strong>{{ instructions.bank_details.beneficiaire }}</strong>
+          </div>
+          <div class="bank-detail-row">
+            <span>Référence</span>
+            <strong>{{ instructions.reference }}</strong>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Confirmation #}
+      <div class="instructions-confirm-section">
+        <h3>Confirmez votre paiement</h3>
+        <p>
+          Une fois le paiement effectué, confirmez-le en uploadant la preuve
+          (capture d'écran SMS, reçu de virement…).
+        </p>
+
+        <form action="{{ instructions.confirm_url }}" method="POST"
+              enctype="multipart/form-data" class="confirm-form">
+          <input type="hidden" name="_token" value="{{ csrf_token('mobile_confirm_' ~ payment.id) }}">
+
+          <div class="wf-group">
+            <label class="wf-label">Votre numéro de téléphone</label>
+            <input type="tel" name="phone" class="wf-input"
+                   placeholder="+243 81X XXX XXXX">
+          </div>
+
+          <div class="wf-group">
+            <label class="wf-label">ID / Référence de la transaction</label>
+            <input type="text" name="tx_id" class="wf-input"
+                   placeholder="Ex : TXN123456789">
+          </div>
+
+          <div class="wf-group">
+            <label class="wf-label">Note <span class="wf-optional">optionnel</span></label>
+            <textarea name="note" class="wf-input" rows="2"
+                      placeholder="Informations complémentaires..."></textarea>
+          </div>
+
+          <button type="submit" class="em-btn em-btn--primary w-100">
+            <i class="bi bi-check-lg"></i> Confirmer mon paiement
+          </button>
+        </form>
+      </div>
+
+      <div class="instructions-note">
+        <i class="bi bi-clock-history"></i>
+        Votre page mémorielle sera créée dans les <strong>24h</strong> après validation
+        de votre paiement par notre équipe.
+        <br><br>
+        Des questions ? <a href="{{ path('app_contact') }}">Contactez-nous</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function copyRef(text) {
+  navigator.clipboard.writeText(text).then(function() {
+    var btns = document.querySelectorAll('.copy-btn');
+    btns.forEach(function(btn) {
+      var orig = btn.innerHTML;
+      btn.innerHTML = '<i class="bi bi-check-lg" style="color:#2D7A4F"></i>';
+      setTimeout(function() { btn.innerHTML = orig; }, 1500);
+    });
+  });
+}
+</script>
+{% endblock %}

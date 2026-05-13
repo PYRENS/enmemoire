@@ -1,0 +1,140 @@
+{% extends 'base.html.twig' %}
+{% block title %}Notifications — EnMémoire.com{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/notifications.css') }}">{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width:680px;padding-top:2.5rem;padding-bottom:4rem;">
+
+  <div class="notif-header">
+    <div>
+      <h1>
+        <i class="bi bi-bell"></i> Notifications
+        {% if unreadCount > 0 %}
+          <span class="notif-count-badge">{{ unreadCount }}</span>
+        {% endif %}
+      </h1>
+    </div>
+    <div class="notif-header__actions">
+      {% if filter == 'unread' %}
+        <a href="{{ path('app_notifications') }}" class="em-btn em-btn--ghost em-btn--sm">Toutes</a>
+      {% else %}
+        <a href="{{ path('app_notifications', {filter: 'unread'}) }}" class="em-btn em-btn--ghost em-btn--sm">Non lues</a>
+      {% endif %}
+      {% if unreadCount > 0 %}
+        <button onclick="markAllRead()" class="em-btn em-btn--outline em-btn--sm">
+          <i class="bi bi-check-all"></i> Tout marquer lu
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if notifications %}
+  <div class="notif-list" id="notif-list">
+    {% for notif in notifications %}
+    <div class="notif-item {% if not notif.isRead %}notif-item--unread{% endif %}"
+         id="notif-{{ notif.id }}">
+
+      <div class="notif-item__icon notif-item__icon--{{ notif.type }}">
+        <i class="bi bi-{% if notif.type == 'condolence_pending' %}chat-heart
+          {% elseif notif.type == 'testimonial_pending' %}quote
+          {% elseif notif.type == 'guestbook_pending' %}book
+          {% elseif notif.type == 'gadget_deposited' %}gift
+          {% elseif notif.type == 'memorial_expiring' %}clock
+          {% else %}bell{% endif %}"></i>
+      </div>
+
+      <div class="notif-item__content">
+        <div class="notif-item__title">{{ notif.title }}</div>
+        {% if notif.message %}
+          <p class="notif-item__message">{{ notif.message|slice(0, 120) }}{% if notif.message|length > 120 %}…{% endif %}</p>
+        {% endif %}
+        <div class="notif-item__meta">
+          <span class="notif-item__time">{{ notif.createdAt|date('d/m/Y à H:i') }}</span>
+          {% if notif.actionUrl %}
+            <a href="{{ notif.actionUrl }}" class="notif-item__link">Voir →</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="notif-item__actions">
+        {% if not notif.isRead %}
+        <button onclick="markRead({{ notif.id }})" class="notif-action-btn" title="Marquer comme lu">
+          <i class="bi bi-check-lg"></i>
+        </button>
+        {% endif %}
+        <button onclick="deleteNotif({{ notif.id }})" class="notif-action-btn notif-action-btn--delete" title="Supprimer">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Pagination #}
+  {% if totalPages > 1 %}
+  <div style="display:flex;justify-content:center;gap:.5rem;margin-top:1.5rem;">
+    {% for p in 1..totalPages %}
+      <a href="{{ path('app_notifications', {page: p, filter: filter}) }}"
+         class="em-btn em-btn--sm {% if p == page %}em-btn--primary{% else %}em-btn--ghost{% endif %}">
+        {{ p }}
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div style="text-align:center;padding:4rem 1rem;color:var(--em-muted);">
+    <i class="bi bi-bell-slash" style="font-size:3rem;display:block;margin-bottom:1rem;"></i>
+    <h3 style="color:var(--em-navy);">Aucune notification</h3>
+    <p>{% if filter == 'unread' %}Vous avez lu toutes vos notifications.{% else %}Vous n'avez pas encore de notifications.{% endif %}</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function markRead(id) {
+  fetch(`/notifications/${id}/read`, {method:'POST'})
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        const el = document.getElementById(`notif-${id}`);
+        el?.classList.remove('notif-item--unread');
+        updateBadge(data.unreadCount);
+      }
+    });
+}
+
+function markAllRead() {
+  fetch('/notifications/read-all', {method:'POST'})
+    .then(r => r.json())
+    .then(() => {
+      document.querySelectorAll('.notif-item--unread').forEach(el => el.classList.remove('notif-item--unread'));
+      updateBadge(0);
+    });
+}
+
+function deleteNotif(id) {
+  fetch(`/notifications/${id}/delete`, {method:'POST'})
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById(`notif-${id}`)?.remove();
+      }
+    });
+}
+
+function updateBadge(count) {
+  const badge = document.querySelector('.notif-count-badge');
+  const headerBadge = document.getElementById('notif-count');
+  if (badge) badge.textContent = count > 0 ? count : '';
+  if (headerBadge) {
+    headerBadge.style.display = count > 0 ? 'flex' : 'none';
+    headerBadge.textContent = count;
+  }
+}
+</script>
+{% endblock %}

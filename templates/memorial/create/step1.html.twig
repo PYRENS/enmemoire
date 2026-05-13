@@ -1,0 +1,174 @@
+{% extends 'base.html.twig' %}
+{% block title %}Créer une page mémorielle — Étape 1{% endblock %}
+{% block body_class %}create-memorial-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/create.css') }}">{% endblock %}
+
+{% block body %}
+<div class="wizard-wrapper">
+  <div class="container" style="max-width:760px;padding-top:3rem;padding-bottom:4rem;">
+
+    {# Progress bar #}
+    {% include 'memorial/create/_progress.html.twig' with {step: 1} %}
+
+    <div class="wizard-card">
+      <div class="wizard-card__header">
+        <div class="wizard-step-icon">🕯️</div>
+        <h1 class="wizard-title">Informations du défunt</h1>
+        <p class="wizard-subtitle">Ces informations apparaîtront sur la page mémorielle.</p>
+      </div>
+
+      {% if error %}
+        <div class="wizard-alert">
+          <i class="bi bi-exclamation-circle"></i> {{ error }}
+        </div>
+      {% endif %}
+
+      <form method="POST" action="{{ path('app_memorial_create') }}"
+            class="wizard-form" data-disable-on-submit>
+        <input type="hidden" name="_token" value="{{ csrf_token('memorial_create_step1') }}">
+
+        {# Prénom + Nom #}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="wf-group">
+              <label class="wf-label">Prénom *</label>
+              <input type="text" name="first_name" class="wf-input"
+                     value="{{ form.first_name ?? '' }}"
+                     placeholder="Ex : Olga" required maxlength="100">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="wf-group">
+              <label class="wf-label">Nom *</label>
+              <input type="text" name="last_name" class="wf-input"
+                     value="{{ form.last_name ?? '' }}"
+                     placeholder="Ex : Mumbere" required maxlength="100">
+            </div>
+          </div>
+        </div>
+
+        {# Surnom #}
+        <div class="wf-group">
+          <label class="wf-label">Surnom / Nom d'usage <span class="wf-optional">optionnel</span></label>
+          <input type="text" name="nickname" class="wf-input"
+                 value="{{ form.nickname ?? '' }}"
+                 placeholder="Ex : Mama Olga" maxlength="100">
+        </div>
+
+        {# Dates #}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="wf-group">
+              <label class="wf-label">Date de naissance *</label>
+              <input type="date" name="birth_date" class="wf-input"
+                     value="{{ form.birth_date ?? '' }}" required>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="wf-group">
+              <label class="wf-label">Date de décès *</label>
+              <input type="date" name="death_date" class="wf-input"
+                     value="{{ form.death_date ?? '' }}" required
+                     max="{{ "now"|date("Y-m-d") }}">
+            </div>
+          </div>
+        </div>
+
+        {# Lieux #}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="wf-group">
+              <label class="wf-label">Lieu de naissance <span class="wf-optional">optionnel</span></label>
+              <input type="text" name="birth_place" class="wf-input"
+                     value="{{ form.birth_place ?? '' }}"
+                     placeholder="Ex : Kinshasa, RDC" maxlength="200">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="wf-group">
+              <label class="wf-label">Lieu de décès *</label>
+              <input type="text" name="death_place" class="wf-input"
+                     value="{{ form.death_place ?? '' }}"
+                     placeholder="Ex : Kinshasa, RDC" required maxlength="200">
+            </div>
+          </div>
+        </div>
+
+        {# Profession #}
+        <div class="wf-group">
+          <label class="wf-label">Profession / Titre <span class="wf-optional">optionnel</span></label>
+          <input type="text" name="profession" class="wf-input"
+                 value="{{ form.profession ?? '' }}"
+                 placeholder="Ex : Infirmière, Enseignant, Pasteur..." maxlength="200">
+        </div>
+
+        {# Citation #}
+        <div class="wf-group">
+          <label class="wf-label">Citation favorite <span class="wf-optional">optionnel</span></label>
+          <input type="text" name="quote" class="wf-input"
+                 value="{{ form.quote ?? '' }}"
+                 placeholder="Une phrase qui lui ressemblait..." maxlength="500">
+        </div>
+
+        {# Avis de décès #}
+        <div class="wf-group">
+          <label class="wf-label">
+            Avis de décès / Communiqué
+            <span class="wf-optional">optionnel — modifiable après création</span>
+          </label>
+          <textarea name="obituary" class="wf-input" rows="4"
+                    placeholder="C'est avec une profonde tristesse que nous annonçons le décès de..."
+                    maxlength="3000">{{ form.obituary ?? '' }}</textarea>
+          <div class="wf-hint">Ce texte sera affiché comme avis de décès sur la page mémorielle.</div>
+        </div>
+
+        {# Visibilité #}
+        <div class="wf-group">
+          <label class="wf-label">Visibilité de la page</label>
+          <div class="wf-radio-group">
+            <label class="wf-radio {% if (form.visibility ?? 'public') == 'public' %}active{% endif %}">
+              <input type="radio" name="visibility" value="public"
+                     {% if (form.visibility ?? 'public') == 'public' %}checked{% endif %}>
+              <i class="bi bi-globe2"></i>
+              <div>
+                <strong>Publique</strong>
+                <small>Visible par tous, indexée dans la recherche</small>
+              </div>
+            </label>
+            <label class="wf-radio {% if (form.visibility ?? '') == 'private' %}active{% endif %}">
+              <input type="radio" name="visibility" value="private"
+                     {% if (form.visibility ?? '') == 'private' %}checked{% endif %}>
+              <i class="bi bi-lock"></i>
+              <div>
+                <strong>Privée</strong>
+                <small>Accessible uniquement via le lien direct</small>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="wizard-actions">
+          <a href="{{ path('app_dashboard') }}" class="em-btn em-btn--ghost">
+            <i class="bi bi-arrow-left"></i> Annuler
+          </a>
+          <button type="submit" class="em-btn em-btn--primary em-btn--lg">
+            Continuer <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+// Mettre à jour le style des radios visibilité
+document.querySelectorAll('.wf-radio input').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    document.querySelectorAll('.wf-radio').forEach(function(l) { l.classList.remove('active'); });
+    this.closest('.wf-radio').classList.add('active');
+  });
+});
+</script>
+{% endblock %}

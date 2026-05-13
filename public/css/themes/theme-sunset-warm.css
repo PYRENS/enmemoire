@@ -1,0 +1,19 @@
+/* ============================
+   Thème : Coucher de Soleil (FREE)
+   ============================ */
+[data-theme="sunset-warm"] {
+  --theme-bg:           #FDF6EE;
+  --theme-bg-alt:       #FAF0E4;
+  --theme-surface:      #FFFFFF;
+  --theme-text:         #3D2010;
+  --theme-text-muted:   #8C5A38;
+  --theme-heading:      #6B2F0A;
+  --theme-accent:       #D4622A;
+  --theme-accent-light: #E8905E;
+  --theme-border:       rgba(107, 47, 10, 0.12);
+  --theme-hero-overlay: linear-gradient(to bottom, rgba(180, 60, 10, 0.45), rgba(50, 20, 5, 0.70));
+  --theme-card-shadow:  0 4px 16px rgba(107, 47, 10, 0.10);
+}
+[data-theme="sunset-warm"] .memorial-accent { color: #D4622A; }
+[data-theme="sunset-warm"] .em-btn--primary { background: #D4622A; border-color: #D4622A; }
+[data-theme="sunset-warm"] .em-btn--primary:hover { background: #E8905E; border-color: #E8905E; box-shadow: 0 4px 16px rgba(212, 98, 42, 0.35); }

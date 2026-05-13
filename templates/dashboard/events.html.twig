@@ -1,0 +1,86 @@
+{% extends 'base.html.twig' %}{% block title %}Événements — {{ page.deceasedFirstName }}{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">{% endblock %}
+{% block body %}
+<div class="dashboard-wrapper">
+  {% include 'dashboard/partials/_sidebar.html.twig' %}
+  <main class="dashboard-main">
+    <div class="dashboard-main__header">
+      <h1 class="dashboard-main__title"><i class="bi bi-calendar-event"></i> Événements</h1>
+    </div>
+
+    <div class="event-form-panel mb-4">
+      <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Créer un événement</h3>
+      <form action="{{ path('app_dashboard_event_add', {slug: page.slug}) }}" method="POST" data-disable-on-submit>
+        <input type="hidden" name="_token" value="{{ csrf_token('event_add_' ~ page.id) }}">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="em-form-label">Type *</label>
+            <select class="em-form-control" name="type">
+              <option value="funeral">⚰️ Obsèques / Rite funéraire</option>
+              <option value="commemoration">🕊️ Cérémonie de commémoration</option>
+              <option value="anniversary_mass">⛪ Messe d'anniversaire</option>
+              <option value="reception">🏛️ Réception après funérailles</option>
+              <option value="other">📌 Autre</option>
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="em-form-label">Titre *</label>
+            <input type="text" class="em-form-control" name="title" placeholder="Ex : Obsèques de Jean-Pierre" required maxlength="255">
+          </div>
+          <div class="col-md-3">
+            <label class="em-form-label">Date et heure *</label>
+            <input type="datetime-local" class="em-form-control" name="event_date" required>
+          </div>
+          <div class="col-md-6">
+            <label class="em-form-label">Lieu</label>
+            <input type="text" class="em-form-control" name="location_name" placeholder="Nom du lieu" maxlength="255">
+          </div>
+          <div class="col-md-6">
+            <label class="em-form-label">Adresse</label>
+            <input type="text" class="em-form-control" name="location_address" placeholder="Adresse complète" maxlength="500">
+          </div>
+          <div class="col-md-12">
+            <label class="em-form-label">Lien de diffusion live (YouTube, Facebook, Zoom...)</label>
+            <input type="url" class="em-form-control" name="live_url" placeholder="https://youtube.com/live/..." maxlength="500">
+          </div>
+          <div class="col-12">
+            <label class="em-form-label">Description</label>
+            <textarea class="em-form-control" name="description" rows="2" placeholder="Informations complémentaires..." maxlength="1000"></textarea>
+          </div>
+          <div class="col-12 text-end">
+            <button type="submit" class="em-btn em-btn--primary"><i class="bi bi-plus-lg"></i> Créer l'événement</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="events-admin-list">
+      {% for event in events %}
+      <div class="event-admin-card event-admin-card--{{ event.status }}">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="em-badge em-badge--{{ event.isLive ? 'active' : (event.isUpcoming ? 'info' : 'pending') }}">
+              {{ event.status == 'live' ? '🔴 EN DIRECT' : (event.status == 'upcoming' ? '📅 À venir' : '✅ Terminé') }}
+            </span>
+            <strong>{{ event.title }}</strong>
+          </div>
+          <small class="text-muted d-block">
+            <i class="bi bi-calendar3"></i> {{ event.eventDate|date('d/m/Y à H:i') }}
+            {% if event.locationName %} · <i class="bi bi-geo-alt"></i> {{ event.locationName }}{% endif %}
+          </small>
+          {% if event.liveUrl %}
+            <a href="{{ event.liveUrl }}" target="_blank" class="em-btn em-btn--outline em-btn--sm mt-2">
+              <i class="bi bi-play-circle"></i> Lien live
+            </a>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+        <div class="dashboard-empty"><p>Aucun événement créé. Planifiez des obsèques, commémorations ou cérémonies.</p></div>
+      {% endfor %}
+    </div>
+  </main>
+</div>
+{% endblock %}
+{% block javascripts %}<script src="{{ asset('js/dashboard.js') }}"></script>{% endblock %}

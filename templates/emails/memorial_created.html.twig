@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmation — EnMémoire.com</title>
+</head>
+<body style="margin:0;padding:0;background:#F4F6F9;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F9;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="580" cellpadding="0" cellspacing="0"
+           style="background:white;border-radius:16px;box-shadow:0 4px 24px rgba(27,43,75,.1);
+                  overflow:hidden;max-width:580px;width:100%;">
+
+      <!-- HEADER -->
+      <tr><td style="background:linear-gradient(135deg,#1B2B4B 0%,#2C4270 100%);
+                     padding:28px 32px;text-align:center;">
+        <h1 style="color:white;font-weight:300;font-size:24px;margin:0;letter-spacing:.5px;">
+          🕯️ <span style="color:#C9A84C;">En</span>Mémoire<span style="color:#C9A84C;">.com</span>
+        </h1>
+        <p style="color:rgba(255,255,255,.6);font-size:13px;margin:6px 0 0;">
+          Plateforme Mémorielle Numérique
+        </p>
+      </td></tr>
+
+      <!-- CORPS -->
+      <tr><td style="padding:32px;">
+
+        <!-- Salutation -->
+        <h2 style="color:#1B2B4B;font-size:20px;font-weight:400;margin:0 0 8px;">
+          Bonjour {{ moderator.firstName }} 👋
+        </h2>
+        <p style="color:#6B7280;font-size:15px;line-height:1.6;margin:0 0 24px;">
+          La page mémorielle de <strong style="color:#1B2B4B;">{{ page.deceasedFullName }}</strong>
+          a été créée avec succès. Vous en êtes le modérateur principal.
+        </p>
+
+        <!-- Bouton principal -->
+        <div style="text-align:center;margin:0 0 32px;">
+          <a href="{{ page_url }}"
+             style="display:inline-block;background:#C9A84C;color:white;text-decoration:none;
+                    padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;
+                    letter-spacing:.3px;">
+            🕯️ Voir la page mémorielle
+          </a>
+        </div>
+
+        <!-- Infos page -->
+        <table width="100%" cellpadding="0" cellspacing="0"
+               style="background:#F8F4EE;border-radius:12px;overflow:hidden;margin-bottom:28px;">
+          <tr><td style="padding:16px 20px;border-bottom:1px solid #E8E0D4;">
+            <span style="font-size:12px;font-weight:700;text-transform:uppercase;
+                         letter-spacing:.08em;color:#9CA3AF;">Détails de la page</span>
+          </td></tr>
+          <tr><td style="padding:0;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding:10px 20px;font-size:14px;color:#6B7280;width:45%;
+                           border-bottom:1px solid #E8E0D4;">Défunt</td>
+                <td style="padding:10px 20px;font-size:14px;color:#1B2B4B;font-weight:600;
+                           border-bottom:1px solid #E8E0D4;">{{ page.deceasedFullName }}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 20px;font-size:14px;color:#6B7280;
+                           border-bottom:1px solid #E8E0D4;">Dates</td>
+                <td style="padding:10px 20px;font-size:14px;color:#1B2B4B;font-weight:600;
+                           border-bottom:1px solid #E8E0D4;">
+                  {{ page.deceasedBirthDate|date('d/m/Y') }} — {{ page.deceasedDeathDate|date('d/m/Y') }}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:10px 20px;font-size:14px;color:#6B7280;
+                           border-bottom:1px solid #E8E0D4;">Code de la page</td>
+                <td style="padding:10px 20px;font-size:14px;color:#1B2B4B;font-weight:600;
+                           font-family:monospace;border-bottom:1px solid #E8E0D4;">{{ page.pageCode }}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 20px;font-size:14px;color:#6B7280;
+                           border-bottom:1px solid #E8E0D4;">Formule</td>
+                <td style="padding:10px 20px;font-size:14px;color:#1B2B4B;font-weight:600;
+                           border-bottom:1px solid #E8E0D4;">{{ page.formula.name }}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 20px;font-size:14px;color:#6B7280;">Validité</td>
+                <td style="padding:10px 20px;font-size:14px;color:#1B2B4B;font-weight:600;">
+                  {% if page.formula.isPerpetual %}Perpétuelle ♾️
+                  {% else %}Jusqu'au {{ page.expiresAt|date('d/m/Y') }}
+                  {% endif %}
+                </td>
+              </tr>
+            </table>
+          </td></tr>
+        </table>
+
+        <!-- FACTURE -->
+        <table width="100%" cellpadding="0" cellspacing="0"
+               style="border:2px solid #E8E0D4;border-radius:12px;overflow:hidden;margin-bottom:28px;">
+
+          <!-- En-tête facture -->
+          <tr><td colspan="2" style="background:#1B2B4B;padding:12px 20px;">
+            <span style="color:white;font-size:13px;font-weight:700;
+                         text-transform:uppercase;letter-spacing:.08em;">
+              🧾 Facture / Reçu de paiement
+            </span>
+          </td></tr>
+
+          <tr>
+            <td style="padding:14px 20px;vertical-align:top;">
+              <p style="margin:0;font-size:12px;color:#9CA3AF;text-transform:uppercase;
+                        letter-spacing:.05em;font-weight:700;">Émetteur</p>
+              <p style="margin:4px 0 0;font-size:14px;color:#1B2B4B;font-weight:600;">EnMémoire.com</p>
+              <p style="margin:2px 0 0;font-size:13px;color:#6B7280;">support@enmemoire.com</p>
+            </td>
+            <td style="padding:14px 20px;vertical-align:top;text-align:right;">
+              <p style="margin:0;font-size:12px;color:#9CA3AF;text-transform:uppercase;
+                        letter-spacing:.05em;font-weight:700;">Facturé à</p>
+              <p style="margin:4px 0 0;font-size:14px;color:#1B2B4B;font-weight:600;">
+                {{ moderator.firstName }} {{ moderator.lastName }}
+              </p>
+              <p style="margin:2px 0 0;font-size:13px;color:#6B7280;">{{ moderator.email }}</p>
+            </td>
+          </tr>
+
+          <tr><td colspan="2" style="padding:0 20px;">
+            <hr style="border:none;border-top:1px solid #E8E0D4;margin:0;">
+          </td></tr>
+
+          <!-- Détails facturation -->
+          <tr><td colspan="2" style="padding:14px 20px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr style="background:#F8F4EE;">
+                <th style="padding:8px 10px;font-size:12px;color:#6B7280;
+                           text-align:left;font-weight:600;">Description</th>
+                <th style="padding:8px 10px;font-size:12px;color:#6B7280;
+                           text-align:center;font-weight:600;">Qté</th>
+                <th style="padding:8px 10px;font-size:12px;color:#6B7280;
+                           text-align:right;font-weight:600;">Montant</th>
+              </tr>
+              <tr>
+                <td style="padding:10px;font-size:14px;color:#2D2D2D;border-bottom:1px solid #F0EBE3;">
+                  Page mémorielle — Formule {{ page.formula.name }}<br>
+                  <small style="color:#9CA3AF;font-size:12px;">
+                    {% if page.formula.isPerpetual %}Accès perpétuel
+                    {% else %}{{ page.formula.durationYears }} an(s) — Exp. {{ page.expiresAt|date('d/m/Y') }}
+                    {% endif %}
+                  </small>
+                </td>
+                <td style="padding:10px;font-size:14px;text-align:center;
+                           color:#2D2D2D;border-bottom:1px solid #F0EBE3;">1</td>
+                <td style="padding:10px;font-size:14px;font-weight:600;text-align:right;
+                           color:#2D2D2D;border-bottom:1px solid #F0EBE3;">
+                  {{ payment.amount }} {{ payment.currency }}
+                </td>
+              </tr>
+              <!-- Total -->
+              <tr style="background:#F8F4EE;">
+                <td colspan="2" style="padding:12px 10px;font-size:14px;
+                                       font-weight:700;color:#1B2B4B;">Total payé</td>
+                <td style="padding:12px 10px;font-size:18px;font-weight:700;
+                           text-align:right;color:#C9A84C;">
+                  {{ payment.amount }} {{ payment.currency }}
+                </td>
+              </tr>
+            </table>
+          </td></tr>
+
+          <!-- Référence & date -->
+          <tr><td colspan="2" style="padding:12px 20px;background:#F8F4EE;">
+            <span style="font-size:12px;color:#9CA3AF;">
+              Référence : <strong style="color:#1B2B4B;font-family:monospace;">
+                EM-{{ '%06d'|format(payment.id) }}
+              </strong>
+              &nbsp;·&nbsp;
+              Date : <strong style="color:#1B2B4B;">{{ payment.createdAt|date('d/m/Y à H:i') }}</strong>
+              &nbsp;·&nbsp;
+              Moyen : <strong style="color:#1B2B4B;">{{ payment.provider|title }}</strong>
+            </span>
+          </td></tr>
+        </table>
+
+        <!-- Prochaines étapes -->
+        <table width="100%" cellpadding="0" cellspacing="0"
+               style="background:#EBF5FF;border-radius:12px;overflow:hidden;margin-bottom:28px;">
+          <tr><td style="padding:16px 20px;">
+            <p style="margin:0 0 12px;font-size:14px;font-weight:700;color:#1B2B4B;">
+              🚀 Prochaines étapes
+            </p>
+            <ul style="margin:0;padding:0 0 0 18px;font-size:14px;color:#374151;line-height:1.9;">
+              <li>Accédez à votre <a href="{{ dashboard_url }}" style="color:#1B2B4B;font-weight:600;">tableau de bord</a> pour personnaliser la page</li>
+              <li>Ajoutez des photos, vidéos et la biographie du défunt</li>
+              <li>Partagez le lien ou le QR Code avec vos proches</li>
+              <li>Invitez des co-modérateurs pour gérer la page ensemble</li>
+            </ul>
+          </td></tr>
+        </table>
+
+        <!-- Lien QR Code si disponible -->
+        {% if page.qrCodeUrl %}
+        <div style="text-align:center;margin-bottom:28px;">
+          <p style="font-size:14px;color:#6B7280;margin:0 0 12px;">
+            Votre QR Code mémoriel (imprimable / gravable) :
+          </p>
+          <img src="{{ qr_url }}" alt="QR Code" width="120" height="120"
+               style="border:1px solid #E8E0D4;border-radius:8px;padding:8px;">
+        </div>
+        {% endif %}
+
+        <p style="font-size:13px;color:#9CA3AF;text-align:center;margin:0;">
+          Pour toute question : <a href="mailto:support@enmemoire.com"
+             style="color:#1B2B4B;">support@enmemoire.com</a>
+        </p>
+
+      </td></tr>
+
+      <!-- FOOTER -->
+      <tr><td style="background:#F8F4EE;border-top:1px solid #E8E0D4;
+                     padding:16px 32px;text-align:center;">
+        <p style="color:#9CA3AF;font-size:12px;margin:0;">
+          © {{ "now"|date("Y") }} EnMémoire.com — Tous droits réservés<br>
+          <a href="{{ app_url }}/mentions-legales" style="color:#9CA3AF;">CGU</a>
+          &nbsp;·&nbsp;
+          <a href="{{ app_url }}/confidentialite" style="color:#9CA3AF;">Confidentialité</a>
+        </p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

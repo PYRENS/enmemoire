@@ -1,0 +1,18 @@
+{# templates/memorial/create/_progress.html.twig #}
+<div class="wizard-progress">
+  <div class="wizard-progress__steps">
+    {% for i in 1..3 %}
+    <div class="wizard-progress__step {% if i < step %}done{% elseif i == step %}active{% endif %}">
+      <div class="wizard-progress__circle">
+        {% if i < step %}<i class="bi bi-check-lg"></i>{% else %}{{ i }}{% endif %}
+      </div>
+      <span class="wizard-progress__label">
+        {% if i == 1 %}Défunt{% elseif i == 2 %}Formule{% else %}Paiement{% endif %}
+      </span>
+    </div>
+    {% if i < 3 %}
+    <div class="wizard-progress__line {% if i < step %}done{% endif %}"></div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>

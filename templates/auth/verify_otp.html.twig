@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+{% block title %}Vérification du code — EnMémoire.com{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/auth.css') }}">{% endblock %}
+
+{% block body %}
+<div class="auth-wrapper auth-wrapper--centered">
+  <div class="auth-panel auth-panel--narrow">
+    <div class="auth-panel__inner">
+      <a href="{{ path('app_home') }}" class="auth-logo">🕯️ <span>En<strong>Mémoire</strong>.com</span></a>
+
+      <div class="auth-otp-icon">
+        {% if channel == 'whatsapp' %}
+          <i class="bi bi-whatsapp" style="color:#25D366;"></i>
+        {% else %}
+          <i class="bi bi-envelope-open" style="color:var(--em-gold);"></i>
+        {% endif %}
+      </div>
+
+      <h1 class="auth-title">Vérifiez votre {{ channel == 'whatsapp' ? 'WhatsApp' : 'email' }}</h1>
+      <p class="auth-subtitle">
+        Nous avons envoyé un code à 6 chiffres à<br>
+        <strong>{{ channel == 'whatsapp' ? user.phoneWhatsapp : user.email }}</strong>
+      </p>
+
+      {% if error %}
+        <div class="auth-alert auth-alert--error"><i class="bi bi-exclamation-circle"></i> {{ error }}</div>
+      {% endif %}
+
+      {% for type, msgs in app.flashes %}
+        {% for msg in msgs %}
+          <div class="auth-alert auth-alert--{{ type == 'success' ? 'success' : 'warning' }}">
+            <i class="bi bi-{{ type == 'success' ? 'check-circle' : 'info-circle' }}"></i> {{ msg }}
+          </div>
+        {% endfor %}
+      {% endfor %}
+
+      <form method="POST" action="{{ path('app_verify_otp') }}" class="auth-form" id="otp-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('verify_otp') }}">
+        <input type="hidden" name="action" value="verify">
+
+        {# Saisie OTP — 6 cases individuelles #}
+        <div class="auth-otp-inputs" id="otp-boxes">
+          {% for i in 1..6 %}
+            <input type="text" name="digit[]" maxlength="1"
+                   class="auth-otp-digit" inputmode="numeric" pattern="[0-9]"
+                   autocomplete="{% if i == 1 %}one-time-code{% else %}off{% endif %}"
+                   required>
+          {% endfor %}
+        </div>
+
+        <button type="submit" class="auth-submit">
+          <i class="bi bi-check-lg"></i> Vérifier le code
+        </button>
+      </form>
+
+      <div class="auth-otp-resend">
+        <p class="text-muted small">Vous n'avez pas reçu le code ?</p>
+        <form method="POST" action="{{ path('app_verify_otp') }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('verify_otp') }}">
+          <input type="hidden" name="action" value="resend">
+          <button type="submit" class="auth-link-btn">
+            <i class="bi bi-arrow-clockwise"></i> Renvoyer le code
+          </button>
+        </form>
+        <p class="text-muted small mt-2">ou</p>
+        <a href="{{ path('app_register') }}" class="auth-link-btn">
+          <i class="bi bi-arrow-left"></i> Modifier mes informations
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block javascripts %}<script src="{{ asset('js/auth.js') }}"></script>{% endblock %}

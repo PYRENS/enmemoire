@@ -1,24 +1,273 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
-        {% block stylesheets %}
-        {% endblock %}
+<html lang="{{ app.request.locale|default('fr') }}" data-theme="{{ memorial_theme|default('classic-white') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_description %}EnMémoire.com — Plateforme Mémorielle Numérique{% endblock %}">
+    <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}EnMémoire.com{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Préservez et partagez la mémoire de vos proches{% endblock %}">
+    <meta property="og:type" content="website">
 
-        {% block javascripts %}
-            {% block importmap %}{{ importmap('app') }}{% endblock %}
-        {% endblock %}
+    <title>{% block title %}EnMémoire.com{% endblock %}</title>
 
-        {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
-        {% if frankenphpHotReload %}
-        <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
-        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
-        {% endif %}
-    </head>
-    <body>
-        {% block body %}{% endblock %}
-    </body>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/themes/theme-base.css') }}">
+    {% if memorial_theme is defined and memorial_theme %}
+        <link rel="stylesheet" href="{{ asset('css/themes/theme-' ~ memorial_theme ~ '.css') }}">
+    {% endif %}
+    {% block stylesheets %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %} {{ app.user ? 'user-logged' : 'user-guest' }}">
+
+<header class="em-header" id="site-header">
+    <nav class="navbar navbar-expand-lg em-navbar">
+        <div class="container-xl">
+
+            {# Logo #}
+            <a class="navbar-brand em-logo" href="{{ path('app_home') }}">
+                <span class="em-logo__flame" aria-hidden="true">
+                    <svg width="22" height="28" viewBox="0 0 26 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 2C13 2 4 9 4 18C4 23.523 8.477 28 14 28C19.523 28 24 23.523 24 18C24 12 18 8 17 4C17 4 16 10 12 12C12 12 14 7 13 2Z" fill="currentColor" opacity="0.9"/>
+                        <path d="M13 16C13 16 10 19 10 22C10 24.209 11.791 26 14 26C16.209 26 18 24.209 18 22C18 19 15 17 14 14C14 14 13.5 17 13 16Z" fill="white" opacity="0.6"/>
+                    </svg>
+                </span>
+                <span class="em-logo__text">En<strong>Mémoire</strong></span>
+            </a>
+
+            {# Burger mobile #}
+            <button class="navbar-toggler em-toggler" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#navbarMain"
+                    aria-controls="navbarMain" aria-expanded="false" aria-label="Menu"
+                    style="border:none;box-shadow:none;outline:none;padding:6px 8px;">
+                <span></span><span></span><span></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarMain">
+
+                {# Liens gauche #}
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link {% if app.request.attributes.get('_route') == 'app_home' %}active{% endif %}"
+                           href="{{ path('app_home') }}">
+                            <i class="bi bi-house-door"></i> {{ 'nav.home'|trans }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if app.request.attributes.get('_route') starts with 'app_memorial_search' %}active{% endif %}"
+                           href="{{ path('app_memorial_search') }}">
+                            <i class="bi bi-search"></i> {{ 'nav.search'|trans }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if app.request.attributes.get('_route') == 'app_obituaries' %}active{% endif %}"
+                           href="{{ path('app_obituaries') }}">
+                            <i class="bi bi-newspaper"></i> {{ 'nav.obituaries'|trans }}
+                        </a>
+                    </li>
+                    {% if app.user %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ path('app_gadget_shop') }}">
+                            <i class="bi bi-shop"></i> {{ 'nav.shop'|trans }}
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                {# Liens droite #}
+                <ul class="navbar-nav ms-auto align-items-center gap-1">
+
+                    {# Langue — UN seul <li>, drapeaux toujours côte à côte desktop ET mobile #}
+                    <li class="nav-item">
+                        <div style="display:flex;align-items:center;gap:2px;padding:2px 4px;">
+                            <a href="?_locale=fr" title="Français"
+                               style="display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:6px;text-decoration:none;
+                                      font-size:.8rem;font-weight:{% if app.request.locale != 'en' %}700{% else %}400{% endif %};
+                                      color:{% if app.request.locale != 'en' %}#1B2B4B{% else %}#6B7280{% endif %};">
+                                <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/fr.svg') }}"
+                                     width="20" height="14" alt="FR"
+                                     style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15);flex-shrink:0;"
+                                     onerror="this.style.display='none'">
+                                FR
+                            </a>
+                            <span style="color:#D1D5DB;font-size:.7rem;user-select:none;">|</span>
+                            <a href="?_locale=en" title="English"
+                               style="display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:6px;text-decoration:none;
+                                      font-size:.8rem;font-weight:{% if app.request.locale == 'en' %}700{% else %}400{% endif %};
+                                      color:{% if app.request.locale == 'en' %}#1B2B4B{% else %}#6B7280{% endif %};">
+                                <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/gb.svg') }}"
+                                     width="20" height="14" alt="EN"
+                                     style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15);flex-shrink:0;"
+                                     onerror="this.style.display='none'">
+                                EN
+                            </a>
+                        </div>
+                    </li>
+
+                    {% if app.user %}
+                        <li class="nav-item">
+                            <a href="{{ path('app_notifications') }}" class="nav-link em-notif-btn" title="Notifications">
+                                <i class="bi bi-bell"></i>
+                                <span class="em-notif-badge" id="notif-count" style="display:none"></span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('app_memorial_create') }}" class="btn em-btn-primary btn-sm">
+                                <i class="bi bi-plus-circle"></i> {{ 'nav.create_memorial'|trans }}
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown em-user-menu">
+                            <a class="nav-link dropdown-toggle em-user-toggle" href="#" data-bs-toggle="dropdown">
+                                {% if app.user.avatarUrl %}
+                                    <img src="{{ asset(app.user.avatarUrl) }}" alt="{{ app.user.fullName }}" class="em-avatar-sm">
+                                {% else %}
+                                    <span class="em-avatar-initials">{{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}</span>
+                                {% endif %}
+                                <span class="em-username d-none d-lg-inline">{{ app.user.firstName }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end em-user-dropdown">
+                                <li class="dropdown-header">
+                                    <strong>{{ app.user.fullName }}</strong>
+                                    <small class="d-block text-muted">{{ app.user.email }}</small>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ path('app_dashboard') }}"><i class="bi bi-grid-1x2"></i> {{ 'nav.dashboard'|trans }}</a></li>
+                                <li><a class="dropdown-item" href="{{ path('app_profile') }}"><i class="bi bi-person-circle"></i> {{ 'nav.profile'|trans }}</a></li>
+                                {% if is_granted('ROLE_MANAGER') %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ path('app_admin_dashboard') }}"><i class="bi bi-shield-lock"></i> {{ 'nav.admin'|trans }}</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item em-logout" href="{{ path('app_logout') }}"><i class="bi bi-box-arrow-right"></i> {{ 'nav.logout'|trans }}</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a href="{{ path('app_login') }}" class="btn em-btn-outline btn-sm">
+                                <i class="bi bi-person"></i> {{ 'nav.login'|trans }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('app_register') }}" class="btn em-btn-primary btn-sm">
+                                {{ 'nav.register'|trans }}
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+
+            </div>
+        </div>
+    </nav>
+</header>
+
+{% for type, messages in app.flashes %}
+    {% for message in messages %}
+    <div class="em-flash alert alert-{{ type == 'error' ? 'danger' : type }} alert-dismissible fade show"
+         role="alert" style="margin:0;border-radius:0;">
+        <div class="container-xl d-flex align-items-center gap-2">
+            <i class="bi bi-{% if type == 'success' %}check-circle{% elseif type == 'error' or type == 'danger' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            {{ message }}
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+    {% endfor %}
+{% endfor %}
+
+<main class="em-main {% block main_class %}{% endblock %}" id="main-content">
+    {% block body %}{% endblock %}
+</main>
+
+<footer class="em-footer">
+    <div class="em-footer__wave" aria-hidden="true">
+        <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,60 L0,60 Z" fill="currentColor"/>
+        </svg>
+    </div>
+    <div class="em-footer__body">
+        <div class="container-xl">
+            <div class="row g-5">
+                <div class="col-lg-4">
+                    <a href="{{ path('app_home') }}" class="em-footer__logo">
+                        <svg width="20" height="26" viewBox="0 0 26 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M13 2C13 2 4 9 4 18C4 23.523 8.477 28 14 28C19.523 28 24 23.523 24 18C24 12 18 8 17 4C17 4 16 10 12 12C12 12 14 7 13 2Z" fill="currentColor" opacity="0.85"/>
+                        </svg>
+                        <span>En<strong>Mémoire</strong>.com</span>
+                    </a>
+                    <p class="em-footer__tagline">{{ 'footer.tagline'|trans }}</p>
+                    <div class="em-footer__social">
+                        <a href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+                        <a href="#" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <h6 class="em-footer__heading">{{ 'footer.platform'|trans }}</h6>
+                    <ul class="em-footer__links">
+                        <li><a href="{{ path('app_home') }}">{{ 'nav.home'|trans }}</a></li>
+                        <li><a href="{{ path('app_memorial_search') }}">{{ 'nav.search'|trans }}</a></li>
+                        <li><a href="{{ path('app_obituaries') }}">{{ 'nav.obituaries'|trans }}</a></li>
+                        <li><a href="{{ path('app_gadget_shop') }}">{{ 'nav.shop'|trans }}</a></li>
+                    </ul>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <h6 class="em-footer__heading">{{ 'footer.help'|trans }}</h6>
+                    <ul class="em-footer__links">
+                        <li><a href="{{ path('app_how_it_works') }}">{{ 'footer.how_it_works'|trans }}</a></li>
+                        <li><a href="{{ path('app_pricing') }}">{{ 'footer.pricing'|trans }}</a></li>
+                        <li><a href="{{ path('app_faq') }}">{{ 'footer.faq'|trans }}</a></li>
+                        <li><a href="{{ path('app_contact') }}">{{ 'footer.contact'|trans }}</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4">
+                    <h6 class="em-footer__heading">{{ 'footer.newsletter'|trans }}</h6>
+                    <p class="em-footer__newsletter-text">{{ 'footer.newsletter_desc'|trans }}</p>
+                    <form class="em-footer__newsletter-form" action="{{ path('app_newsletter_subscribe') }}" method="POST">
+                        <input type="hidden" name="_token" value="{{ csrf_token('newsletter') }}">
+                        <div class="input-group">
+                            <input type="email" class="form-control" name="email"
+                                   placeholder="{{ 'footer.newsletter_placeholder'|trans }}" required>
+                            <button class="btn em-btn-primary" type="submit"><i class="bi bi-send"></i></button>
+                        </div>
+                    </form>
+                    <div class="em-footer__badges">
+                        <span class="em-badge-ssl"><i class="bi bi-shield-check"></i> SSL</span>
+                        <span class="em-badge-rgpd"><i class="bi bi-lock"></i> RGPD</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="em-footer__bottom">
+        <div class="container-xl">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0">&copy; {{ "now"|date("Y") }} EnMémoire.com — {{ 'footer.rights'|trans }}</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="{{ path('app_legal_terms') }}">{{ 'footer.terms'|trans }}</a>
+                    <span class="mx-2">·</span>
+                    <a href="{{ path('app_privacy') }}">{{ 'footer.privacy'|trans }}</a>
+                    <span class="mx-2">·</span>
+                    <a href="{{ path('app_cookies') }}">{{ 'footer.cookies'|trans }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ asset('js/app.js') }}"></script>
+{% block javascripts %}{% endblock %}
+<script>
+document.querySelectorAll('.em-flash').forEach(function(el){
+    setTimeout(function(){ var a=bootstrap.Alert.getOrCreateInstance(el); if(a) a.close(); }, 6000);
+});
+</script>
+</body>
 </html>

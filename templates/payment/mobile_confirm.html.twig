@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+{% block title %}Confirmer le paiement — EnMémoire.com{% endblock %}
+{% block body_class %}create-memorial-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/create.css') }}">{% endblock %}
+
+{% block body %}
+<div class="wizard-wrapper">
+  <div class="container" style="max-width:520px;padding-top:3rem;padding-bottom:4rem;">
+    <div class="wizard-card">
+
+      <div class="wizard-card__header">
+        <div class="wizard-step-icon">📲</div>
+        <h1 class="wizard-title">Confirmer le paiement</h1>
+        <p class="wizard-subtitle">
+          Référence : <strong>EM-{{ '%06d'|format(payment.id) }}</strong> —
+          Montant : <strong>{{ payment.amount }} {{ payment.currency }}</strong>
+        </p>
+      </div>
+
+      <form method="POST" class="wizard-form" enctype="multipart/form-data">
+        <input type="hidden" name="_token" value="{{ csrf_token('mobile_confirm_' ~ payment.id) }}">
+
+        <div class="wf-group">
+          <label class="wf-label">Votre numéro de téléphone *</label>
+          <input type="tel" name="phone" class="wf-input" required
+                 placeholder="+243 81X XXX XXXX">
+        </div>
+
+        <div class="wf-group">
+          <label class="wf-label">ID / Référence de la transaction *</label>
+          <input type="text" name="tx_id" class="wf-input" required
+                 placeholder="Ex : TXN123456789">
+          <span class="wf-hint">L'identifiant de transaction reçu par SMS après le paiement.</span>
+        </div>
+
+        <div class="wf-group">
+          <label class="wf-label">Note <span class="wf-optional">optionnel</span></label>
+          <textarea name="note" class="wf-input" rows="3"
+                    placeholder="Informations complémentaires..."></textarea>
+        </div>
+
+        <button type="submit" class="em-btn em-btn--primary em-btn--lg w-100">
+          <i class="bi bi-send"></i> Envoyer la confirmation
+        </button>
+      </form>
+
+      <div class="instructions-note mt-3">
+        <i class="bi bi-info-circle"></i>
+        Notre équipe vérifiera votre paiement sous <strong>24h</strong>.
+        Vous recevrez un email de confirmation.
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

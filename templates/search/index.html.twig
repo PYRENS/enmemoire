@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+{% block title %}Recherche{% if query %} — {{ query }}{% endif %} — EnMémoire.com{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/home.css') }}">{% endblock %}
+
+{% block body %}
+<div class="em-section em-section--sm">
+  <div class="container-xl">
+
+    <div class="search-header">
+      <h1><i class="bi bi-search"></i> Rechercher un défunt</h1>
+      <p class="text-muted">Retrouvez la page mémorielle d'un proche</p>
+    </div>
+
+    <form action="{{ path('app_memorial_search') }}" method="GET" class="search-bar-form mb-5">
+      <div class="search-bar-wrap">
+        <i class="bi bi-search search-bar-icon"></i>
+        <input type="search" name="q" class="search-bar-input"
+               value="{{ query }}"
+               placeholder="Nom, prénom du défunt…"
+               autofocus autocomplete="off">
+        <button type="submit" class="em-btn em-btn--primary">Rechercher</button>
+      </div>
+    </form>
+
+    <div id="search-results">
+      {% include 'search/partials/_results.html.twig' with {results: results, query: query} %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const input   = document.querySelector('.search-bar-input');
+    const results = document.getElementById('search-results');
+    let timer;
+
+    input?.addEventListener('input', function () {
+        clearTimeout(timer);
+        const q = this.value.trim();
+        if (q.length < 2) return;
+        timer = setTimeout(async () => {
+            const res  = await fetch(`{{ path('app_memorial_search') }}?q=${encodeURIComponent(q)}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await res.json();
+            results.innerHTML = data.html;
+        }, 350);
+    });
+});
+</script>
+{% endblock %}

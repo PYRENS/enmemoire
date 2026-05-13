@@ -1,0 +1,41 @@
+{% if results|length %}
+  <p class="text-muted small mb-3">{{ results|length }} résultat(s) pour « <strong>{{ query }}</strong> »</p>
+  <div class="search-results-grid">
+    {% for page in results %}
+    <a href="{{ path('app_memorial_show', {slug: page.slug}) }}" class="search-result-card">
+      <div class="search-result-card__photo">
+        {% if page.mainPhotoUrl %}
+          <img src="{{ asset(page.mainPhotoUrl) }}" alt="{{ page.deceasedFullName }}" loading="lazy">
+        {% else %}
+          <div class="search-result-card__placeholder"><i class="bi bi-person-fill"></i></div>
+        {% endif %}
+      </div>
+      <div class="search-result-card__info">
+        <strong>{{ page.deceasedFullName }}</strong>
+        {% if page.deceasedNickname %}
+          <em class="d-block text-muted">« {{ page.deceasedNickname }} »</em>
+        {% endif %}
+        <span>{{ page.deceasedBirthDate|date('d/m/Y') }} — {{ page.deceasedDeathDate|date('d/m/Y') }}</span>
+        {% if page.deceasedDeathPlace %}
+          <small><i class="bi bi-geo-alt"></i> {{ page.deceasedDeathPlace }}</small>
+        {% endif %}
+      </div>
+      <div class="search-result-card__arrow"><i class="bi bi-arrow-right"></i></div>
+    </a>
+    {% endfor %}
+  </div>
+{% elseif query %}
+  <div class="search-empty">
+    <div class="search-empty__icon">🔍</div>
+    <h3>Aucun résultat</h3>
+    <p class="text-muted">Aucune page mémorielle trouvée pour « <strong>{{ query }}</strong> ».</p>
+    <a href="{{ path('app_register') }}" class="em-btn em-btn--primary mt-3">
+      <i class="bi bi-plus-circle"></i> Créer cette page mémorielle
+    </a>
+  </div>
+{% else %}
+  <div class="search-empty">
+    <div class="search-empty__icon">🕯️</div>
+    <p class="text-muted">Commencez à taper un nom pour rechercher un mémorial.</p>
+  </div>
+{% endif %}
