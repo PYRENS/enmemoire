@@ -25,11 +25,11 @@ class MemorialModerator
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: MemorialPage::class, inversedBy: 'moderators')]
-    #[ORM\JoinColumn(name: 'memorial_id', nullable: false, onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?MemorialPage $memorial = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'moderatorRoles')]
-    #[ORM\JoinColumn(name: 'user_id', nullable: false, onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(name: 'user_id', nullable: true, onDelete: 'SET NULL')]
     private ?User $user = null;
 
     /** Code affiché sur la page pour le système de rapprochement */
@@ -45,6 +45,9 @@ class MemorialModerator
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'invited_by', nullable: true)]
     private ?User $invitedBy = null;
+
+    #[ORM\Column(length: 180, nullable: true)]
+    private ?string $invitedEmail = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $invitedAt = null;
@@ -84,4 +87,7 @@ class MemorialModerator
     public function setAcceptedAt(?\DateTimeInterface $d): static { $this->acceptedAt = $d; return $this; }
     public function getCreatedAt(): \DateTimeInterface { return $this->createdAt; }
     public function getTrustList(): Collection { return $this->trustList; }
+
+    public function getInvitedEmail(): ?string { return $this->invitedEmail; }
+    public function setInvitedEmail(?string $e): static { $this->invitedEmail = $e; return $this; }
 }

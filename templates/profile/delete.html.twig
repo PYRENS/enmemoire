@@ -1,0 +1,59 @@
+{# templates/profile/delete.html.twig #}
+{% extends 'base.html.twig' %}
+{% block title %}Supprimer mon compte — EnMémoire.com{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/profile.css') }}">{% endblock %}
+{% block body %}
+<div class="profile-layout container-xl">
+  {% include 'profile/_sidebar.html.twig' with {active: 'delete'} %}
+  <main class="profile-main">
+    <div class="profile-section profile-section--danger">
+      <div class="profile-section__header">
+        <h3 style="color:var(--em-danger);">⚠️ Supprimer mon compte</h3>
+      </div>
+
+      <div class="profile-danger-notice">
+        <strong>Cette action est irréversible.</strong>
+        <ul>
+          <li>Vos informations personnelles seront anonymisées (conformément au RGPD)</li>
+          <li>Vos pages mémorielles resteront accessibles</li>
+          <li>Vous perdrez accès à votre tableau de bord</li>
+          <li>Vos paiements et factures resteront dans nos archives légales</li>
+        </ul>
+      </div>
+
+      {% if error %}
+        <div class="profile-alert profile-alert--error"><i class="bi bi-exclamation-circle"></i> {{ error }}</div>
+      {% endif %}
+
+      <form method="POST" class="profile-form" id="delete-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('profile_delete') }}">
+
+        <div class="profile-form-group">
+          <label>Confirmez votre mot de passe *</label>
+          <input type="password" name="password" class="profile-input" required autocomplete="current-password">
+        </div>
+
+        <div class="profile-form-group">
+          <label>Tapez <strong>SUPPRIMER</strong> pour confirmer *</label>
+          <input type="text" name="confirmation" class="profile-input"
+                 placeholder="SUPPRIMER" required id="confirm-input">
+        </div>
+
+        <div class="profile-form-actions">
+          <a href="{{ path('app_profile') }}" class="em-btn em-btn--ghost">Annuler</a>
+          <button type="submit" class="em-btn em-btn--danger" id="delete-btn" disabled>
+            <i class="bi bi-trash"></i> Supprimer définitivement
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+{% endblock %}
+{% block javascripts %}
+<script>
+document.getElementById('confirm-input')?.addEventListener('input', function() {
+  document.getElementById('delete-btn').disabled = this.value !== 'SUPPRIMER';
+});
+</script>
+{% endblock %}

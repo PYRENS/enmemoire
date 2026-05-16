@@ -45,13 +45,13 @@
 
       <div class="notif-item__content">
         <div class="notif-item__title">{{ notif.title }}</div>
-        {% if notif.message %}
-          <p class="notif-item__message">{{ notif.message|slice(0, 120) }}{% if notif.message|length > 120 %}…{% endif %}</p>
+        {% if notif.body %}
+          <p class="notif-item__message">{{ notif.body|slice(0, 120) }}{% if notif.body|length > 120 %}…{% endif %}</p>
         {% endif %}
         <div class="notif-item__meta">
           <span class="notif-item__time">{{ notif.createdAt|date('d/m/Y à H:i') }}</span>
-          {% if notif.actionUrl %}
-            <a href="{{ notif.actionUrl }}" class="notif-item__link">Voir →</a>
+          {% if notif.linkUrl %}
+            <a href="{{ notif.linkUrl }}" class="notif-item__link">Voir →</a>
           {% endif %}
         </div>
       </div>

@@ -1,0 +1,127 @@
+{% extends 'base.html.twig' %}
+{% block title %}Inviter un modérateur — {{ page.deceasedFullName }}{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/moderator.css') }}">{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width:680px;padding-top:2.5rem;padding-bottom:4rem;">
+
+  <div class="mod-header">
+    <a href="{{ path('app_moderators_index', {slug: page.slug}) }}" class="mod-back">
+      <i class="bi bi-arrow-left"></i> Modérateurs
+    </a>
+    <div>
+      <h1>✉️ Inviter un co-modérateur</h1>
+      <p class="text-muted">Page de <strong>{{ page.deceasedFullName }}</strong></p>
+    </div>
+  </div>
+
+  {% if success %}
+    <div class="mod-alert mod-alert--success">
+      <i class="bi bi-check-circle-fill"></i>
+      <span>{{ success|raw }}</span>
+    </div>
+  {% endif %}
+
+  {% if error %}
+    <div class="mod-alert mod-alert--error">
+      <i class="bi bi-exclamation-circle"></i> {{ error }}
+    </div>
+  {% endif %}
+
+  {# Formulaire d'invitation #}
+  <div class="mod-section">
+    <h3>Nouvelle invitation</h3>
+
+    <form method="POST" action="{{ path('app_moderator_invite', {slug: page.slug}) }}" class="mod-form">
+      <input type="hidden" name="_token" value="{{ csrf_token('moderator_invite_' ~ page.id) }}">
+
+      <div class="mod-form-group">
+        <label>Adresse email *</label>
+        <div class="mod-input-wrap">
+          <i class="bi bi-envelope"></i>
+          <input type="email" name="email" class="mod-input"
+                 placeholder="email@exemple.com" required autofocus>
+        </div>
+        <small class="mod-hint">
+          Si la personne a déjà un compte EnMémoire, elle recevra une notification.
+          Sinon, un email d'invitation lui sera envoyé.
+        </small>
+      </div>
+
+      <div class="mod-form-group">
+        <label>Message personnel <span style="font-weight:400;color:var(--em-muted);">(optionnel)</span></label>
+        <textarea name="note" class="mod-input" rows="3"
+                  placeholder="Bonjour, je vous invite à m'aider à gérer cette page mémorielle…"
+                  maxlength="500"></textarea>
+      </div>
+
+      <div class="mod-form-actions">
+        <a href="{{ path('app_moderators_index', {slug: page.slug}) }}" class="em-btn em-btn--ghost">
+          Annuler
+        </a>
+        <button type="submit" class="em-btn em-btn--primary">
+          <i class="bi bi-send"></i> Envoyer l'invitation
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {# Invitations en cours #}
+  {% set pending = moderators|filter(m => m.status == 'pending') %}
+  {% if pending|length > 0 %}
+  <div class="mod-section">
+    <h3>Invitations en attente ({{ pending|length }})</h3>
+    {% for mod in pending %}
+    <div class="mod-pending-row">
+      <div>
+        <div style="font-size:.9rem;font-weight:500;color:var(--em-navy);">
+          {{ mod.user ? mod.user.email : 'Email externe' }}
+        </div>
+        <div style="font-size:.78rem;color:var(--em-muted);">
+          Code : <code>{{ mod.moderatorCode }}</code>
+          · {{ mod.invitedAt ? 'Envoyée le ' ~ mod.invitedAt|date('d/m/Y') : '' }}
+        </div>
+      </div>
+      <div style="display:flex;gap:.4rem;">
+        <button onclick="resendInvite({{ mod.id }}, '{{ page.slug }}')"
+                class="mod-btn mod-btn--info mod-btn--sm" title="Renvoyer">
+          <i class="bi bi-send"></i>
+        </button>
+        <button onclick="cancelInvite({{ mod.id }}, '{{ page.slug }}')"
+                class="mod-btn mod-btn--warning mod-btn--sm" title="Annuler">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <span class="csrf-cancel" data-id="{{ mod.id }}" style="display:none;">{{ csrf_token('moderator_cancel_' ~ mod.id) }}</span>
+      <span class="csrf-resend" data-id="{{ mod.id }}" style="display:none;">{{ csrf_token('moderator_resend_' ~ mod.id) }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+async function cancelInvite(id, slug) {
+  if (!confirm('Annuler cette invitation ?')) return;
+  const token = document.querySelector(`.csrf-cancel[data-id="${id}"]`)?.textContent;
+  const form  = new FormData();
+  form.append('_token', token);
+  const resp = await fetch(`/dashboard/moderateurs/${slug}/annuler/${id}`, {method:'POST', body:form});
+  const data = await resp.json();
+  if (data.success) location.reload();
+  else alert(data.error);
+}
+
+async function resendInvite(id, slug) {
+  const token = document.querySelector(`.csrf-resend[data-id="${id}"]`)?.textContent;
+  const form  = new FormData();
+  form.append('_token', token);
+  const resp = await fetch(`/dashboard/moderateurs/${slug}/renvoyer/${id}`, {method:'POST', body:form});
+  const data = await resp.json();
+  alert(data.success ? '✅ Invitation renvoyée !' : (data.error || 'Erreur'));
+}
+</script>
+{% endblock %}

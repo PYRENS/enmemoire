@@ -17,28 +17,18 @@ class MemorialModeratorRepository extends ServiceEntityRepository
 
     public function findActiveModeratorsForPage(MemorialPage $page): array
     {
-        return $this->createQueryBuilder('m')
-            ->join('m.user', 'u')
-            ->where('m.memorial = :page')
-            ->andWhere('m.status = :status')
-            ->setParameter('page', $page)
-            ->setParameter('status', 'active')
-            ->orderBy('m.isOwner', 'DESC')
-            ->addOrderBy('m.acceptedAt', 'ASC')
-            ->getQuery()
-            ->getResult();
+        return $this->findBy(
+            ['memorial' => $page, 'status' => MemorialModerator::STATUS_ACTIVE],
+            ['isOwner' => 'DESC', 'createdAt' => 'ASC']
+        );
     }
 
-    public function countActiveModerators(MemorialPage $page): int
+    public function findPendingForUser(User $user): array
     {
-        return (int) $this->createQueryBuilder('m')
-            ->select('COUNT(m.id)')
-            ->where('m.memorial = :page')
-            ->andWhere('m.status = :status')
-            ->setParameter('page', $page)
-            ->setParameter('status', 'active')
-            ->getQuery()
-            ->getSingleScalarResult();
+        return $this->findBy(
+            ['user' => $user, 'status' => MemorialModerator::STATUS_PENDING],
+            ['invitedAt' => 'DESC']
+        );
     }
 
     public function findModeratorForUser(MemorialPage $page, User $user): ?MemorialModerator
@@ -46,7 +36,22 @@ class MemorialModeratorRepository extends ServiceEntityRepository
         return $this->findOneBy([
             'memorial' => $page,
             'user'     => $user,
-            'status'   => 'active',
+        ]);
+    }
+
+    public function countActiveForPage(MemorialPage $page): int
+    {
+        return (int) $this->count([
+            'memorial' => $page,
+            'status'   => MemorialModerator::STATUS_ACTIVE,
+        ]);
+    }
+
+    public function countActiveModerators(MemorialPage $page): int
+    {
+        return (int) $this->count([
+            'memorial' => $page,
+            'status'   => MemorialModerator::STATUS_ACTIVE,
         ]);
     }
 }

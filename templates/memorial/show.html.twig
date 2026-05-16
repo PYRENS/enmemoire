@@ -9,6 +9,36 @@
 {% block stylesheets %}
 <link rel="stylesheet" href="{{ asset('css/memorial.css') }}">
 <link rel="stylesheet" href="{{ asset('css/themes/theme-' ~ memorial_theme ~ '.css') }}">
+
+<style>
+.memorial-gallery__item-wrap { position: relative; }
+.memorial-gallery__mod-actions {
+  position: absolute; top: 4px; right: 4px;
+  display: flex; gap: 4px; z-index: 10;
+}
+.mgal-btn {
+  width: 28px; height: 28px; border-radius: 6px; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .78rem; cursor: pointer; transition: all .2s;
+  opacity: .85;
+}
+.mgal-btn:hover { opacity: 1; transform: scale(1.1); }
+.mgal-btn--edit   { background: white; color: var(--em-navy); }
+.mgal-btn--delete { background: rgba(185,28,28,.9); color: white; }
+</style>
+
+<style>
+.em-btn--gold { background: var(--em-gold); color: var(--em-navy); border: none; font-weight: 700; }
+.em-btn--gold:hover { background: #b8943f; color: white; }
+.em-btn--light { background: rgba(27,43,75,.8); color: white; border: 1.5px solid rgba(255,255,255,.4); font-weight: 500; }
+.em-btn--light:hover { background: var(--em-navy); border-color: white; }
+.memorial-gallery__item-wrap { position: relative; display: contents; }
+.memorial-gallery__mod-actions { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; z-index: 10; }
+.mgal-btn { width: 30px; height: 30px; border-radius: 6px; border: none; display: flex; align-items: center; justify-content: center; font-size: .8rem; cursor: pointer; transition: all .2s; }
+.mgal-btn--edit { background: white; color: #1B2B4B; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.mgal-btn--delete { background: rgba(185,28,28,.9); color: white; }
+.mgal-btn:hover { transform: scale(1.1); }
+</style>
 {% endblock %}
 
 {% block body %}
@@ -17,8 +47,10 @@
 <section class="memorial-hero theme-hero">
 
   {# Photo de couverture #}
-  {% if page.mainPhotoUrl %}
-  <div class="memorial-cover" style="background-image:url('{{ asset(page.mainPhotoUrl) }}')"></div>
+  {% if page.coverPhotoUrl %}
+  <div class="memorial-cover" style="background-image:url('{{ page.coverPhotoUrl starts with 'http' ? page.coverPhotoUrl : asset(page.coverPhotoUrl) }}')"></div>
+{% elseif page.mainPhotoUrl %}
+  <div class="memorial-cover" style="background-image:url('{{ page.mainPhotoUrl starts with 'http' ? page.mainPhotoUrl : asset(page.mainPhotoUrl) }}')"></div>
   {% else %}
   <div class="memorial-cover memorial-cover--default"></div>
   {% endif %}
@@ -76,14 +108,14 @@
     {# Actions rapides #}
     <div class="memorial-hero__actions">
       {% if app.user and not userHasSigned %}
-      <button type="button" class="em-btn em-btn--primary" onclick="openTab('guestbook')">
+      <button type="button" class="em-btn em-btn--gold" onclick="openTab('guestbook')">
         <i class="bi bi-pen"></i> Signer le livre d'or
       </button>
       {% endif %}
-      <button type="button" class="em-btn em-btn--outline" onclick="openTab('condolences')">
+      <button type="button" class="em-btn em-btn--light" onclick="openTab('condolences')">
         <i class="bi bi-chat-heart"></i> Laisser un message
       </button>
-      <a href="{{ path('app_qrcode_show', {slug: page.slug}) }}" class="em-btn em-btn--ghost">
+      <a href="/qrcode/{{ page.slug }}" class="em-btn em-btn--ghost">
         <i class="bi bi-qr-code"></i> QR Code
       </a>
       {% if isModerator %}
@@ -222,26 +254,102 @@
 
   {# GALERIE #}
   <div class="memorial-panel" id="panel-gallery">
-    {% if gallery %}
+
+    {% set photos = gallery|filter(m => m.type != 'video') %}
+    {% set videos = gallery|filter(m => m.type == 'video') %}
+
+    {# Photos #}
+    {% if photos is not empty %}
     <h2>Galerie photos</h2>
     <div class="memorial-gallery">
-      {% for media in gallery %}
-      <a href="{{ asset(media.fileUrl) }}" class="memorial-gallery__item" target="_blank">
-        <img src="{{ asset(media.thumbnailUrl ?? media.fileUrl) }}"
-             alt="{{ media.caption ?? 'Photo de ' ~ page.deceasedFullName }}"
-             loading="lazy">
-        {% if media.caption %}
-        <div class="memorial-gallery__caption">{{ media.caption }}</div>
+      {% for media in photos %}
+      <div style="position:relative;" id="gallery-item-{{ media.id }}">
+        <a href="javascript:void(0)" class="memorial-gallery__item"
+           data-lightbox="gallery"
+           data-url="{{ media.url starts with 'http' ? media.url : asset(media.url) }}"
+           data-caption="{{ media.caption ?? '' }}"
+           data-type="photo"
+           onclick="openLightbox(event,this)">
+          <img src="{{ (media.thumbnailUrl ?? media.url) starts with 'http' ? (media.thumbnailUrl ?? media.url) : asset(media.thumbnailUrl ?? media.url) }}"
+               alt="{{ media.caption ?? 'Photo de ' ~ page.deceasedFullName }}"
+               loading="lazy">
+          {% if media.caption %}
+          <div class="memorial-gallery__caption">{{ media.caption }}</div>
+          {% endif %}
+        </a>
+        {% if isModerator %}
+        <div class="memorial-gallery__mod-actions">
+          <button onclick="editGalleryCaption({{ media.id }}, '{{ media.caption|default('')|e('js') }}')"
+                  class="mgal-btn mgal-btn--edit" title="Modifier la légende">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button onclick="deleteGalleryItem({{ media.id }})"
+                  class="mgal-btn mgal-btn--delete" title="Supprimer">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+        <span class="mgal-csrf-delete" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_delete_' ~ media.id) }}</span>
+        <span class="mgal-csrf-caption" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_caption_' ~ media.id) }}</span>
         {% endif %}
-      </a>
+      </div>
       {% endfor %}
     </div>
     {% else %}
     <div class="memorial-empty-panel">
       <i class="bi bi-images"></i>
+      <p>La galerie photos sera alimentée prochainement.</p>
+    </div>
+    {% endif %}
+
+    {# Vidéos #}
+    {% if videos is not empty %}
+    <h2 style="margin-top:2rem;">Galerie vidéos</h2>
+    <div class="memorial-gallery">
+      {% for media in videos %}
+      <div style="position:relative;" id="gallery-item-{{ media.id }}">
+        <a href="javascript:void(0)" class="memorial-gallery__item"
+           data-lightbox="gallery"
+           data-url="{{ media.url starts with 'http' ? media.url : asset(media.url) }}"
+           data-caption="{{ media.caption ?? '' }}"
+           data-type="video"
+           onclick="openLightbox(event,this)">
+          <div style="position:relative;width:100%;height:100%;min-height:120px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;">
+            {% if media.thumbnailUrl and media.thumbnailUrl starts with 'http' %}
+              <img src="{{ media.thumbnailUrl }}" alt="" loading="lazy"
+                   style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.6;">
+            {% endif %}
+            <span style="position:relative;font-size:3rem;color:white;text-shadow:0 2px 12px rgba(0,0,0,.8);z-index:1;">▶</span>
+          </div>
+          {% if media.caption %}
+          <div class="memorial-gallery__caption">{{ media.caption }}</div>
+          {% endif %}
+        </a>
+        {% if isModerator %}
+        <div class="memorial-gallery__mod-actions">
+          <button onclick="editGalleryCaption({{ media.id }}, '{{ media.caption|default('')|e('js') }}')"
+                  class="mgal-btn mgal-btn--edit" title="Modifier la légende">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button onclick="deleteGalleryItem({{ media.id }})"
+                  class="mgal-btn mgal-btn--delete" title="Supprimer">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+        <span class="mgal-csrf-delete" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_delete_' ~ media.id) }}</span>
+        <span class="mgal-csrf-caption" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_caption_' ~ media.id) }}</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if gallery is empty %}
+    <div class="memorial-empty-panel">
+      <i class="bi bi-images"></i>
       <p>La galerie sera alimentée prochainement.</p>
     </div>
     {% endif %}
+
   </div>
 
   {# CONDOLÉANCES #}
@@ -408,11 +516,11 @@
   <div class="container-xl">
     <div class="memorial-footer__content">
       <div class="memorial-footer__qr">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data={{ app.request.schemeAndHttpHost }}/memorial/{{ page.slug }}&ecc=H"
-             alt="QR Code" width="80" height="80" style="border-radius:4px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data={{ (app.request.schemeAndHttpHost ~ '/memorial/' ~ page.slug)|url_encode }}&ecc=H"
+             alt="Page QR Code" class="memorial-footer__qr-link-icon">
         <div>
           <strong>{{ page.pageCode }}</strong>
-          <a href="{{ path('app_qrcode_show', {slug: page.slug}) }}" class="memorial-footer__qr-link">
+          <a href="/qrcode/{{ page.slug }}" class="memorial-footer__qr-link">
             <i class="bi bi-qr-code"></i> Télécharger le QR Code
           </a>
         </div>
@@ -437,6 +545,40 @@
   </div>
 </footer>
 
+
+{# LIGHTBOX #}
+<div id="lightbox" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);z-index:9999;align-items:center;justify-content:center;">
+  <button onclick="closeLightbox()" style="position:fixed;top:12px;right:16px;background:none;border:none;color:white;font-size:2.5rem;cursor:pointer;line-height:1;z-index:10000;">&times;</button>
+  <div onclick="lightboxNav(-1)" style="position:absolute;left:0;top:0;width:20%;height:100%;cursor:pointer;display:flex;align-items:center;justify-content:flex-start;padding-left:8px;z-index:2;">
+    <span style="background:rgba(255,255,255,.2);color:white;font-size:2rem;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;">&#8249;</span>
+  </div>
+  <div onclick="lightboxNav(1)" style="position:absolute;right:0;top:0;width:20%;height:100%;cursor:pointer;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;z-index:2;">
+    <span style="background:rgba(255,255,255,.2);color:white;font-size:2rem;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;">&#8250;</span>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;max-width:90vw;">
+    <img id="lightbox-img" src="" alt="" style="max-width:90vw;max-height:80vh;border-radius:8px;object-fit:contain;">
+    <video id="lightbox-video" controls style="max-width:90vw;max-height:80vh;border-radius:8px;display:none;"></video>
+    <p id="lightbox-caption" style="color:rgba(255,255,255,.8);font-size:.9rem;margin:12px 0 0;text-align:center;"></p>
+    <p id="lightbox-counter" style="color:rgba(255,255,255,.4);font-size:.78rem;margin:4px 0 0;text-align:center;"></p>
+  </div>
+</div>
+
+{# LIGHTBOX #}
+<div id="lightbox" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);z-index:9999;align-items:center;justify-content:center;">
+  <button onclick="closeLightbox()" style="position:fixed;top:12px;right:16px;background:none;border:none;color:white;font-size:2.5rem;cursor:pointer;line-height:1;z-index:10000;">&times;</button>
+  <div onclick="lightboxNav(-1)" style="position:absolute;left:0;top:0;width:20%;height:100%;cursor:pointer;display:flex;align-items:center;justify-content:flex-start;padding-left:8px;z-index:2;">
+    <span style="background:rgba(255,255,255,.2);color:white;font-size:2rem;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;">&#8249;</span>
+  </div>
+  <div onclick="lightboxNav(1)" style="position:absolute;right:0;top:0;width:20%;height:100%;cursor:pointer;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;z-index:2;">
+    <span style="background:rgba(255,255,255,.2);color:white;font-size:2rem;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;">&#8250;</span>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;max-width:90vw;">
+    <img id="lightbox-img" src="" alt="" style="max-width:90vw;max-height:80vh;border-radius:8px;object-fit:contain;">
+    <video id="lightbox-video" controls style="max-width:90vw;max-height:80vh;border-radius:8px;display:none;"></video>
+    <p id="lightbox-caption" style="color:rgba(255,255,255,.8);font-size:.9rem;margin:12px 0 0;text-align:center;"></p>
+    <p id="lightbox-counter" style="color:rgba(255,255,255,.4);font-size:.78rem;margin:4px 0 0;text-align:center;"></p>
+  </div>
+</div>
 {% endblock %}
 
 {% block javascripts %}
@@ -541,5 +683,63 @@ document.querySelectorAll('.gadget-btn').forEach(btn => {
     }
   });
 });
+</script>
+<script>
+var _lbItems=[],_lbIdx=0;
+function openLightbox(e,el){e.preventDefault();_lbItems=Array.from(document.querySelectorAll('[data-lightbox="gallery"]')).map(function(a){return{url:a.dataset.url,caption:a.dataset.caption,type:a.dataset.type};});_lbIdx=Array.from(document.querySelectorAll('[data-lightbox="gallery"]')).indexOf(el);_showLb(_lbIdx);document.getElementById('lightbox').style.display='flex';}
+function closeLightbox(){document.getElementById('lightbox').style.display='none';var v=document.getElementById('lightbox-video');v.pause();v.src='';}
+function lightboxNav(d){_lbIdx=(_lbIdx+d+_lbItems.length)%_lbItems.length;_showLb(_lbIdx);}
+function _showLb(i){var item=_lbItems[i],img=document.getElementById('lightbox-img'),vid=document.getElementById('lightbox-video');if(item.type==='video'){img.style.display='none';vid.style.display='block';vid.src=item.url;}else{vid.style.display='none';vid.pause();img.style.display='block';img.src=item.url;img.alt=item.caption;}document.getElementById('lightbox-caption').textContent=item.caption||'';document.getElementById('lightbox-counter').textContent=(i+1)+' / '+_lbItems.length;}
+document.addEventListener('keydown',function(e){if(document.getElementById('lightbox').style.display==='none')return;if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')lightboxNav(-1);if(e.key==='ArrowRight')lightboxNav(1);});
+document.getElementById('lightbox').addEventListener('click',function(e){if(e.target===this)closeLightbox();});
+
+// Gestion galerie modérateur
+var MEMORIAL_SLUG_MOD = '{{ page.slug }}';
+
+async function deleteGalleryItem(id) {
+  if (!confirm('Supprimer ce média définitivement ?')) return;
+  var csrf = document.querySelector(`.mgal-csrf-delete[data-id="${id}"]`)?.textContent?.trim();
+  var form = new FormData(); form.append('_token', csrf);
+  var resp = await fetch(`/memorial/${MEMORIAL_SLUG_MOD}/media/galerie/${id}/delete`, {method:'POST',body:form,headers:{'X-Requested-With':'XMLHttpRequest'}});
+  var data = await resp.json();
+  if (data.success) { document.getElementById(`gallery-item-${id}`)?.remove(); }
+  else alert(data.error || 'Erreur');
+}
+
+function editGalleryCaption(id, current) {
+  var caption = prompt('Modifier la légende :', current);
+  if (caption === null) return;
+  var csrf = document.querySelector(`.mgal-csrf-caption[data-id="${id}"]`)?.textContent?.trim();
+  var form = new FormData(); form.append('_token', csrf); form.append('caption', caption);
+  fetch(`/memorial/${MEMORIAL_SLUG_MOD}/media/galerie/${id}/caption`, {method:'POST',body:form,headers:{'X-Requested-With':'XMLHttpRequest'}})
+    .then(r => r.json()).then(data => {
+      if (data.success) {
+        var cap = document.querySelector(`#gallery-item-${id} .memorial-gallery__caption`);
+        if (caption) {
+          if (cap) cap.textContent = caption;
+          else {
+            var newCap = document.createElement('div');
+            newCap.className = 'memorial-gallery__caption';
+            newCap.textContent = caption;
+            document.querySelector(`#gallery-item-${id} .memorial-gallery__item`)?.appendChild(newCap);
+          }
+        } else if (cap) cap.remove();
+      }
+    });
+}
+
+</script>
+<script>
+var _lbItems=[],_lbIdx=0;
+function openLightbox(e,el){e.preventDefault();_lbItems=Array.from(document.querySelectorAll('[data-lightbox="gallery"]')).map(function(a){return{url:a.dataset.url,caption:a.dataset.caption,type:a.dataset.type};});_lbIdx=Array.from(document.querySelectorAll('[data-lightbox="gallery"]')).indexOf(el);_showLb(_lbIdx);document.getElementById('lightbox').style.display='flex';}
+function closeLightbox(){document.getElementById('lightbox').style.display='none';var v=document.getElementById('lightbox-video');v.pause();v.src='';}
+function lightboxNav(d){_lbIdx=(_lbIdx+d+_lbItems.length)%_lbItems.length;_showLb(_lbIdx);}
+function _showLb(i){var item=_lbItems[i],img=document.getElementById('lightbox-img'),vid=document.getElementById('lightbox-video');if(item.type==='video'){img.style.display='none';vid.style.display='block';vid.src=item.url;}else{vid.style.display='none';vid.pause();img.style.display='block';img.src=item.url;img.alt=item.caption;}document.getElementById('lightbox-caption').textContent=item.caption||'';document.getElementById('lightbox-counter').textContent=(i+1)+' / '+_lbItems.length;}
+document.addEventListener('keydown',function(e){if(document.getElementById('lightbox').style.display==='none')return;if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')lightboxNav(-1);if(e.key==='ArrowRight')lightboxNav(1);});
+document.getElementById('lightbox').addEventListener('click',function(e){if(e.target===this)closeLightbox();});
+// Modérateur galerie
+var PAGE_SLUG='{{ page.slug }}';
+async function deleteGalleryItem(id){if(!confirm('Supprimer ce média ?'))return;var csrf=document.querySelector('.mgal-csrf-delete[data-id="'+id+'"]')?.textContent?.trim();var form=new FormData();form.append('_token',csrf);var resp=await fetch('/memorial/'+PAGE_SLUG+'/media/galerie/'+id+'/delete',{method:'POST',body:form,headers:{'X-Requested-With':'XMLHttpRequest'}});var data=await resp.json();if(data.success)document.getElementById('gallery-item-'+id)?.remove();else alert(data.error||'Erreur');}
+function editGalleryCaption(id,current){var caption=prompt('Légende :',current);if(caption===null)return;var csrf=document.querySelector('.mgal-csrf-caption[data-id="'+id+'"]')?.textContent?.trim();var form=new FormData();form.append('_token',csrf);form.append('caption',caption);fetch('/memorial/'+PAGE_SLUG+'/media/galerie/'+id+'/caption',{method:'POST',body:form,headers:{'X-Requested-With':'XMLHttpRequest'}}).then(r=>r.json()).then(data=>{if(data.success){var cap=document.querySelector('#gallery-item-'+id+' .memorial-gallery__caption');if(caption){if(cap)cap.textContent=caption;else{var c=document.createElement('div');c.className='memorial-gallery__caption';c.textContent=caption;document.querySelector('#gallery-item-'+id+' a')?.appendChild(c);}}else if(cap)cap.remove();}});}
 </script>
 {% endblock %}

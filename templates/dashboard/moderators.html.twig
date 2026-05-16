@@ -42,18 +42,13 @@
       <div class="dashboard-card__header"><h3><i class="bi bi-person-plus"></i> Inviter un modérateur</h3></div>
       <div class="dashboard-card__body">
         <p class="text-muted small mb-3">Vous pouvez avoir au maximum <strong>3 modérateurs</strong> par page. Actuellement : {{ moderators|length }}/3.</p>
-        <form action="{{ path('app_dashboard_moderator_invite', {slug: page.slug}) }}" method="POST" class="row g-3">
-          <input type="hidden" name="_token" value="{{ csrf_token('mod_invite_' ~ page.id) }}">
-          <div class="col-md-8">
-            <label class="em-form-label">Email de l'utilisateur à inviter</label>
-            <input type="email" class="em-form-control" name="email" placeholder="email@exemple.com" required autocomplete="off">
-          </div>
-          <div class="col-md-4 d-flex align-items-end">
-            <button type="submit" class="em-btn em-btn--primary w-100">
-              <i class="bi bi-send"></i> Envoyer l'invitation
-            </button>
-          </div>
-        </form>
+        <p class="text-muted small mb-3">
+          Gérez et invitez des co-modérateurs depuis la page dédiée.
+        </p>
+        <a href="{{ path('app_moderators_index', {slug: page.slug}) }}"
+           class="em-btn em-btn--primary">
+          <i class="bi bi-people"></i> Gérer les modérateurs
+        </a>
       </div>
     </div>
     {% else %}

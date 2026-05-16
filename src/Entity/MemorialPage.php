@@ -68,6 +68,9 @@ class MemorialPage
     #[ORM\Column(length: 500, nullable: true)]
     private ?string $mainPhotoUrl = null;
 
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $coverPhotoUrl = null;
+
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $obituaryText = null;
 
@@ -211,6 +214,8 @@ class MemorialPage
     public function setDeceasedQuote(?string $q): static { $this->deceasedQuote = $q; return $this; }
     public function getMainPhotoUrl(): ?string { return $this->mainPhotoUrl; }
     public function setMainPhotoUrl(?string $u): static { $this->mainPhotoUrl = $u; return $this; }
+    public function getCoverPhotoUrl(): ?string { return $this->coverPhotoUrl; }
+    public function setCoverPhotoUrl(?string $u): static { $this->coverPhotoUrl = $u; return $this; }
     public function getObituaryText(): ?string { return $this->obituaryText; }
     public function setObituaryText(?string $t): static { $this->obituaryText = $t; return $this; }
     public function getBiographyText(): ?string { return $this->biographyText; }

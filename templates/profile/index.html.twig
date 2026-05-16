@@ -1,0 +1,235 @@
+{% extends 'base.html.twig' %}
+{% block title %}Mon profil — EnMémoire.com{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/profile.css') }}">{% endblock %}
+
+{% block body %}
+<div class="profile-layout container-xl">
+
+  {# Sidebar profil #}
+  <aside class="profile-sidebar">
+    <div class="profile-card">
+
+      {# Avatar #}
+      <div class="profile-avatar-wrap" id="avatar-wrap">
+        {% if user.avatarUrl %}
+          <img src="{{ asset(user.avatarUrl) }}" alt="{{ user.fullName }}"
+               class="profile-avatar" id="avatar-img">
+        {% else %}
+          <div class="profile-avatar profile-avatar--initials" id="avatar-initials">
+            {{ user.firstName|first|upper }}{{ user.lastName|first|upper }}
+          </div>
+        {% endif %}
+        <button class="profile-avatar-edit" onclick="document.getElementById('avatar-input').click()"
+                title="Changer l'avatar">
+          <i class="bi bi-camera-fill"></i>
+        </button>
+        <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp"
+               style="display:none;" onchange="uploadAvatar(this)">
+      </div>
+
+      <h2 class="profile-name">{{ user.fullName }}</h2>
+      <p class="profile-email">{{ user.email }}</p>
+
+      <div class="profile-badges">
+        <span class="profile-badge profile-badge--{{ user.status == 'active' ? 'success' : 'warning' }}">
+          <i class="bi bi-circle-fill"></i>
+          {{ user.status == 'active' ? 'Actif' : user.status|capitalize }}
+        </span>
+        {% if user.emailVerified %}
+          <span class="profile-badge profile-badge--info">
+            <i class="bi bi-patch-check-fill"></i> Email vérifié
+          </span>
+        {% endif %}
+      </div>
+
+      <div class="profile-stats-mini">
+        <div class="profile-stat-mini">
+          <strong>{{ stats.pages }}</strong>
+          <span>Page(s)</span>
+        </div>
+        <div class="profile-stat-mini">
+          <strong>{{ stats.condolences }}</strong>
+          <span>Messages</span>
+        </div>
+        <div class="profile-stat-mini">
+          <strong>{{ stats.member_since }}</strong>
+          <span>Membre depuis</span>
+        </div>
+      </div>
+    </div>
+
+    {# Navigation profil #}
+    <nav class="profile-nav">
+      <a href="{{ path('app_profile') }}"
+         class="profile-nav__item active">
+        <i class="bi bi-person"></i> Mon profil
+      </a>
+      <a href="{{ path('app_profile_edit') }}" class="profile-nav__item">
+        <i class="bi bi-pencil"></i> Modifier les infos
+      </a>
+      <a href="{{ path('app_profile_password') }}" class="profile-nav__item">
+        <i class="bi bi-shield-lock"></i> Mot de passe
+      </a>
+      <a href="{{ path('app_profile_preferences') }}" class="profile-nav__item">
+        <i class="bi bi-sliders"></i> Préférences
+      </a>
+      <a href="{{ path('app_dashboard') }}" class="profile-nav__item">
+        <i class="bi bi-grid-1x2"></i> Mon espace
+      </a>
+      <a href="{{ path('app_profile_delete') }}"
+         class="profile-nav__item profile-nav__item--danger">
+        <i class="bi bi-trash"></i> Supprimer le compte
+      </a>
+    </nav>
+  </aside>
+
+  {# Contenu principal #}
+  <main class="profile-main">
+
+    {% for type, msgs in app.flashes %}
+      {% for msg in msgs %}
+      <div class="profile-alert profile-alert--{{ type == 'success' ? 'success' : 'info' }}">
+        <i class="bi bi-{{ type == 'success' ? 'check-circle' : 'info-circle' }}"></i>
+        {{ msg }}
+      </div>
+      {% endfor %}
+    {% endfor %}
+
+    {# Infos personnelles #}
+    <div class="profile-section">
+      <div class="profile-section__header">
+        <h3>Informations personnelles</h3>
+        <a href="{{ path('app_profile_edit') }}" class="em-btn em-btn--outline em-btn--sm">
+          <i class="bi bi-pencil"></i> Modifier
+        </a>
+      </div>
+      <div class="profile-info-grid">
+        <div class="profile-info-row">
+          <span>Prénom</span><strong>{{ user.firstName }}</strong>
+        </div>
+        <div class="profile-info-row">
+          <span>Nom</span><strong>{{ user.lastName }}</strong>
+        </div>
+        <div class="profile-info-row">
+          <span>Email</span>
+          <strong>{{ user.email }}
+            {% if user.emailVerified %}
+              <i class="bi bi-patch-check-fill" style="color:var(--em-success);font-size:.9rem;" title="Email vérifié"></i>
+            {% endif %}
+          </strong>
+        </div>
+        <div class="profile-info-row">
+          <span>WhatsApp</span>
+          <strong>{{ user.phoneWhatsapp ?? '—' }}</strong>
+        </div>
+        <div class="profile-info-row">
+          <span>Langue</span>
+          <strong style="display:flex;align-items:center;gap:6px;">
+            {% if user.locale == 'fr' %}
+              <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/fr.svg') }}"
+                   width="20" height="14"
+                   style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12);flex-shrink:0;"
+                   alt="FR"> Français
+            {% else %}
+              <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/gb.svg') }}"
+                   width="20" height="14"
+                   style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12);flex-shrink:0;"
+                   alt="EN"> English
+            {% endif %}
+          </strong>
+        </div>
+        <div class="profile-info-row">
+          <span>Membre depuis</span>
+          <strong>{{ user.createdAt|date('d/m/Y') }}</strong>
+        </div>
+      </div>
+    </div>
+
+    {# Pages mémorielles gérées #}
+    <div class="profile-section">
+      <div class="profile-section__header">
+        <h3>Mes pages mémorielles</h3>
+        <a href="{{ path('app_memorial_create') }}" class="em-btn em-btn--primary em-btn--sm">
+          <i class="bi bi-plus-circle"></i> Créer
+        </a>
+      </div>
+
+      {% if pages %}
+        <div class="profile-pages">
+          {% for page in pages %}
+          <a href="{{ path('app_dashboard_memorial', {slug: page.slug}) }}"
+             class="profile-page-card">
+            <div class="profile-page-card__photo">
+              {% if page.mainPhotoUrl %}
+                <img src="{{ asset(page.mainPhotoUrl) }}" alt="{{ page.deceasedFullName }}">
+              {% else %}
+                <div class="profile-page-card__placeholder">👤</div>
+              {% endif %}
+            </div>
+            <div class="profile-page-card__info">
+              <strong>{{ page.deceasedFullName }}</strong>
+              <span>{{ page.deceasedBirthDate|date('Y') }} — {{ page.deceasedDeathDate|date('Y') }}</span>
+              <div class="profile-page-card__meta">
+                <span class="profile-page-badge profile-page-badge--{{ page.status == 'active' ? 'success' : 'warning' }}">
+                  {{ page.status == 'active' ? 'Active' : page.status }}
+                </span>
+                <span>{{ page.pageCode }}</span>
+              </div>
+            </div>
+            <i class="bi bi-arrow-right" style="color:var(--em-muted);"></i>
+          </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="profile-empty">
+          <div style="font-size:2.5rem;margin-bottom:.75rem;">🕯️</div>
+          <p>Vous n'avez pas encore créé de page mémorielle.</p>
+          <a href="{{ path('app_memorial_create') }}" class="em-btn em-btn--primary mt-3">
+            Créer ma première page
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+  </main>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+const CSRF_AVATAR = '{{ csrf_token("profile_avatar") }}';
+const CSRF_DELETE = '{{ csrf_token("profile_avatar_delete") }}';
+
+async function uploadAvatar(input) {
+  if (!input.files[0]) return;
+
+  const form = new FormData();
+  form.append('avatar', input.files[0]);
+  form.append('_token', CSRF_AVATAR);
+
+  const resp = await fetch('{{ path("app_profile_avatar") }}', {method:'POST', body:form});
+  const data = await resp.json();
+
+  if (data.error) {
+    alert(data.error);
+    return;
+  }
+
+  // Mettre à jour l'avatar affiché
+  const wrap = document.getElementById('avatar-wrap');
+  const existing = document.getElementById('avatar-img') || document.getElementById('avatar-initials');
+  if (existing) existing.remove();
+
+  const img = document.createElement('img');
+  img.src       = data.avatar_url + '?t=' + Date.now();
+  img.className = 'profile-avatar';
+  img.id        = 'avatar-img';
+  img.alt       = 'Avatar';
+  wrap.insertBefore(img, wrap.firstChild);
+
+  // Mettre à jour dans le header aussi
+  const headerAvatar = document.querySelector('.em-avatar-sm');
+  if (headerAvatar) headerAvatar.src = data.avatar_url + '?t=' + Date.now();
+}
+</script>
+{% endblock %}

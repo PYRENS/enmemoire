@@ -16,19 +16,19 @@ class NotificationService
         User    $user,
         string  $type,
         string  $title,
-        string  $message    = '',
-        string  $actionUrl  = '',
-        ?string $targetType = null,
-        ?int    $targetId   = null,
+        string  $body       = '',
+        string  $linkUrl    = '',
+        ?string $relatedType = null,
+        ?int    $relatedId   = null,
     ): Notification {
         $notif = new Notification();
         $notif->setUser($user)
               ->setType($type)
               ->setTitle($title)
-              ->setMessage($message)
-              ->setActionUrl($actionUrl)
-              ->setTargetType($targetType)
-              ->setTargetId($targetId)
+              ->setBody($body ?: null)
+              ->setLinkUrl($linkUrl ?: null)
+              ->setRelatedType($relatedType)
+              ->setRelatedId($relatedId)
               ->setIsRead(false);
 
         $this->em->persist($notif);

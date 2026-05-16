@@ -17,6 +17,7 @@ use App\Repository\MemorialModeratorRepository;
 use App\Repository\MemorialPageRepository;
 use App\Security\Voter\MemorialPageVoter;
 use App\Service\ModerationService;
+use App\Service\MediaService;
 use App\Service\MemorialPageService;
 use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -38,6 +39,7 @@ class DashboardController extends AbstractController
         private readonly NotificationService         $notifService,
         private readonly MemorialPageRepository      $memorialRepo,
         private readonly MemorialModeratorRepository $moderatorRepo,
+        private readonly MediaService                $mediaService,
     ) {}
 
     // =========================================================
@@ -71,11 +73,12 @@ class DashboardController extends AbstractController
         $pending = $this->moderationService->getPendingCount($page);
 
         return $this->render('dashboard/memorial.html.twig', [
-            'page'       => $page,
-            'stats'      => $stats,
-            'pending'    => $pending,
-            'moderators' => $this->moderatorRepo->findActiveModeratorsForPage($page),
-            'events'     => $page->getEvents()->toArray(),
+            'page'        => $page,
+            'stats'       => $stats,
+            'pending'     => $pending,
+            'moderators'  => $this->moderatorRepo->findActiveModeratorsForPage($page),
+            'events'      => $page->getEvents()->toArray(),
+            'storageMode' => $this->mediaService->getStorageMode(),
         ]);
     }
 
@@ -488,31 +491,14 @@ class DashboardController extends AbstractController
     // =========================================================
     private function getPageOrDeny(string $slug): MemorialPage
     {
-        /** @var \App\Entity\User $user */
-        $user = $this->getUser();
-
-        $page = $this->memorialRepo->findBySlug($slug);
+        $page = $this->memorialRepo->findBySlugActive($slug);
 
         if (!$page) {
             throw $this->createNotFoundException('Page mémorielle introuvable.');
         }
 
-        // 1. Modérateur actif en base
-        if ($this->memorialService->isModerator($page, $user)) {
-            return $page;
-        }
+        $this->denyAccessUnlessGranted(MemorialPageVoter::MANAGE, $page);
 
-        // 2. Vérification directe via SQL — contourne les problèmes
-        //    de lazy loading et de JoinColumn sur created_by
-        $row = $this->em->getConnection()->executeQuery(
-            'SELECT created_by FROM memorial_pages WHERE id = ?',
-            [$page->getId()]
-        )->fetchAssociative();
-
-        if ($row && (int)$row['created_by'] === $user->getId()) {
-            return $page;
-        }
-
-        throw $this->createAccessDeniedException();
+        return $page;
     }
 }

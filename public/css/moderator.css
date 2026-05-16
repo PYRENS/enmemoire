@@ -1,0 +1,178 @@
+/* ==========================================================
+   moderator.css — Système d'invitations modérateurs
+   ========================================================== */
+
+.mod-header {
+  display: flex; align-items: center; gap: 1.25rem;
+  margin-bottom: 2rem; flex-wrap: wrap;
+}
+.mod-back {
+  color: var(--em-muted); text-decoration: none; font-size: .875rem;
+  display: flex; align-items: center; gap: .3rem;
+}
+.mod-back:hover { color: var(--em-navy); }
+.mod-header h1 { font-family: var(--font-display); font-size: 1.75rem; color: var(--em-navy); margin: 0; }
+
+/* Alertes */
+.mod-alert {
+  display: flex; align-items: flex-start; gap: .6rem;
+  padding: .9rem 1.1rem; border-radius: var(--em-radius); font-size: .875rem;
+  margin-bottom: 1.25rem;
+}
+.mod-alert--success { background: rgba(45,122,79,.08); border: 1px solid rgba(45,122,79,.2); color: #14532D; }
+.mod-alert--error   { background: rgba(185,28,28,.08); border: 1px solid rgba(185,28,28,.2); color: #991B1B; }
+.mod-alert--info    { background: rgba(30,95,168,.08); border: 1px solid rgba(30,95,168,.2); color: #1E3A5F; }
+
+/* ----------------------------------------------------------
+   LISTE DES MODÉRATEURS
+   ---------------------------------------------------------- */
+.mod-list { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 2rem; }
+
+.mod-card {
+  display: flex; align-items: center; gap: 1rem;
+  background: white; border: 1px solid var(--em-stone);
+  border-radius: var(--em-radius-lg); padding: 1rem 1.25rem;
+  transition: var(--em-transition);
+}
+.mod-card:hover { box-shadow: var(--em-shadow-sm); }
+.mod-card--pending { border-left: 3px solid var(--em-warning); opacity: .85; }
+.mod-card--revoked { border-left: 3px solid var(--em-danger);  opacity: .6; }
+.mod-card--active  { border-left: 3px solid var(--em-success); }
+
+/* Avatar */
+.mod-avatar {
+  width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+  background: var(--em-navy); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .95rem; font-weight: 600; overflow: hidden;
+  border: 2px solid var(--em-stone);
+}
+.mod-avatar--owner { border-color: var(--em-gold); background: rgba(201,168,76,.15); color: var(--em-gold); }
+.mod-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Infos */
+.mod-info { flex: 1; min-width: 0; }
+.mod-name { font-size: .95rem; font-weight: 600; color: var(--em-navy); display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.mod-email { font-size: .8rem; color: var(--em-muted); margin: .15rem 0 .35rem; }
+.mod-meta { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+
+/* Badges */
+.mod-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 10px; font-size: .72rem; font-weight: 600;
+}
+.mod-badge--owner   { background: rgba(201,168,76,.15); color: var(--em-gold); }
+.mod-badge--active  { background: rgba(45,122,79,.1);   color: var(--em-success); }
+.mod-badge--pending { background: rgba(180,83,9,.1);    color: var(--em-warning); }
+.mod-badge--revoked { background: rgba(185,28,28,.1);   color: var(--em-danger); }
+
+/* Actions */
+.mod-actions { display: flex; gap: .35rem; flex-shrink: 0; }
+
+.mod-btn {
+  width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--em-stone);
+  background: white; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; font-size: .9rem; transition: var(--em-transition);
+  color: var(--em-muted);
+}
+.mod-btn--sm { width: 28px; height: 28px; font-size: .8rem; }
+.mod-btn--info:hover    { background: rgba(30,95,168,.1); color: var(--em-info); border-color: rgba(30,95,168,.2); }
+.mod-btn--warning:hover { background: rgba(180,83,9,.1);  color: var(--em-warning); border-color: rgba(180,83,9,.2); }
+.mod-btn--danger:hover  { background: rgba(185,28,28,.1); color: var(--em-danger); border-color: rgba(185,28,28,.2); }
+
+.mod-empty { text-align: center; padding: 3rem; color: var(--em-muted); }
+.mod-empty i { font-size: 2.5rem; display: block; margin-bottom: .75rem; }
+
+/* Rôles info */
+.mod-roles-info {
+  background: var(--em-cream); border-radius: var(--em-radius-lg);
+  padding: 1.25rem 1.5rem; margin-top: 1rem;
+}
+.mod-roles-info h3 { font-size: .95rem; font-weight: 600; color: var(--em-navy); margin-bottom: 1rem; display: flex; align-items: center; gap: .4rem; }
+.mod-roles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.mod-role p { font-size: .82rem; color: var(--em-muted); margin: .4rem 0 0; line-height: 1.5; }
+
+/* ----------------------------------------------------------
+   FORMULAIRE D'INVITATION
+   ---------------------------------------------------------- */
+.mod-section {
+  background: white; border: 1px solid var(--em-stone);
+  border-radius: var(--em-radius-xl); padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.mod-section h3 { font-family: var(--font-display); font-size: 1.2rem; font-weight: 400; color: var(--em-navy); margin: 0 0 1.25rem; }
+
+.mod-form { display: flex; flex-direction: column; gap: 0; }
+.mod-form-group { margin-bottom: 1rem; }
+.mod-form-group label { display: block; font-size: .8rem; font-weight: 600; color: var(--em-navy); margin-bottom: .4rem; }
+
+.mod-input-wrap { position: relative; display: flex; align-items: stretch; }
+.mod-input-wrap i { position: absolute; left: 12px; top: 0; bottom: 0; display: flex; align-items: center; color: var(--em-muted); font-size: .95rem; }
+
+.mod-input {
+  width: 100%; padding: .72rem 1rem;
+  border: 1.5px solid var(--em-stone); border-radius: var(--em-radius-sm);
+  font-family: var(--font-body); font-size: .95rem; color: var(--em-charcoal);
+  background: white; outline: none; transition: var(--em-transition);
+  appearance: none;
+}
+.mod-input-wrap .mod-input { padding-left: 2.5rem; }
+.mod-input:focus { border-color: var(--em-navy); box-shadow: 0 0 0 3px rgba(27,43,75,.08); }
+textarea.mod-input { resize: vertical; min-height: 80px; }
+
+.mod-hint { font-size: .75rem; color: var(--em-muted); margin-top: .25rem; display: block; }
+
+.mod-form-actions { display: flex; justify-content: flex-end; gap: .75rem; padding-top: 1rem; border-top: 1px solid var(--em-stone); }
+
+.mod-pending-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; padding: .75rem 0; border-bottom: 1px solid var(--em-stone);
+}
+.mod-pending-row:last-child { border-bottom: none; }
+
+/* ----------------------------------------------------------
+   PAGE D'ACCEPTATION
+   ---------------------------------------------------------- */
+.mod-accept-card {
+  background: white; border-radius: var(--em-radius-xl);
+  border: 1px solid var(--em-stone); box-shadow: var(--em-shadow-lg);
+  padding: 2.5rem 2rem; text-align: center;
+}
+
+.mod-accept-icon { font-size: 3.5rem; margin-bottom: 1rem; display: block; animation: float-icon 3s ease-in-out infinite; }
+@keyframes float-icon { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+.mod-accept-title { font-family: var(--font-display); font-size: 1.75rem; font-weight: 300; color: var(--em-navy); margin-bottom: .35rem; }
+.mod-accept-inviter { color: var(--em-muted); font-size: .95rem; margin-bottom: 1.5rem; }
+
+.mod-accept-page {
+  display: flex; align-items: center; gap: 1rem;
+  background: var(--em-cream); border-radius: var(--em-radius);
+  padding: 1rem 1.25rem; margin-bottom: 1.5rem; text-align: left;
+}
+.mod-accept-page__portrait {
+  width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+  background: var(--em-navy); color: white; font-size: 1.4rem;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  border: 2px solid var(--em-gold);
+}
+.mod-accept-page__portrait img { width: 100%; height: 100%; object-fit: cover; }
+
+.mod-accept-perms {
+  background: rgba(27,43,75,.03); border-radius: var(--em-radius);
+  padding: 1.25rem; margin-bottom: 1.5rem; text-align: left;
+}
+.mod-accept-perms ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5rem; }
+.mod-accept-perms li { display: flex; align-items: center; gap: .6rem; font-size: .875rem; color: var(--em-charcoal); }
+.mod-accept-perms .bi-check-circle-fill { color: var(--em-success); }
+
+.mod-accept-actions { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+
+/* ----------------------------------------------------------
+   RESPONSIVE
+   ---------------------------------------------------------- */
+@media (max-width: 575px) {
+  .mod-card { flex-wrap: wrap; }
+  .mod-roles-grid { grid-template-columns: 1fr; }
+  .mod-accept-card { padding: 1.75rem 1.25rem; }
+}

@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const notifBadge = document.getElementById('notif-count');
     if (notifBadge && document.body.classList.contains('user-logged')) {
         const fetchNotifCount = () => {
-            fetch('/api/notifications/count', {
+            fetch('/notifications/count', {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
             .then(r => r.ok ? r.json() : null)
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --------------------------------------------------
     document.querySelectorAll('a[href^="#"]').forEach(link => {
         link.addEventListener('click', function (e) {
-            const target = document.querySelector(this.getAttribute('href'));
+            const href = this.getAttribute('href'); if (!href || href === '#' || href.startsWith('javascript')) return; const target = document.querySelector(href);
             if (target) {
                 e.preventDefault();
                 const headerH = document.getElementById('site-header')?.offsetHeight || 70;

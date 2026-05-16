@@ -1,0 +1,191 @@
+{% extends 'base.html.twig' %}
+{% block title %}Modérateurs — {{ page.deceasedFullName }}{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/moderator.css') }}">{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width:800px;padding-top:2.5rem;padding-bottom:4rem;">
+
+  <div class="mod-header">
+    <a href="{{ path('app_dashboard_memorial', {slug: page.slug}) }}" class="mod-back">
+      <i class="bi bi-arrow-left"></i> Dashboard
+    </a>
+    <div>
+      <h1>👥 Modérateurs</h1>
+      <p class="text-muted">Page de <strong>{{ page.deceasedFullName }}</strong></p>
+    </div>
+    {% if isOwner %}
+      <a href="{{ path('app_moderator_invite', {slug: page.slug}) }}" class="em-btn em-btn--primary">
+        <i class="bi bi-person-plus"></i> Inviter
+      </a>
+    {% endif %}
+  </div>
+
+  {% for type, msgs in app.flashes %}
+    {% for msg in msgs %}
+      <div class="mod-alert mod-alert--{{ type }}">
+        <i class="bi bi-{{ type == 'success' ? 'check-circle' : 'info-circle' }}"></i>
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endfor %}
+
+  {# Liste des modérateurs #}
+  <div class="mod-list">
+    {% for mod in moderators %}
+    <div class="mod-card mod-card--{{ mod.status }}" id="mod-{{ mod.id }}">
+
+      {# Avatar #}
+      <div class="mod-avatar {% if mod.isOwner %}mod-avatar--owner{% endif %}">
+        {% if mod.user and mod.user.avatarUrl %}
+          <img src="{{ asset(mod.user.avatarUrl) }}" alt="{{ mod.user.fullName }}">
+        {% elseif mod.user %}
+          {{ mod.user.firstName|first|upper }}{{ mod.user.lastName|first|upper }}
+        {% else %}
+          <i class="bi bi-envelope"></i>
+        {% endif %}
+      </div>
+
+      {# Infos #}
+      <div class="mod-info">
+        <div class="mod-name">
+          {% if mod.user %}
+            {{ mod.user.fullName }}
+            {% if mod.isOwner %}
+              <span class="mod-badge mod-badge--owner">👑 Propriétaire</span>
+            {% endif %}
+          {% else %}
+            <em class="text-muted">Invitation en attente</em>
+          {% endif %}
+        </div>
+        {% if mod.user %}
+          <div class="mod-email">{{ mod.user.email }}</div>
+        {% endif %}
+        <div class="mod-meta">
+          {% if mod.status == 'pending' %}
+            <span class="mod-badge mod-badge--pending">
+              <i class="bi bi-clock"></i> En attente
+            </span>
+            <span class="text-muted" style="font-size:.78rem;">
+              Code : <code>{{ mod.moderatorCode }}</code>
+            </span>
+          {% elseif mod.status == 'active' %}
+            <span class="mod-badge mod-badge--active">
+              <i class="bi bi-check-circle"></i> Actif
+            </span>
+          {% elseif mod.status == 'revoked' %}
+            <span class="mod-badge mod-badge--revoked">
+              <i class="bi bi-x-circle"></i> Révoqué
+            </span>
+          {% endif %}
+          {% if mod.invitedBy %}
+            <span class="text-muted" style="font-size:.78rem;">
+              Invité par {{ mod.invitedBy.firstName }}
+              le {{ mod.invitedAt|date('d/m/Y') }}
+            </span>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Actions (propriétaire seulement) #}
+      {% if isOwner and not mod.isOwner %}
+      <div class="mod-actions">
+        {% if mod.status == 'pending' %}
+          <button onclick="resendInvite({{ mod.id }}, '{{ page.slug }}')"
+                  class="mod-btn mod-btn--info" title="Renvoyer l'invitation">
+            <i class="bi bi-send"></i>
+          </button>
+          <button onclick="cancelInvite({{ mod.id }}, '{{ page.slug }}')"
+                  class="mod-btn mod-btn--warning" title="Annuler l'invitation">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        {% elseif mod.status == 'active' %}
+          <button onclick="revokeModeration({{ mod.id }}, '{{ page.slug }}')"
+                  class="mod-btn mod-btn--danger" title="Révoquer l'accès">
+            <i class="bi bi-person-dash"></i>
+          </button>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {# Tokens CSRF cachés #}
+      <span class="csrf-revoke" data-id="{{ mod.id }}" style="display:none;">
+        {{ csrf_token('moderator_revoke_' ~ mod.id) }}
+      </span>
+      <span class="csrf-cancel" data-id="{{ mod.id }}" style="display:none;">
+        {{ csrf_token('moderator_cancel_' ~ mod.id) }}
+      </span>
+      <span class="csrf-resend" data-id="{{ mod.id }}" style="display:none;">
+        {{ csrf_token('moderator_resend_' ~ mod.id) }}
+      </span>
+    </div>
+    {% else %}
+    <div class="mod-empty">
+      <i class="bi bi-people"></i>
+      <p>Aucun modérateur pour cette page.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Info sur les rôles #}
+  <div class="mod-roles-info">
+    <h3><i class="bi bi-info-circle"></i> Rôles des modérateurs</h3>
+    <div class="mod-roles-grid">
+      <div class="mod-role">
+        <span class="mod-badge mod-badge--owner">👑 Propriétaire</span>
+        <p>Accès complet — peut inviter/révoquer des modérateurs, modifier la formule, supprimer la page.</p>
+      </div>
+      <div class="mod-role">
+        <span class="mod-badge mod-badge--active">Co-modérateur</span>
+        <p>Peut modérer les condoléances, témoignages, livre d'or et gérer la galerie photos.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+async function revokeModeration(id, slug) {
+  if (!confirm('Révoquer l\'accès de ce modérateur ?')) return;
+  const token = document.querySelector(`.csrf-revoke[data-id="${id}"]`)?.textContent;
+  const form  = new FormData();
+  form.append('_token', token);
+  const resp = await fetch(`/dashboard/moderateurs/${slug}/revoquer/${id}`, {method:'POST', body:form});
+  const data = await resp.json();
+  if (data.success) {
+    const card = document.getElementById(`mod-${id}`);
+    card.classList.remove('mod-card--active');
+    card.classList.add('mod-card--revoked');
+    card.querySelector('.mod-actions').innerHTML = '';
+    card.querySelector('.mod-meta .mod-badge').className = 'mod-badge mod-badge--revoked';
+    card.querySelector('.mod-meta .mod-badge').innerHTML = '<i class="bi bi-x-circle"></i> Révoqué';
+  } else {
+    alert(data.error);
+  }
+}
+
+async function cancelInvite(id, slug) {
+  if (!confirm('Annuler cette invitation ?')) return;
+  const token = document.querySelector(`.csrf-cancel[data-id="${id}"]`)?.textContent;
+  const form  = new FormData();
+  form.append('_token', token);
+  const resp = await fetch(`/dashboard/moderateurs/${slug}/annuler/${id}`, {method:'POST', body:form});
+  const data = await resp.json();
+  if (data.success) {
+    document.getElementById(`mod-${id}`)?.remove();
+  } else {
+    alert(data.error);
+  }
+}
+
+async function resendInvite(id, slug) {
+  const token = document.querySelector(`.csrf-resend[data-id="${id}"]`)?.textContent;
+  const form  = new FormData();
+  form.append('_token', token);
+  const resp = await fetch(`/dashboard/moderateurs/${slug}/renvoyer/${id}`, {method:'POST', body:form});
+  const data = await resp.json();
+  alert(data.success ? '✅ Invitation renvoyée !' : (data.error || 'Erreur'));
+}
+</script>
+{% endblock %}

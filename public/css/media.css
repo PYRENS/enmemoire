@@ -1,0 +1,255 @@
+/* ==========================================================
+   media.css — Upload photos/vidéos page mémorielle
+   ========================================================== */
+
+/* ----------------------------------------------------------
+   CARTES SECTIONS
+   ---------------------------------------------------------- */
+.media-upload-section { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.media-card {
+  background: white;
+  border: 1px solid var(--em-stone);
+  border-radius: var(--em-radius-xl);
+  overflow: hidden;
+}
+
+.media-card__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.5rem; border-bottom: 1px solid var(--em-stone);
+  flex-wrap: wrap; gap: .5rem;
+}
+.media-card__header h3 {
+  font-size: .95rem; font-weight: 600; color: var(--em-navy); margin: 0;
+  display: flex; align-items: center; gap: .4rem;
+}
+.media-hint { font-size: .75rem; color: var(--em-muted); }
+
+.media-card__body { padding: 1.5rem; }
+
+/* ----------------------------------------------------------
+   PHOTO DE PROFIL
+   ---------------------------------------------------------- */
+.media-portrait-upload {
+  display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+}
+
+.media-portrait-preview {
+  width: 120px; height: 120px; border-radius: 50%;
+  border: 3px solid var(--em-gold); overflow: hidden; flex-shrink: 0;
+  background: var(--em-cream);
+}
+.media-portrait-preview img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.media-portrait-placeholder {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: var(--em-muted); font-size: .75rem; gap: .4rem;
+}
+.media-portrait-placeholder i { font-size: 2.5rem; }
+
+.media-portrait-actions { display: flex; flex-direction: column; gap: .5rem; }
+
+/* ----------------------------------------------------------
+   PHOTO DE COUVERTURE
+   ---------------------------------------------------------- */
+.media-cover-preview {
+  width: 100%; height: 160px; border-radius: var(--em-radius);
+  background: var(--em-cream); background-size: cover; background-position: center;
+  border: 2px dashed var(--em-stone); position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; transition: var(--em-transition);
+}
+.media-cover-placeholder {
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  color: var(--em-muted); font-size: .875rem;
+}
+.media-cover-placeholder i { font-size: 2rem; }
+
+.media-cover-btn {
+  position: absolute; bottom: 12px; right: 12px;
+  display: flex; align-items: center; gap: .4rem;
+  background: rgba(27,43,75,.85); color: white; border: none;
+  padding: .4rem .85rem; border-radius: var(--em-radius-sm);
+  font-size: .8rem; cursor: pointer; font-family: var(--font-body);
+  transition: var(--em-transition);
+}
+.media-cover-btn:hover { background: var(--em-navy); }
+
+/* ----------------------------------------------------------
+   ZONE DE DÉPÔT
+   ---------------------------------------------------------- */
+.media-dropzone {
+  border: 2px dashed var(--em-stone); border-radius: var(--em-radius-lg);
+  padding: 2.5rem 1.5rem; text-align: center;
+  background: var(--em-cream); transition: var(--em-transition);
+  cursor: pointer; margin-bottom: 1rem;
+}
+.media-dropzone:hover,
+.media-dropzone.dragover {
+  border-color: var(--em-gold);
+  background: rgba(201,168,76,.05);
+}
+.media-dropzone i { font-size: 2.5rem; color: var(--em-gold); display: block; margin-bottom: .75rem; }
+.media-dropzone p { color: var(--em-muted); font-size: .9rem; margin: 0 0 .75rem; }
+
+.media-caption-row { margin-bottom: 1rem; }
+.media-caption-input {
+  width: 100%; padding: .6rem 1rem;
+  border: 1.5px solid var(--em-stone); border-radius: var(--em-radius-sm);
+  font-family: var(--font-body); font-size: .875rem; color: var(--em-charcoal);
+  outline: none; transition: var(--em-transition);
+}
+.media-caption-input:focus { border-color: var(--em-navy); }
+
+/* ----------------------------------------------------------
+   BARRE DE PROGRESSION
+   ---------------------------------------------------------- */
+.media-upload-progress {
+  display: flex; align-items: center; gap: .75rem;
+  margin-bottom: .75rem; padding: .5rem;
+  background: var(--em-cream); border-radius: var(--em-radius-sm);
+}
+.media-upload-progress__bar {
+  flex: 1; height: 6px; background: var(--em-navy);
+  border-radius: 3px; width: 0%; transition: width .3s ease;
+}
+#gallery-progress { flex-direction: row; }
+#gallery-progress .media-upload-progress__bar {
+  background: var(--em-gold);
+}
+#gallery-progress-label { font-size: .78rem; color: var(--em-muted); white-space: nowrap; }
+
+/* ----------------------------------------------------------
+   MESSAGES
+   ---------------------------------------------------------- */
+.media-upload-msg { font-size: .82rem; min-height: 18px; margin-top: .4rem; }
+.media-upload-msg--success { color: var(--em-success); }
+.media-upload-msg--error   { color: var(--em-danger); }
+
+/* ----------------------------------------------------------
+   GRILLE GALERIE
+   ---------------------------------------------------------- */
+.media-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: .75rem;
+  margin-top: 1rem;
+}
+
+.media-gallery-item {
+  position: relative; border-radius: var(--em-radius); overflow: hidden;
+  aspect-ratio: 1; background: var(--em-cream);
+  border: 1px solid var(--em-stone);
+}
+.media-gallery-item img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: var(--em-transition);
+}
+.media-gallery-item:hover img { transform: scale(1.04); }
+
+.media-gallery-item__video {
+  width: 100%; height: 100%; background: #1B2B4B;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.media-gallery-item__video i { font-size: 2.5rem; color: white; z-index: 1; }
+.media-gallery-item__video img {
+  position: absolute; inset: 0; opacity: .4;
+}
+
+.media-gallery-item__caption {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,.6); color: white; font-size: .7rem;
+  padding: .25rem .4rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+}
+
+.media-gallery-item__delete {
+  position: absolute; top: 4px; right: 4px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(185,28,28,.85); color: white; border: none;
+  font-size: .7rem; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; opacity: 0; transition: var(--em-transition);
+}
+.media-gallery-item:hover .media-gallery-item__delete { opacity: 1; }
+.media-gallery-item__delete:hover { background: var(--em-danger); }
+
+.media-gallery-empty {
+  grid-column: 1 / -1; text-align: center; padding: 2rem;
+  color: var(--em-muted);
+}
+.media-gallery-empty i { font-size: 2rem; display: block; margin-bottom: .5rem; }
+
+/* ----------------------------------------------------------
+   RESPONSIVE
+   ---------------------------------------------------------- */
+@media (max-width: 575px) {
+  .media-portrait-upload { flex-direction: column; align-items: flex-start; }
+  .media-gallery-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  .media-card__body { padding: 1rem; }
+}
+
+/* ----------------------------------------------------------
+   ACTIONS GALERIE (édition légende + suppression)
+   ---------------------------------------------------------- */
+.media-gallery-item__actions {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; gap: 4px; padding: 6px;
+  background: linear-gradient(to top, rgba(0,0,0,.7), transparent);
+  opacity: 0; transition: opacity .2s;
+  justify-content: flex-end;
+}
+.media-gallery-item:hover .media-gallery-item__actions { opacity: 1; }
+
+.media-gallery-item__action-btn {
+  width: 28px; height: 28px; border-radius: 6px; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; cursor: pointer; transition: var(--em-transition);
+}
+.media-gallery-item__action-btn--edit  { background: rgba(255,255,255,.9); color: var(--em-navy); }
+.media-gallery-item__action-btn--save  { background: var(--em-success); color: white; }
+.media-gallery-item__action-btn--delete { background: rgba(185,28,28,.9); color: white; }
+.media-gallery-item__action-btn:hover  { transform: scale(1.1); }
+
+/* Légende éditable */
+.media-gallery-item__caption-wrap {
+  position: absolute; bottom: 32px; left: 0; right: 0; padding: 0 6px;
+}
+.media-gallery-item__caption-text {
+  color: white; font-size: .7rem; text-overflow: ellipsis;
+  overflow: hidden; white-space: nowrap; display: block;
+  text-shadow: 0 1px 3px rgba(0,0,0,.8);
+  min-height: 16px;
+}
+.media-gallery-item__caption-input {
+  width: 100%; padding: 3px 6px; border-radius: 4px;
+  border: 1.5px solid var(--em-gold); background: rgba(0,0,0,.8);
+  color: white; font-size: .72rem; outline: none;
+  box-sizing: border-box;
+}
+
+/* Supprimer l'ancien bouton delete (remplacé par action-btn) */
+.media-gallery-item__delete { display: none !important; }
+
+
+/* Icônes d'actions galerie dashboard */
+.mgal-icons {
+  position: absolute;
+  top: 4px; right: 4px;
+  display: flex;
+  gap: 3px;
+  z-index: 5;
+}
+.mgal-icon {
+  width: 26px; height: 26px;
+  border-radius: 6px; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; cursor: pointer;
+  transition: transform .15s;
+  opacity: .9;
+}
+.mgal-icon:hover { opacity: 1; transform: scale(1.1); }
+.mgal-icon--edit   { background: rgba(255,255,255,.95); color: var(--em-navy); }
+.mgal-icon--delete { background: rgba(185,28,28,.9); color: white; }

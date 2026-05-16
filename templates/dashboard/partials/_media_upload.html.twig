@@ -1,0 +1,540 @@
+{# templates/dashboard/partials/_media_upload.html.twig
+   Inclure avec : {% include 'dashboard/partials/_media_upload.html.twig' with {page: page} %}
+#}
+
+<div class="media-upload-section" id="media-section">
+
+  {# ── PHOTO DE PROFIL DU DÉFUNT ─────────────────────────── #}
+  <div class="media-card">
+    <div class="media-card__header">
+      <h3><i class="bi bi-person-circle"></i> Photo de profil</h3>
+      <span class="media-hint">Affichée sur la page mémorielle · JPG, PNG, WebP · Max 10 Mo</span>
+    </div>
+    <div class="media-card__body">
+      <div class="media-portrait-upload" id="portrait-wrap">
+
+        {# Prévisualisation actuelle #}
+        <div class="media-portrait-preview" id="portrait-preview">
+          {% if page.mainPhotoUrl %}
+            <img src="{{ page.mainPhotoUrl starts with 'http' ? page.mainPhotoUrl : asset(page.mainPhotoUrl) }}"
+                 alt="{{ page.deceasedFullName }}" id="portrait-img">
+          {% else %}
+            <div class="media-portrait-placeholder" id="portrait-placeholder">
+              <i class="bi bi-person-fill"></i>
+              <span>Aucune photo</span>
+            </div>
+          {% endif %}
+        </div>
+
+        {# Boutons #}
+        <div class="media-portrait-actions">
+          <button type="button" class="em-btn em-btn--primary em-btn--sm"
+                  onclick="document.getElementById('portrait-input').click()">
+            <i class="bi bi-camera"></i>
+            {{ page.mainPhotoUrl ? 'Changer' : 'Ajouter une photo' }}
+          </button>
+          {% if page.mainPhotoUrl %}
+            <button type="button" class="em-btn em-btn--ghost em-btn--sm"
+                    onclick="deleteMainPhoto()" id="portrait-delete-btn">
+              <i class="bi bi-trash"></i> Supprimer
+            </button>
+          {% endif %}
+        </div>
+
+        <input type="file" id="portrait-input" accept="image/jpeg,image/png,image/webp"
+               style="display:none;" onchange="uploadMainPhoto(this)">
+
+        <div class="media-upload-progress" id="portrait-progress" style="display:none;">
+          <div class="media-upload-progress__bar" id="portrait-bar"></div>
+        </div>
+        <div class="media-upload-msg" id="portrait-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  {# ── PHOTO DE COUVERTURE ───────────────────────────────── #}
+  <div class="media-card">
+    <div class="media-card__header">
+      <h3><i class="bi bi-image"></i> Photo de couverture</h3>
+      <span class="media-hint">Bandeau en haut de la page · JPG, PNG, WebP · Max 10 Mo</span>
+    </div>
+    <div class="media-card__body">
+
+      <div class="media-cover-preview" id="cover-preview"
+           {% if page.coverPhotoUrl %}
+             style="background-image:url('{{ page.coverPhotoUrl starts with 'http' ? page.coverPhotoUrl : asset(page.coverPhotoUrl) }}');"
+           {% endif %}>
+        {% if not page.coverPhotoUrl %}
+          <div class="media-cover-placeholder">
+            <i class="bi bi-panorama"></i>
+            <span>Aucune photo de couverture</span>
+          </div>
+        {% endif %}
+        <button type="button" class="media-cover-btn"
+                onclick="document.getElementById('cover-input').click()">
+          <i class="bi bi-camera"></i>
+          {{ page.coverPhotoUrl ? 'Changer' : 'Ajouter' }}
+        </button>
+      </div>
+
+      <input type="file" id="cover-input" accept="image/jpeg,image/png,image/webp"
+             style="display:none;" onchange="uploadCoverPhoto(this)">
+      <div class="media-upload-msg" id="cover-msg"></div>
+    </div>
+  </div>
+
+  {# ── GALERIE PHOTOS & VIDÉOS ───────────────────────────── #}
+  <div class="media-card">
+    <div class="media-card__header">
+      <h3><i class="bi bi-images"></i> Galerie photos & vidéos</h3>
+      <span class="media-hint">Photos JPG/PNG/WebP · Vidéos MP4/WebM · Max 10 Mo / 100 Mo</span>
+    </div>
+    <div class="media-card__body">
+
+      {# Zone de dépôt #}
+      <div class="media-dropzone" id="dropzone"
+           ondragover="event.preventDefault(); this.classList.add('dragover')"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="handleDrop(event)">
+        <i class="bi bi-cloud-upload"></i>
+        <p>Glissez vos fichiers ici ou</p>
+        <button type="button" class="em-btn em-btn--outline em-btn--sm"
+                onclick="document.getElementById('gallery-input').click()">
+          Parcourir
+        </button>
+        <input type="file" id="gallery-input" multiple
+               accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+               style="display:none;" onchange="uploadGallery(this.files)">
+      </div>
+
+      {# Légende optionnelle #}
+      <div class="media-caption-row">
+        <input type="text" id="gallery-caption" class="media-caption-input"
+               placeholder="Légende pour les fichiers sélectionnés (optionnel)"
+               maxlength="255">
+      </div>
+
+      {# Barre de progression globale #}
+      <div class="media-upload-progress" id="gallery-progress" style="display:none;">
+        <div class="media-upload-progress__bar" id="gallery-bar"></div>
+        <span id="gallery-progress-label"></span>
+      </div>
+
+      {# Grille galerie existante #}
+      <div class="media-gallery-grid" id="gallery-grid">
+        {% set medias = page.mediaGalleries ?? [] %}
+        {% for media in medias %}
+          {% if true %}
+          <div class="media-gallery-item" id="media-item-{{ media.id }}">
+            {# Miniature #}
+            {% if media.type == 'video' %}
+              <div class="media-gallery-item__video">
+                <i class="bi bi-play-circle-fill"></i>
+                {% if media.thumbnailUrl %}
+                  <img src="{{ media.thumbnailUrl starts with 'http' ? media.thumbnailUrl : asset(media.thumbnailUrl) }}" alt="">
+                {% endif %}
+              </div>
+            {% else %}
+              <img src="{{ media.url starts with 'http' ? media.url : asset(media.url) }}"
+                   alt="{{ media.caption ?? '' }}" loading="lazy">
+            {% endif %}
+
+            {# Icônes d'actions #}
+            <div class="mgal-icons">
+              <button onclick="openCaptionModal({{ media.id }}, '{{ media.caption|default('')|e('js') }}')"
+                      class="mgal-icon mgal-icon--edit" title="Modifier la légende">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button onclick="deleteGalleryMedia({{ media.id }})"
+                      class="mgal-icon mgal-icon--delete" title="Supprimer">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+
+            <span class="csrf-media-delete" data-id="{{ media.id }}" style="display:none;">
+              {{ csrf_token('media_delete_' ~ media.id) }}
+            </span>
+            <span class="csrf-media-caption" data-id="{{ media.id }}" style="display:none;">
+              {{ csrf_token('media_caption_' ~ media.id) }}
+            </span>
+          </div>
+          {% endif %}
+        {% else %}
+          <div class="media-gallery-empty" id="gallery-empty">
+            <i class="bi bi-images"></i>
+            <p>Aucune photo ou vidéo pour l'instant.</p>
+          </div>
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+
+
+{# Modal édition légende #}
+<div id="caption-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:12px;padding:1.5rem;width:380px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+    <h4 style="margin:0 0 1rem;color:var(--em-navy);font-size:1rem;"><i class="bi bi-pencil"></i> Modifier la légende</h4>
+    <input type="text" id="modal-caption-input" maxlength="255"
+           placeholder="Ajouter une légende…"
+           style="width:100%;padding:.6rem .8rem;border:1.5px solid #E8E0D4;border-radius:8px;
+                  font-size:.9rem;outline:none;box-sizing:border-box;margin-bottom:1rem;"
+           onkeydown="if(event.key==='Enter')saveCaptionModal();if(event.key==='Escape')closeCaptionModal();">
+    <input type="hidden" id="modal-media-id">
+    <div style="display:flex;justify-content:flex-end;gap:.5rem;">
+      <button onclick="closeCaptionModal()"
+              style="padding:.5rem 1rem;border:1.5px solid #E8E0D4;background:white;border-radius:8px;cursor:pointer;font-size:.875rem;">
+        Annuler
+      </button>
+      <button onclick="saveCaptionModal()"
+              style="padding:.5rem 1rem;background:var(--em-navy);color:white;border:none;border-radius:8px;cursor:pointer;font-size:.875rem;font-weight:600;">
+        <i class="bi bi-check-lg"></i> Enregistrer
+      </button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+{# Tokens CSRF #}
+<span id="csrf-main"    style="display:none;">{{ csrf_token('media_main_'    ~ page.id) }}</span>
+<span id="csrf-cover"   style="display:none;">{{ csrf_token('media_cover_'   ~ page.id) }}</span>
+<span id="csrf-gallery" style="display:none;">{{ csrf_token('media_gallery_' ~ page.id) }}</span>
+
+<script>
+var SLUG = '{{ page.slug }}';
+
+// ── Photo principale ──────────────────────────────────────
+async function uploadMainPhoto(input) {
+  if (!input.files[0]) return;
+
+  // Prévisualisation immédiate via FileReader
+  var reader = new FileReader();
+  reader.onload = function(e) { updatePortrait(e.target.result); };
+  reader.readAsDataURL(input.files[0]);
+
+  showProgress('portrait-bar', 'portrait-progress');
+  var form = new FormData();
+  form.append('photo',   input.files[0]);
+  form.append('_token',  document.getElementById('csrf-main').textContent.trim());
+  try {
+    var data = await postForm(`/memorial/${SLUG}/media/photo-principale`, form);
+    if (data.success) {
+      updatePortrait(data.url); // remplacer par l'URL serveur finale
+      showMsg('portrait-msg', data.message, 'success');
+    } else {
+      showMsg('portrait-msg', data.error, 'error');
+    }
+  } catch(e) { showMsg('portrait-msg', 'Erreur réseau', 'error'); }
+  hideProgress('portrait-progress');
+}
+
+function updatePortrait(url) {
+  var preview = document.getElementById('portrait-preview');
+  if (!preview) return;
+  // Supprimer placeholder et ancienne image
+  var ph  = document.getElementById('portrait-placeholder');
+  var old = document.getElementById('portrait-img');
+  if (ph)  ph.remove();
+  if (old) old.remove();
+  // Créer nouvelle image
+  var img   = document.createElement('img');
+  img.id    = 'portrait-img';
+  img.alt   = 'Photo profil';
+  img.style.width  = '100%';
+  img.style.height = '100%';
+  img.style.objectFit = 'cover';
+  img.src   = url + (url.startsWith('data:') ? '' : '?t=' + Date.now());
+  preview.appendChild(img);
+}
+
+// ── Photo couverture ──────────────────────────────────────
+async function uploadCoverPhoto(input) {
+  if (!input.files[0]) return;
+  var form = new FormData();
+  form.append('cover',  input.files[0]);
+  form.append('_token', document.getElementById('csrf-cover').textContent.trim());
+  var preview = document.getElementById('cover-preview');
+  // Prévisualisation immédiate
+  var reader  = new FileReader();
+  reader.onload = function(e) {
+    preview.style.backgroundImage = `url('${e.target.result}')`;
+    preview.querySelector('.media-cover-placeholder')?.remove();
+  };
+  reader.readAsDataURL(input.files[0]);
+  try {
+    var data = await postForm(`/memorial/${SLUG}/media/couverture`, form);
+    if (data.success) {
+      showMsg('cover-msg', data.message, 'success');
+    } else {
+      showMsg('cover-msg', data.error, 'error');
+    }
+  } catch(e) { showMsg('cover-msg', 'Erreur réseau', 'error'); }
+}
+
+// ── Galerie ───────────────────────────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropzone').classList.remove('dragover');
+  uploadGallery(e.dataTransfer.files);
+}
+
+async function uploadGallery(files) {
+  if (!files || files.length === 0) return;
+  var caption = document.getElementById('gallery-caption').value;
+
+  document.getElementById('gallery-progress').style.display = 'flex';
+  document.getElementById('gallery-bar').style.width = '0%';
+  document.getElementById('gallery-progress-label').textContent = `0/${files.length} uploadé(s)`;
+
+  var uploadedItems = [];
+
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i];
+
+    // Prévisualisation locale immédiate pour ce fichier
+    if (file.type.startsWith('image/')) {
+      await new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          showGalleryPreview(e.target.result, file.name, caption, 'image');
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    } else if (file.type.startsWith('video/')) {
+      showGalleryPreview(null, file.name, caption, 'video');
+    }
+
+    // Upload vers le serveur
+    var form = new FormData();
+    form.append('files',   file);
+    form.append('caption', caption);
+    form.append('_token',  document.getElementById('csrf-gallery').textContent.trim());
+    try {
+      var data = await postForm(`/memorial/${SLUG}/media/galerie`, form);
+      if (data.success && data.uploaded.length > 0) {
+        data.uploaded.forEach(function(m) { uploadedItems.push(m); });
+      }
+    } catch(e) { console.error('Upload error:', e); }
+
+    var pct = Math.round((i + 1) / files.length * 100);
+    document.getElementById('gallery-bar').style.width = pct + '%';
+    document.getElementById('gallery-progress-label').textContent = `${i+1}/${files.length} uploadé(s)`;
+  }
+
+  // Supprimer previews et afficher les items définitifs
+  document.querySelectorAll('.media-gallery-item--preview').forEach(function(el) { el.remove(); });
+  uploadedItems.forEach(function(m) { addToGalleryGrid(m); });
+
+  setTimeout(function() {
+    document.getElementById('gallery-progress').style.display = 'none';
+    document.getElementById('gallery-caption').value = '';
+  }, 1000);
+}
+
+function showGalleryPreview(src, name, caption, type) {
+  var empty = document.getElementById('gallery-empty');
+  if (empty) empty.remove();
+  var grid = document.getElementById('gallery-grid');
+  var div  = document.createElement('div');
+  div.className = 'media-gallery-item media-gallery-item--preview';
+  div.style.opacity = '.6';
+  if (type === 'video') {
+    div.innerHTML = '<div class="media-gallery-item__video"><i class="bi bi-play-circle-fill"></i></div>';
+  } else {
+    div.innerHTML = `<img src="${src}" alt="${caption || name}" loading="lazy">`;
+  }
+  // Spinner de chargement
+  var spin = document.createElement('div');
+  spin.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);';
+  spin.innerHTML = '<div style="width:20px;height:20px;border:2px solid white;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;"></div>';
+  div.appendChild(spin);
+  grid.insertBefore(div, grid.firstChild);
+}
+
+function addToGalleryGrid(media) {
+  var empty = document.getElementById('gallery-empty');
+  if (empty) empty.remove();
+
+  var grid = document.getElementById('gallery-grid');
+  var div  = document.createElement('div');
+  div.className = 'media-gallery-item';
+  div.id        = 'media-item-' + media.id;
+
+  if (media.type === 'video') {
+    div.innerHTML = `
+      <div class="media-gallery-item__video">
+        <i class="bi bi-play-circle-fill"></i>
+        ${media.thumb ? `<img src="${media.thumb}" alt="">` : ''}
+      </div>
+    `;
+  } else {
+    div.innerHTML = `<img src="${media.url}" alt="${media.caption || ''}" loading="lazy">`;
+  }
+
+  if (media.caption) {
+    var cap = document.createElement('div');
+    cap.className   = 'media-gallery-item__caption';
+    cap.textContent = media.caption;
+    div.appendChild(cap);
+  }
+
+  // Token CSRF pour suppression
+  var csrf = document.createElement('span');
+  csrf.className = 'csrf-media-delete';
+  csrf.dataset.id = media.id;
+  csrf.style.display = 'none';
+  // On récupérera le token via une requête si nécessaire — pour l'instant reload
+  div.appendChild(csrf);
+
+  var btn = document.createElement('button');
+  btn.className = 'media-gallery-item__delete';
+  btn.title     = 'Supprimer';
+  btn.innerHTML = '<i class="bi bi-x-lg"></i>';
+  btn.onclick   = function() { deleteGalleryMedia(media.id); };
+  div.appendChild(btn);
+
+  grid.insertBefore(div, grid.firstChild);
+}
+
+async function deleteGalleryMedia(id) {
+  if (!confirm('Supprimer ce média ?')) return;
+  var csrf = document.querySelector(`.csrf-media-delete[data-id="${id}"]`)?.textContent?.trim();
+  if (!csrf) { alert('Rechargez la page pour supprimer.'); return; }
+  var form = new FormData();
+  form.append('_token', csrf);
+  var data = await postForm(`/memorial/${SLUG}/media/galerie/${id}/delete`, form);
+  if (data.success) {
+    document.getElementById(`media-item-${id}`)?.remove();
+  } else {
+    alert(data.error || 'Erreur');
+  }
+}
+
+function editCaption(id) {
+  var text  = document.getElementById(`caption-text-${id}`);
+  var input = document.getElementById(`caption-input-${id}`);
+  var btnEdit = document.getElementById(`btn-edit-${id}`);
+  var btnSave = document.getElementById(`btn-save-${id}`);
+  text.style.display  = 'none';
+  input.style.display = 'block';
+  btnEdit.style.display = 'none';
+  btnSave.style.display = 'flex';
+  input.focus();
+  input.select();
+}
+
+function cancelCaption(id) {
+  var text  = document.getElementById(`caption-text-${id}`);
+  var input = document.getElementById(`caption-input-${id}`);
+  var btnEdit = document.getElementById(`btn-edit-${id}`);
+  var btnSave = document.getElementById(`btn-save-${id}`);
+  input.value = text.textContent.trim();
+  text.style.display  = 'block';
+  input.style.display = 'none';
+  btnEdit.style.display = 'flex';
+  btnSave.style.display = 'none';
+}
+
+async function saveCaption(id) {
+  var input = document.getElementById(`caption-input-${id}`);
+  var text  = document.getElementById(`caption-text-${id}`);
+  var csrf  = document.querySelector(`.csrf-media-caption[data-id="${id}"]`)?.textContent?.trim();
+  var form  = new FormData();
+  form.append('_token', csrf);
+  form.append('caption', input.value);
+  try {
+    var data = await postForm(`/memorial/${SLUG}/media/galerie/${id}/caption`, form);
+    if (data.success) {
+      text.textContent = input.value;
+      cancelCaption(id);
+    } else {
+      alert(data.error || 'Erreur');
+    }
+  } catch(e) { alert('Erreur réseau'); }
+}
+
+// ── Helpers ───────────────────────────────────────────────
+async function postForm(url, formData) {
+  var resp = await fetch(url, {method:'POST', body:formData, headers:{'X-Requested-With':'XMLHttpRequest'}});
+  return resp.json();
+}
+
+function showProgress(barId, wrapId) {
+  var wrap = document.getElementById(wrapId);
+  var bar  = document.getElementById(barId);
+  if (wrap) wrap.style.display = 'flex';
+  if (bar)  { bar.style.width = '0%'; animateBar(barId); }
+}
+
+function animateBar(barId) {
+  var bar = document.getElementById(barId);
+  var w   = 0;
+  var iv  = setInterval(function() {
+    w += 5;
+    if (bar) bar.style.width = Math.min(w, 90) + '%';
+    if (w >= 90) clearInterval(iv);
+  }, 100);
+}
+
+function hideProgress(wrapId) {
+  var bar  = document.querySelector(`#${wrapId} .media-upload-progress__bar`);
+  if (bar) bar.style.width = '100%';
+  setTimeout(function() {
+    var wrap = document.getElementById(wrapId);
+    if (wrap) wrap.style.display = 'none';
+  }, 500);
+}
+
+function showMsg(id, msg, type) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent  = msg;
+  el.className    = 'media-upload-msg media-upload-msg--' + type;
+  setTimeout(function() { el.textContent = ''; el.className = 'media-upload-msg'; }, 4000);
+}
+
+function openCaptionModal(id, current) {
+  document.getElementById('modal-media-id').value = id;
+  document.getElementById('modal-caption-input').value = current;
+  var modal = document.getElementById('caption-modal');
+  modal.style.display = 'flex';
+  setTimeout(function(){ document.getElementById('modal-caption-input').focus(); }, 50);
+}
+function closeCaptionModal() {
+  document.getElementById('caption-modal').style.display = 'none';
+}
+async function saveCaptionModal() {
+  var id      = document.getElementById('modal-media-id').value;
+  var caption = document.getElementById('modal-caption-input').value.trim();
+  var csrf    = document.querySelector('.csrf-media-caption[data-id="'+id+'"]')?.textContent?.trim();
+  var form    = new FormData();
+  form.append('_token', csrf);
+  form.append('caption', caption);
+  try {
+    var resp = await fetch('/memorial/'+SLUG+'/media/galerie/'+id+'/caption', {
+      method:'POST', body:form, headers:{'X-Requested-With':'XMLHttpRequest'}
+    });
+    var data = await resp.json();
+    if (data.success) {
+      var cap = document.querySelector('#media-item-'+id+' .media-gallery-item__caption');
+      if (caption) {
+        if (cap) cap.textContent = caption;
+        else {
+          var c = document.createElement('div');
+          c.className = 'media-gallery-item__caption';
+          c.textContent = caption;
+          document.getElementById('media-item-'+id)?.appendChild(c);
+        }
+      } else if (cap) cap.remove();
+      closeCaptionModal();
+    } else alert(data.error || 'Erreur');
+  } catch(e) { alert('Erreur réseau'); }
+}
+document.getElementById('caption-modal')?.addEventListener('click', function(e){ if(e.target===this)closeCaptionModal(); });
+</script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+.media-gallery-item--preview { pointer-events: none; }
+</style>

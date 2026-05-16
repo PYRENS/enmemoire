@@ -487,3 +487,13 @@ img { max-width: 100%; height: auto; display: block; }
     margin-top: 0.35rem;
   }
 }
+
+/* Boutons hero page mémorielle */
+.em-btn--gold {
+  background: var(--em-gold); color: var(--em-navy); border: none;
+  font-weight: 700;
+}
+.em-btn--gold:hover { background: #b8943f; color: white; }
+
+.em-btn--light { background: rgba(27,43,75,.15); color: var(--em-navy); border: 1.5px solid var(--em-navy); font-weight: 500; }
+.em-btn--light:hover { background: var(--em-navy); color: white; border-color: var(--em-navy); }

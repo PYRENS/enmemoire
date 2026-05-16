@@ -1,0 +1,118 @@
+{% extends 'base.html.twig' %}
+{% block title %}Préférences — EnMémoire.com{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/profile.css') }}">{% endblock %}
+
+{% block body %}
+<div class="profile-layout container-xl">
+  {% include 'profile/_sidebar.html.twig' with {active: 'preferences'} %}
+
+  <main class="profile-main">
+    <div class="profile-section">
+      <div class="profile-section__header"><h3>Préférences</h3></div>
+
+      {% if error %}
+        <div class="profile-alert profile-alert--error"><i class="bi bi-exclamation-circle"></i> {{ error }}</div>
+      {% endif %}
+      {% for type, msgs in app.flashes %}{% for msg in msgs %}
+        <div class="profile-alert profile-alert--success"><i class="bi bi-check-circle"></i> {{ msg }}</div>
+      {% endfor %}{% endfor %}
+
+      <form method="POST" class="profile-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('profile_prefs') }}">
+
+        <h4 class="profile-form-section-title">🌍 Langue de l'interface</h4>
+        <div class="profile-form-group">
+          <div style="display:flex;gap:.75rem;">
+            <label id="lang-fr"
+                   style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;
+                          border:{{ (user.locale ?? 'fr') != 'en' ? '2px solid #1B2B4B' : '1.5px solid #E8E0D4' }};
+                          background:{{ (user.locale ?? 'fr') != 'en' ? 'rgba(27,43,75,.05)' : 'white' }};
+                          font-weight:{{ (user.locale ?? 'fr') != 'en' ? '600' : '400' }};"
+                   onclick="selectLang('fr')">
+              <input type="radio" name="locale" value="fr" style="display:none;"
+                     {{ (user.locale ?? 'fr') != 'en' ? 'checked' : '' }}>
+              <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/fr.svg') }}" width="22" height="16"
+                   style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12);" alt="FR">
+              Français
+            </label>
+            <label id="lang-en"
+                   style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;
+                          border:{{ (user.locale ?? 'fr') == 'en' ? '2px solid #1B2B4B' : '1.5px solid #E8E0D4' }};
+                          background:{{ (user.locale ?? 'fr') == 'en' ? 'rgba(27,43,75,.05)' : 'white' }};
+                          font-weight:{{ (user.locale ?? 'fr') == 'en' ? '600' : '400' }};"
+                   onclick="selectLang('en')">
+              <input type="radio" name="locale" value="en" style="display:none;"
+                     {{ (user.locale ?? 'fr') == 'en' ? 'checked' : '' }}>
+              <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/gb.svg') }}" width="22" height="16"
+                   style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12);" alt="EN">
+              English
+            </label>
+          </div>
+        </div>
+
+        <h4 class="profile-form-section-title">🔔 Notifications par email</h4>
+
+        <div class="profile-toggle-row">
+          <div class="profile-toggle-info">
+            <strong>Notifications générales</strong>
+            <small>Nouvelles condoléances, témoignages, etc.</small>
+          </div>
+          <label class="profile-toggle">
+            <input type="checkbox" name="email_notifications" value="1"
+                   {{ (prefs.email_notifications ?? true) ? 'checked' : '' }}>
+            <span class="profile-toggle__slider"></span>
+          </label>
+        </div>
+
+        <div class="profile-toggle-row">
+          <div class="profile-toggle-info">
+            <strong>Nouvelles condoléances</strong>
+            <small>Email à chaque nouveau message sur vos pages.</small>
+          </div>
+          <label class="profile-toggle">
+            <input type="checkbox" name="email_condolences" value="1"
+                   {{ (prefs.email_condolences ?? true) ? 'checked' : '' }}>
+            <span class="profile-toggle__slider"></span>
+          </label>
+        </div>
+
+        <div class="profile-toggle-row">
+          <div class="profile-toggle-info">
+            <strong>Alerte expiration de formule</strong>
+            <small>Email 30 jours avant l'expiration de votre formule.</small>
+          </div>
+          <label class="profile-toggle">
+            <input type="checkbox" name="email_expiry" value="1"
+                   {{ (prefs.email_expiry_warning ?? true) ? 'checked' : '' }}>
+            <span class="profile-toggle__slider"></span>
+          </label>
+        </div>
+
+        <div class="profile-form-actions">
+          <button type="submit" class="em-btn em-btn--primary">
+            <i class="bi bi-check-lg"></i> Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function selectLang(val) {
+  var fr = document.getElementById('lang-fr');
+  var en = document.getElementById('lang-en');
+  var on  = 'flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;border:2px solid #1B2B4B;background:rgba(27,43,75,.05);font-weight:600;';
+  var off = 'flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;border:1.5px solid #E8E0D4;background:white;font-weight:400;';
+  if (val === 'fr') {
+    fr.setAttribute('style', on); fr.querySelector('input').checked = true;
+    en.setAttribute('style', off);
+  } else {
+    en.setAttribute('style', on); en.querySelector('input').checked = true;
+    fr.setAttribute('style', off);
+  }
+}
+</script>
+{% endblock %}

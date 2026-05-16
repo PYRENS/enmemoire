@@ -158,10 +158,26 @@
         {# ✅ FIX select langue : pas de auth-input-wrap (pas d'icône) #}
         <div class="auth-field">
           <label class="auth-label" for="locale">Langue préférée</label>
-          <select name="locale" id="locale" class="auth-input">
-            <option value="fr" {% if (form.locale ?? 'fr') == 'fr' %}selected{% endif %}>🇫🇷 Français</option>
-            <option value="en" {% if (form.locale ?? '') == 'en' %}selected{% endif %}>🇬🇧 English</option>
-          </select>
+          <div class="auth-lang-picker" id="lang-picker">
+            <label class="auth-lang-option {% if (form.locale ?? 'fr') != 'en' %}auth-lang-option--active{% endif %}">
+              <input type="radio" name="locale" id="locale-fr" value="fr"
+                     onchange="this.parentElement.classList.add('auth-lang-option--active'); var other=this.parentElement.parentElement.querySelectorAll('input[type=radio]'); for(var i=0;i<other.length;i++){if(other[i]!==this)other[i].parentElement.classList.remove('auth-lang-option--active');}"
+                     {{ (form.locale ?? 'fr') != 'en' ? 'checked' : '' }}
+                     style="display:none;">
+              <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/fr.svg') }}" width="20" height="14"
+                   style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12);" alt="FR">
+              Français
+            </label>
+            <label class="auth-lang-option {% if (form.locale ?? '') == 'en' %}auth-lang-option--active{% endif %}">
+              <input type="radio" name="locale" id="locale-en" value="en"
+                     onchange="this.parentElement.classList.add('auth-lang-option--active'); var other=this.parentElement.parentElement.querySelectorAll('input[type=radio]'); for(var i=0;i<other.length;i++){if(other[i]!==this)other[i].parentElement.classList.remove('auth-lang-option--active');}"
+                     {{ (form.locale ?? '') == 'en' ? 'checked' : '' }}
+                     style="display:none;">
+              <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/gb.svg') }}" width="20" height="14"
+                   style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12);" alt="EN">
+              English
+            </label>
+          </div>
         </div>
 
         {# CGU — styles inline pour garantir le rendu sur tous les écrans #}
@@ -234,15 +250,15 @@
   }
   updateCgu();
 
-  // Boutons langue
-  var fr = document.getElementById('lang-fr-label');
-  var en = document.getElementById('lang-en-label');
-  var activeS   = 'flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;border-radius:8px;transition:all .2s;user-select:none;border:2px solid #1B2B4B;background:rgba(27,43,75,.06);font-weight:600;color:#1B2B4B;';
-  var inactiveS = 'flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;border-radius:8px;transition:all .2s;user-select:none;border:1.5px solid #E8E0D4;color:#6B7280;';
-  if (fr && en) {
-    fr.addEventListener('click', function(){ fr.setAttribute('style',activeS); en.setAttribute('style',inactiveS); });
-    en.addEventListener('click', function(){ en.setAttribute('style',activeS); fr.setAttribute('style',inactiveS); });
-  }
+  // init langue
+  (function(){
+    var frI = document.getElementById('locale-fr');
+    var enI = document.getElementById('locale-en');
+    if (frI && enI) {
+      frI.parentElement.classList.toggle('auth-lang-option--active', frI.checked);
+      enI.parentElement.classList.toggle('auth-lang-option--active', enI.checked);
+    }
+  })();
 })();
 </script>
 {% endblock %}

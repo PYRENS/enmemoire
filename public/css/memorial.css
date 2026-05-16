@@ -354,3 +354,39 @@
   .memorial-footer__content { flex-direction: column; }
   .memorial-stats { gap: 1.5rem; }
 }
+
+/* Lightbox */
+.memorial-gallery__play {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.3);
+  color: white; font-size: 2.5rem;
+  transition: var(--em-transition);
+}
+.memorial-gallery__item:hover .memorial-gallery__play { background: rgba(0,0,0,.5); }
+
+/* Curseur pointer sur les photos galerie */
+.memorial-gallery__item { cursor: pointer; }
+
+/* Wrapper modérateur galerie */
+.memorial-gallery__item-wrap {
+  position: relative;
+}
+.memorial-gallery__mod-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+.mgal-btn {
+  width: 30px; height: 30px;
+  border-radius: 6px; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; cursor: pointer;
+  transition: all .2s; opacity: .9;
+}
+.mgal-btn:hover { opacity: 1; transform: scale(1.1); }
+.mgal-btn--edit   { background: white; color: #1B2B4B; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.mgal-btn--delete { background: rgba(185,28,28,.9); color: white; }

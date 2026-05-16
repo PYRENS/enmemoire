@@ -1,0 +1,109 @@
+{% extends 'base.html.twig' %}
+{% block title %}Modifier mon profil — EnMémoire.com{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/profile.css') }}">{% endblock %}
+
+{% block body %}
+<div class="profile-layout container-xl">
+  {% include 'profile/_sidebar.html.twig' with {active: 'edit'} %}
+
+  <main class="profile-main">
+    <div class="profile-section">
+      <div class="profile-section__header">
+        <h3>Modifier mes informations</h3>
+      </div>
+
+      {% if error %}
+        <div class="profile-alert profile-alert--error">
+          <i class="bi bi-exclamation-circle"></i> {{ error }}
+        </div>
+      {% endif %}
+
+      <form method="POST" action="{{ path('app_profile_edit') }}" class="profile-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('profile_edit') }}">
+
+        <div class="profile-form-row">
+          <div class="profile-form-group">
+            <label>Prénom *</label>
+            <input type="text" name="first_name" class="profile-input"
+                   value="{{ user.firstName }}" required minlength="2">
+          </div>
+          <div class="profile-form-group">
+            <label>Nom *</label>
+            <input type="text" name="last_name" class="profile-input"
+                   value="{{ user.lastName }}" required minlength="2">
+          </div>
+        </div>
+
+        <div class="profile-form-group">
+          <label>Email</label>
+          <input type="email" class="profile-input" value="{{ user.email }}"
+                 disabled style="opacity:.6;cursor:not-allowed;">
+          <small class="profile-hint">L'email ne peut pas être modifié ici. Contactez le support.</small>
+        </div>
+
+        <div class="profile-form-group">
+          <label>Numéro WhatsApp</label>
+          <input type="tel" name="phone_whatsapp" class="profile-input"
+                 value="{{ user.phoneWhatsapp ?? '' }}"
+                 placeholder="+243 81X XXX XXXX">
+        </div>
+
+        <div class="profile-form-group">
+          <label>Langue préférée</label>
+          <div style="display:flex;gap:.75rem;">
+            <label id="lang-fr"
+                   style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;
+                          border:{{ user.locale != 'en' ? '2px solid #1B2B4B' : '1.5px solid #E8E0D4' }};
+                          background:{{ user.locale != 'en' ? 'rgba(27,43,75,.05)' : 'white' }};
+                          font-weight:{{ user.locale != 'en' ? '600' : '400' }};"
+                   onclick="selectLang('fr')">
+              <input type="radio" name="locale" value="fr" style="display:none;"
+                     {{ user.locale != 'en' ? 'checked' : '' }}>
+              <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/fr.svg') }}" width="22" height="16"
+                   style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12);" alt="FR">
+              Français
+            </label>
+            <label id="lang-en"
+                   style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;
+                          border:{{ user.locale == 'en' ? '2px solid #1B2B4B' : '1.5px solid #E8E0D4' }};
+                          background:{{ user.locale == 'en' ? 'rgba(27,43,75,.05)' : 'white' }};
+                          font-weight:{{ user.locale == 'en' ? '600' : '400' }};"
+                   onclick="selectLang('en')">
+              <input type="radio" name="locale" value="en" style="display:none;"
+                     {{ user.locale == 'en' ? 'checked' : '' }}>
+              <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/gb.svg') }}" width="22" height="16"
+                   style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12);" alt="EN">
+              English
+            </label>
+          </div>
+        </div>
+
+        <div class="profile-form-actions">
+          <a href="{{ path('app_profile') }}" class="em-btn em-btn--ghost">Annuler</a>
+          <button type="submit" class="em-btn em-btn--primary">
+            <i class="bi bi-check-lg"></i> Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function selectLang(val) {
+  var fr = document.getElementById('lang-fr');
+  var en = document.getElementById('lang-en');
+  var on  = 'flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;border:2px solid #1B2B4B;background:rgba(27,43,75,.05);font-weight:600;';
+  var off = 'flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;border:1.5px solid #E8E0D4;background:white;font-weight:400;';
+  if (val === 'fr') {
+    fr.setAttribute('style', on); fr.querySelector('input').checked = true;
+    en.setAttribute('style', off);
+  } else {
+    en.setAttribute('style', on); en.querySelector('input').checked = true;
+    fr.setAttribute('style', off);
+  }
+}
+</script>
+{% endblock %}

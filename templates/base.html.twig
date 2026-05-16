@@ -43,8 +43,7 @@
             {# Burger mobile #}
             <button class="navbar-toggler em-toggler" type="button"
                     data-bs-toggle="collapse" data-bs-target="#navbarMain"
-                    aria-controls="navbarMain" aria-expanded="false" aria-label="Menu"
-                    style="border:none;box-shadow:none;outline:none;padding:6px 8px;">
+                    aria-controls="navbarMain" aria-expanded="false" aria-label="Menu">
                 <span></span><span></span><span></span>
             </button>
 
@@ -82,31 +81,28 @@
                 {# Liens droite #}
                 <ul class="navbar-nav ms-auto align-items-center gap-1">
 
-                    {# Langue — UN seul <li>, drapeaux toujours côte à côte desktop ET mobile #}
+                    {# ── Sélecteur de langue ──────────────────────────────
+                       Deux nav-link simples côte à côte.
+                       <img> SVG direct depuis vos fichiers locaux.
+                       Aucun wrapper, aucun CSS custom, pas de dropdown.
+                    ───────────────────────────────────────────────────── #}
                     <li class="nav-item">
-                        <div style="display:flex;align-items:center;gap:2px;padding:2px 4px;">
-                            <a href="?_locale=fr" title="Français"
-                               style="display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:6px;text-decoration:none;
-                                      font-size:.8rem;font-weight:{% if app.request.locale != 'en' %}700{% else %}400{% endif %};
-                                      color:{% if app.request.locale != 'en' %}#1B2B4B{% else %}#6B7280{% endif %};">
-                                <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/fr.svg') }}"
-                                     width="20" height="14" alt="FR"
-                                     style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15);flex-shrink:0;"
-                                     onerror="this.style.display='none'">
-                                FR
-                            </a>
-                            <span style="color:#D1D5DB;font-size:.7rem;user-select:none;">|</span>
-                            <a href="?_locale=en" title="English"
-                               style="display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:6px;text-decoration:none;
-                                      font-size:.8rem;font-weight:{% if app.request.locale == 'en' %}700{% else %}400{% endif %};
-                                      color:{% if app.request.locale == 'en' %}#1B2B4B{% else %}#6B7280{% endif %};">
-                                <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/gb.svg') }}"
-                                     width="20" height="14" alt="EN"
-                                     style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15);flex-shrink:0;"
-                                     onerror="this.style.display='none'">
-                                EN
-                            </a>
-                        </div>
+                        <a class="nav-link py-1 px-2 {% if app.request.locale != 'en' %}fw-bold text-dark{% endif %}"
+                           href="?_locale=fr" title="Français">
+                            <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/fr.svg') }}"
+                                 width="20" height="14" alt="FR"
+                                 style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15);vertical-align:middle;">
+                            <span style="font-size:.75rem;vertical-align:middle;"> FR</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link py-1 px-2 {% if app.request.locale == 'en' %}fw-bold text-dark{% endif %}"
+                           href="?_locale=en" title="English">
+                            <img src="{{ asset('bibliotheques/flag-icons/flags/4x3/gb.svg') }}"
+                                 width="20" height="14" alt="EN"
+                                 style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15);vertical-align:middle;">
+                            <span style="font-size:.75rem;vertical-align:middle;"> EN</span>
+                        </a>
                     </li>
 
                     {% if app.user %}
@@ -269,5 +265,35 @@ document.querySelectorAll('.em-flash').forEach(function(el){
     setTimeout(function(){ var a=bootstrap.Alert.getOrCreateInstance(el); if(a) a.close(); }, 6000);
 });
 </script>
+
+<script>
+(function() {
+  var badge = document.getElementById('notif-count');
+  if (!badge) return;
+
+  function updateBadge(count) {
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function fetchCount() {
+    fetch('/notifications/count', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) { if (data) updateBadge(data.count); })
+    .catch(function() {});
+  }
+
+  // Charger immédiatement puis toutes les 60 secondes
+  fetchCount();
+  setInterval(fetchCount, 60000);
+})();
+</script>
+
 </body>
 </html>

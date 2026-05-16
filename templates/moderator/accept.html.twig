@@ -1,0 +1,74 @@
+{% extends 'base.html.twig' %}
+{% block title %}Invitation à co-gérer une page — EnMémoire.com{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/moderator.css') }}">{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width:560px;padding-top:4rem;padding-bottom:4rem;">
+  <div class="mod-accept-card">
+
+    {# Icône #}
+    <div class="mod-accept-icon">🕯️</div>
+
+    {# Titre #}
+    <h1 class="mod-accept-title">Invitation à co-gérer</h1>
+
+    {# Qui invite #}
+    {% if invitedBy %}
+    <p class="mod-accept-inviter">
+      <strong>{{ invitedBy.fullName }}</strong> vous invite à co-gérer
+    </p>
+    {% endif %}
+
+    {# Page concernée #}
+    <div class="mod-accept-page">
+      <div class="mod-accept-page__portrait">
+        {% if page.mainPhotoUrl %}
+          <img src="{{ asset(page.mainPhotoUrl) }}" alt="{{ page.deceasedFullName }}">
+        {% else %}
+          👤
+        {% endif %}
+      </div>
+      <div>
+        <strong>{{ page.deceasedFullName }}</strong>
+        <div style="font-size:.85rem;color:var(--em-muted);">
+          {{ page.deceasedBirthDate|date('Y') }} — {{ page.deceasedDeathDate|date('Y') }}
+        </div>
+      </div>
+    </div>
+
+    {# Ce que ça implique #}
+    <div class="mod-accept-perms">
+      <p style="font-size:.875rem;font-weight:600;color:var(--em-navy);margin-bottom:.75rem;">
+        En tant que co-modérateur, vous pourrez :
+      </p>
+      <ul>
+        <li><i class="bi bi-check-circle-fill"></i> Approuver ou refuser les condoléances</li>
+        <li><i class="bi bi-check-circle-fill"></i> Modérer les témoignages et le livre d'or</li>
+        <li><i class="bi bi-check-circle-fill"></i> Ajouter des photos à la galerie</li>
+        <li><i class="bi bi-check-circle-fill"></i> Créer et gérer les événements</li>
+        <li><i class="bi bi-x-circle" style="color:var(--em-danger);"></i> Vous ne pouvez pas modifier la formule ni supprimer la page</li>
+      </ul>
+    </div>
+
+    {# Code de référence #}
+    <div style="font-size:.78rem;color:var(--em-muted);margin-bottom:1.5rem;">
+      Code d'invitation : <code>{{ moderator.moderatorCode }}</code>
+    </div>
+
+    {# Boutons #}
+    <form method="POST">
+      <div class="mod-accept-actions">
+        <button type="submit" name="action" value="decline"
+                class="em-btn em-btn--ghost" style="color:var(--em-danger);">
+          <i class="bi bi-x-lg"></i> Décliner
+        </button>
+        <button type="submit" name="action" value="accept"
+                class="em-btn em-btn--primary em-btn--lg">
+          <i class="bi bi-check-lg"></i> Accepter l'invitation
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

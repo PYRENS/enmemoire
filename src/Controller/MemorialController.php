@@ -80,9 +80,9 @@ class MemorialController extends AbstractController
         // Ligne de vie
         $lifeTimeline = $page->getLifeTimelines()->toArray();
 
-        // Galerie principale (photos)
+        // Galerie principale (photos + videos)
         $gallery = $this->em->getRepository(\App\Entity\MediaGallery::class)
-            ->findBy(['memorial' => $page, 'type' => 'photo', 'event' => null], ['sortOrder' => 'ASC', 'createdAt' => 'DESC'], 30);
+            ->findBy(['memorial' => $page, 'event' => null], ['sortOrder' => 'ASC', 'createdAt' => 'DESC'], 50);
 
         // Connexions familiales acceptées
         $familyConnections = $this->em->getRepository(\App\Entity\FamilyConnection::class)

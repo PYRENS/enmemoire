@@ -1,0 +1,78 @@
+<aside class="profile-sidebar">
+  <div class="profile-card">
+
+    {# Avatar #}
+    <div class="profile-avatar-wrap" id="avatar-wrap">
+      {% if app.user.avatarUrl %}
+        <img src="{{ asset(app.user.avatarUrl) }}" alt="{{ app.user.fullName }}"
+             class="profile-avatar" id="avatar-img">
+      {% else %}
+        <div class="profile-avatar profile-avatar--initials" id="avatar-initials">
+          {{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}
+        </div>
+      {% endif %}
+      <button class="profile-avatar-edit"
+              onclick="document.getElementById('avatar-input-sidebar').click()"
+              title="Changer l'avatar">
+        <i class="bi bi-camera-fill"></i>
+      </button>
+      <input type="file" id="avatar-input-sidebar" accept="image/jpeg,image/png,image/webp"
+             style="display:none;" onchange="uploadAvatarSidebar(this)">
+    </div>
+
+    <h2 class="profile-name">{{ app.user.fullName }}</h2>
+    <p class="profile-email">{{ app.user.email }}</p>
+
+    <div class="profile-badges">
+      <span class="profile-badge profile-badge--{{ app.user.status == 'active' ? 'success' : 'warning' }}">
+        <i class="bi bi-circle-fill"></i>
+        {{ app.user.status == 'active' ? 'Actif' : app.user.status|capitalize }}
+      </span>
+    </div>
+  </div>
+
+  <nav class="profile-nav">
+    <a href="{{ path('app_profile') }}"
+       class="profile-nav__item {% if active == 'index' %}active{% endif %}">
+      <i class="bi bi-person"></i> Mon profil
+    </a>
+    <a href="{{ path('app_profile_edit') }}"
+       class="profile-nav__item {% if active == 'edit' %}active{% endif %}">
+      <i class="bi bi-pencil"></i> Modifier les infos
+    </a>
+    <a href="{{ path('app_profile_password') }}"
+       class="profile-nav__item {% if active == 'password' %}active{% endif %}">
+      <i class="bi bi-shield-lock"></i> Mot de passe
+    </a>
+    <a href="{{ path('app_profile_preferences') }}"
+       class="profile-nav__item {% if active == 'preferences' %}active{% endif %}">
+      <i class="bi bi-sliders"></i> Préférences
+    </a>
+    <a href="{{ path('app_dashboard') }}" class="profile-nav__item">
+      <i class="bi bi-grid-1x2"></i> Mon espace
+    </a>
+    <a href="{{ path('app_profile_delete') }}"
+       class="profile-nav__item profile-nav__item--danger {% if active == 'delete' %}active{% endif %}">
+      <i class="bi bi-trash"></i> Supprimer le compte
+    </a>
+  </nav>
+</aside>
+
+<script>
+async function uploadAvatarSidebar(input) {
+  if (!input.files[0]) return;
+  const form = new FormData();
+  form.append('avatar', input.files[0]);
+  form.append('_token', '{{ csrf_token("profile_avatar") }}');
+  const resp = await fetch('{{ path("app_profile_avatar") }}', {method:'POST', body:form});
+  const data = await resp.json();
+  if (data.error) { alert(data.error); return; }
+  const wrap = document.getElementById('avatar-wrap');
+  const old  = document.getElementById('avatar-img') || document.getElementById('avatar-initials');
+  if (old) old.remove();
+  const img = document.createElement('img');
+  img.src = data.avatar_url + '?t=' + Date.now();
+  img.className = 'profile-avatar'; img.id = 'avatar-img';
+  wrap.insertBefore(img, wrap.firstChild);
+}
+</script>
