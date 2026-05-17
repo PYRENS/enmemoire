@@ -1,0 +1,318 @@
+{% extends 'base.html.twig' %}
+{% block title %}Arbre familial — {{ page.deceasedFullName }}{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('css/family.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="container-xl" style="padding-top:2rem;padding-bottom:4rem;">
+
+  {# En-tête #}
+  <div class="family-header">
+    <a href="{{ path('app_memorial_show', {slug: page.slug}) }}" class="family-back">
+      <i class="bi bi-arrow-left"></i> Page mémorielle
+    </a>
+    <div>
+      <h1>🌳 Arbre familial</h1>
+      <p class="text-muted">{{ page.deceasedFullName }}</p>
+    </div>
+    {% if isModerator %}
+    <a href="{{ path('app_family_requests', {slug: page.slug}) }}" class="em-btn em-btn--ghost" style="margin-right:.5rem;"><i class="bi bi-clock-history"></i> Demandes</a><a href="{{ path('app_family_connect', {slug: page.slug}) }}" class="em-btn em-btn--primary">
+      <i class="bi bi-person-plus"></i> Ajouter un membre
+    </a>
+    {% endif %}
+  </div>
+
+  {% if connections is empty %}
+  {# État vide #}
+  <div class="family-empty">
+    <div class="family-empty__icon">🌱</div>
+    <h3>L'arbre familial est vide</h3>
+    <p>Connectez d'autres pages mémorielles pour construire l'arbre familial de {{ page.deceasedFirstName }}.</p>
+    {% if isModerator %}
+    <a href="{{ path('app_family_requests', {slug: page.slug}) }}" class="em-btn em-btn--ghost" style="margin-right:.5rem;"><i class="bi bi-clock-history"></i> Demandes</a><a href="{{ path('app_family_connect', {slug: page.slug}) }}" class="em-btn em-btn--primary">
+      <i class="bi bi-person-plus"></i> Ajouter le premier membre
+    </a>
+    {% endif %}
+  </div>
+
+  {% else %}
+
+  {# Switcher vue #}
+  <div class="family-view-switch">
+    <button class="family-view-btn active d-none d-md-flex" onclick="switchView('graph')" id="btn-graph">
+      <i class="bi bi-diagram-3"></i> Graphique
+    </button>
+    <button class="family-view-btn" onclick="switchView('list')" id="btn-list">
+      <i class="bi bi-list-ul"></i> Liste
+    </button>
+  </div>
+
+  {# VUE GRAPHIQUE (desktop) #}
+  <div id="view-graph" class="family-graph-wrap">
+    <div class="family-graph-controls">
+      <button onclick="zoomIn()" class="family-ctrl-btn" title="Zoom +"><i class="bi bi-plus-lg"></i></button>
+      <button onclick="zoomOut()" class="family-ctrl-btn" title="Zoom -"><i class="bi bi-dash-lg"></i></button>
+      <button onclick="resetZoom()" class="family-ctrl-btn" title="Réinitialiser"><i class="bi bi-arrows-fullscreen"></i></button>
+    </div>
+    <svg id="family-svg" width="100%" height="600"></svg>
+  </div>
+
+  {# VUE LISTE (mobile + toggle) #}
+  <div id="view-list" class="family-list-wrap" style="display:none;">
+    {# Nœud central #}
+    <div class="family-list-central">
+      <div class="family-list-avatar family-list-avatar--central">
+        {% if page.mainPhotoUrl %}
+          <img src="{{ page.mainPhotoUrl starts with 'http' ? page.mainPhotoUrl : asset(page.mainPhotoUrl) }}"
+               alt="{{ page.deceasedFullName }}">
+        {% else %}
+          {{ page.deceasedFirstName|first|upper }}
+        {% endif %}
+      </div>
+      <div>
+        <strong>{{ page.deceasedFullName }}</strong>
+        <small class="text-muted d-block">
+          {{ page.deceasedBirthDate|date('Y') }} – {{ page.deceasedDeathDate|date('Y') }}
+        </small>
+      </div>
+    </div>
+
+    {# Relations #}
+    {% for connection in connections %}
+      {% set isCentral = connection.memorialFrom.id == page.id %}
+      {% set relative  = isCentral ? connection.memorialTo : connection.memorialFrom %}
+      {% set relation  = isCentral ? connection.relationFrom : connection.relationTo %}
+
+      <div class="family-list-item" id="conn-{{ connection.id }}">
+        <div class="family-list-item__relation">{{ relation }}</div>
+        <a href="{{ path('app_memorial_show', {slug: relative.slug}) }}" class="family-list-item__person" style="min-width:0;">
+          <div class="family-list-avatar">
+            {% if relative.mainPhotoUrl %}
+              <img src="{{ relative.mainPhotoUrl starts with 'http' ? relative.mainPhotoUrl : asset(relative.mainPhotoUrl) }}"
+                   alt="{{ relative.deceasedFullName }}">
+            {% else %}
+              {{ relative.deceasedFirstName|first|upper }}
+            {% endif %}
+          </div>
+          <div>
+            <strong>{{ relative.deceasedFullName }}</strong>
+            <small class="text-muted d-block">
+              {{ relative.deceasedBirthDate|date('Y') }} – {{ relative.deceasedDeathDate|date('Y') }}
+            </small>
+          </div>
+        </a>
+        {% if isModerator %}
+        <button onclick="deleteConnection({{ connection.id }})"
+                class="family-list-item__delete" title="Supprimer">
+          <i class="bi bi-x-lg"></i>
+        </button>
+        <span class="csrf-family-delete" data-id="{{ connection.id }}" style="display:none;">
+          {{ csrf_token('family_delete_' ~ connection.id) }}
+        </span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+// Données de l'arbre
+var TREE_DATA = {{ treeData|json_encode|raw }};
+var PAGE_SLUG = '{{ page.slug }}';
+var IS_MOBILE = window.innerWidth < 768;
+
+// ── Switch vue ────────────────────────────────────────────
+function switchView(view) {
+  document.getElementById('view-graph').style.display = view === 'graph' ? 'block' : 'none';
+  document.getElementById('view-list').style.display  = view === 'list'  ? 'block' : 'none';
+  document.getElementById('btn-graph').classList.toggle('active', view === 'graph');
+  document.getElementById('btn-list').classList.toggle('active', view === 'list');
+  if (view === 'graph') initGraph();
+}
+
+// Auto-switch mobile
+if (IS_MOBILE) switchView('list');
+
+// ── Graphique D3 ──────────────────────────────────────────
+var svg, g, zoom, simulation;
+
+function initGraph() {
+  var container = document.getElementById('family-svg');
+  if (!container || !TREE_DATA.nodes.length) return;
+
+  var W = container.clientWidth || 800;
+  var H = 600;
+
+  // Nettoyer
+  d3.select('#family-svg').selectAll('*').remove();
+
+  svg = d3.select('#family-svg')
+    .attr('viewBox', [0, 0, W, H]);
+
+  // Zoom
+  zoom = d3.zoom()
+    .scaleExtent([0.3, 3])
+    .on('zoom', function(event) { g.attr('transform', event.transform); });
+
+  svg.call(zoom);
+  g = svg.append('g');
+
+  // Defs — clip paths pour photos rondes
+  var defs = svg.append('defs');
+
+  TREE_DATA.nodes.forEach(function(node) {
+    if (node.photo) {
+      defs.append('clipPath')
+        .attr('id', 'clip-' + node.id)
+        .append('circle')
+        .attr('r', node.isCentral ? 38 : 28);
+    }
+  });
+
+  // Simulation force
+  simulation = d3.forceSimulation(TREE_DATA.nodes)
+    .force('link', d3.forceLink(TREE_DATA.edges).id(function(d){ return d.id; }).distance(180))
+    .force('charge', d3.forceManyBody().strength(-400))
+    .force('center', d3.forceCenter(W/2, H/2))
+    .force('collision', d3.forceCollide(80));
+
+  // Liens
+  var link = g.append('g').selectAll('line')
+    .data(TREE_DATA.edges).enter().append('line')
+    .attr('class', 'family-edge');
+
+  // Labels des liens
+  var linkLabel = g.append('g').selectAll('text')
+    .data(TREE_DATA.edges).enter().append('text')
+    .attr('class', 'family-edge-label')
+    .text(function(d){ return d.relationFrom + ' / ' + d.relationTo; });
+
+  // Nœuds
+  var node = g.append('g').selectAll('g')
+    .data(TREE_DATA.nodes).enter().append('g')
+    .attr('class', 'family-node')
+    .call(d3.drag()
+      .on('start', dragStart)
+      .on('drag', dragged)
+      .on('end', dragEnd)
+    )
+    .on('click', function(event, d) {
+      if (!event.defaultPrevented)
+        window.location.href = '/memorial/' + d.slug;
+    });
+
+  // Cercle de fond
+  node.append('circle')
+    .attr('r', function(d){ return d.isCentral ? 42 : 32; })
+    .attr('class', function(d){ return 'family-node-circle' + (d.isCentral ? ' family-node-circle--central' : ''); });
+
+  // Photo ou initiales
+  node.each(function(d) {
+    var n = d3.select(this);
+    if (d.photo) {
+      var photoUrl = d.photo.startsWith('http') ? d.photo : '/' + d.photo.replace(/^\//, '');
+      n.append('image')
+        .attr('href', photoUrl)
+        .attr('x', function(){ return d.isCentral ? -38 : -28; })
+        .attr('y', function(){ return d.isCentral ? -38 : -28; })
+        .attr('width', function(){ return d.isCentral ? 76 : 56; })
+        .attr('height', function(){ return d.isCentral ? 76 : 56; })
+        .attr('clip-path', 'url(#clip-' + d.id + ')');
+    } else {
+      n.append('text')
+        .attr('class', 'family-node-initial')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '0.35em')
+        .attr('font-size', function(){ return d.isCentral ? '1.4rem' : '1.1rem'; })
+        .text(d.label.split(' ').map(function(w){ return w[0]; }).join('').slice(0, 2).toUpperCase());
+    }
+  });
+
+  // Nom sous le nœud
+  node.append('text')
+    .attr('class', 'family-node-label')
+    .attr('text-anchor', 'middle')
+    .attr('y', function(d){ return d.isCentral ? 55 : 44; })
+    .text(function(d){ return d.label.split(' ')[0]; }); // Prénom seulement
+
+  // Dates
+  node.append('text')
+    .attr('class', 'family-node-dates')
+    .attr('text-anchor', 'middle')
+    .attr('y', function(d){ return d.isCentral ? 70 : 58; })
+    .text(function(d){ return d.dates; });
+
+  // Tick
+  simulation.on('tick', function() {
+    link
+      .attr('x1', function(d){ return d.source.x; })
+      .attr('y1', function(d){ return d.source.y; })
+      .attr('x2', function(d){ return d.target.x; })
+      .attr('y2', function(d){ return d.target.y; });
+
+    linkLabel
+      .attr('x', function(d){ return (d.source.x + d.target.x) / 2; })
+      .attr('y', function(d){ return (d.source.y + d.target.y) / 2; });
+
+    node.attr('transform', function(d){ return 'translate(' + d.x + ',' + d.y + ')'; });
+  });
+
+  // Centrer le nœud central après init
+  simulation.on('end', function() {
+    var central = TREE_DATA.nodes.find(function(n){ return n.isCentral; });
+    if (central) {
+      var tx = W/2 - central.x;
+      var ty = H/2 - central.y;
+      svg.call(zoom.transform, d3.zoomIdentity.translate(tx, ty));
+    }
+  });
+}
+
+function dragStart(event, d) {
+  if (!event.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x; d.fy = d.y;
+}
+function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+function dragEnd(event, d) {
+  if (!event.active) simulation.alphaTarget(0);
+  // Garder la position après drag
+  d.fx = d.x;
+  d.fy = d.y;
+}
+
+function zoomIn()    { svg.transition().call(zoom.scaleBy, 1.4); }
+function zoomOut()   { svg.transition().call(zoom.scaleBy, 0.7); }
+function resetZoom() { svg.transition().call(zoom.transform, d3.zoomIdentity.translate(400, 300)); }
+
+// Init graphique si desktop
+if (!IS_MOBILE && TREE_DATA.nodes.length > 0) {
+  window.addEventListener('load', initGraph);
+}
+
+// ── Suppression connexion ─────────────────────────────────
+async function deleteConnection(id) {
+  if (!confirm('Supprimer cette connexion familiale ?')) return;
+  var csrf = document.querySelector('.csrf-family-delete[data-id="'+id+'"]')?.textContent?.trim();
+  var form = new FormData();
+  form.append('_token', csrf);
+  var resp = await fetch('/memorial/'+PAGE_SLUG+'/famille/supprimer/'+id, {
+    method: 'POST', body: form, headers: {'X-Requested-With': 'XMLHttpRequest'}
+  });
+  var data = await resp.json();
+  if (data.success) {
+    document.getElementById('conn-'+id)?.remove();
+    // Recharger le graphique
+    var newNodes = TREE_DATA.nodes;
+    TREE_DATA.edges = TREE_DATA.edges.filter(function(e){ return e.id !== id; });
+    initGraph();
+  } else alert(data.error || 'Erreur');
+}
+</script>
+{% endblock %}

@@ -76,6 +76,16 @@
         <i class="bi bi-people"></i> Modérateurs
       </a>
 
+      <a href="{{ path('app_family_tree', {slug: page.slug}) }}"
+         class="dashboard-nav-item">
+        <i class="bi bi-diagram-3"></i> Arbre familial
+      </a>
+
+      <a href="{{ path('app_family_requests', {slug: page.slug}) }}"
+         class="dashboard-nav-item">
+        <i class="bi bi-clock-history"></i> Demandes familiales
+      </a>
+
       <a href="#" class="dashboard-nav-item" data-bs-toggle="modal" data-bs-target="#themeModal">
         <i class="bi bi-palette"></i> Changer le thème
       </a>

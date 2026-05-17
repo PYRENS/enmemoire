@@ -1,0 +1,201 @@
+{% extends 'base.html.twig' %}
+{% block title %}Connecter un membre — {{ page.deceasedFullName }}{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('css/family.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width:680px;padding-top:2.5rem;padding-bottom:4rem;">
+
+  <div class="family-header">
+    <a href="{{ path('app_family_tree', {slug: page.slug}) }}" class="family-back">
+      <i class="bi bi-arrow-left"></i> Arbre familial
+    </a>
+    <div>
+      <h1>👤 Ajouter un membre</h1>
+      <p class="text-muted">Connecter une page mémorielle à <strong>{{ page.deceasedFullName }}</strong></p>
+    </div>
+  </div>
+
+  {% if error %}
+  <div class="family-alert family-alert--error">
+    <i class="bi bi-exclamation-circle"></i> {{ error }}
+  </div>
+  {% endif %}
+  {% if success %}
+  <div class="family-alert family-alert--success">
+    <i class="bi bi-check-circle"></i> {{ success }}
+    <a href="{{ path('app_family_tree', {slug: page.slug}) }}" class="ms-2">← Voir l'arbre</a>
+  </div>
+  {% endif %}
+
+  {# Étape 1 : Rechercher une page #}
+  <div class="family-card">
+    <h3>1. Rechercher une page mémorielle</h3>
+    <form method="POST" class="family-search-form">
+      <input type="hidden" name="action" value="search">
+      <div class="family-search-row">
+        <input type="text" name="q" class="family-input" placeholder="Nom du défunt…"
+               value="{{ app.request.request.get('q') ?? '' }}" autofocus>
+        <button type="submit" class="em-btn em-btn--primary">
+          <i class="bi bi-search"></i> Rechercher
+        </button>
+      </div>
+    </form>
+
+    {% if results is defined and results is not empty %}
+    <div class="family-results">
+      {% for result in results %}
+      <div class="family-result-item" onclick="selectPage({{ result.id }}, '{{ result.deceasedFullName|e('js') }}', '{{ result.mainPhotoUrl ?? '' }}')"
+           id="result-{{ result.id }}">
+        <div class="family-list-avatar family-list-avatar--sm">
+          {% if result.mainPhotoUrl %}
+            <img src="{{ result.mainPhotoUrl starts with 'http' ? result.mainPhotoUrl : asset(result.mainPhotoUrl) }}" alt="">
+          {% else %}
+            {{ result.deceasedFirstName|first|upper }}
+          {% endif %}
+        </div>
+        <div>
+          <strong>{{ result.deceasedFullName }}</strong>
+          <small class="text-muted d-block">
+            {{ result.deceasedBirthDate|date('d/m/Y') }} – {{ result.deceasedDeathDate|date('d/m/Y') }}
+          </small>
+        </div>
+        <span class="family-result-select">Sélectionner →</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% elseif app.request.isMethod('POST') and app.request.request.get('action') == 'search' %}
+    <p class="text-muted" style="margin-top:1rem;font-size:.875rem;">
+      <i class="bi bi-info-circle"></i> Aucune page trouvée pour cette recherche.
+    </p>
+    {% endif %}
+  </div>
+
+  {# Étape 2 : Définir la relation #}
+  <div class="family-card" id="relation-form" style="display:none;">
+    <h3>2. Définir la relation</h3>
+    <form method="POST" id="connect-form">
+      <input type="hidden" name="action" value="connect">
+      <input type="hidden" name="_token" value="{{ csrf_token('family_connect_' ~ page.id) }}">
+      <input type="hidden" name="target_id" id="target_id" value="">
+
+      {# Aperçu #}
+      <div class="family-connect-preview">
+        <div class="family-connect-person">
+          {% if page.mainPhotoUrl %}
+            <img src="{{ page.mainPhotoUrl starts with 'http' ? page.mainPhotoUrl : asset(page.mainPhotoUrl) }}"
+                 alt="{{ page.deceasedFullName }}" class="family-connect-photo">
+          {% else %}
+            <div class="family-connect-photo family-connect-photo--placeholder">
+              {{ page.deceasedFirstName|first|upper }}
+            </div>
+          {% endif %}
+          <strong>{{ page.deceasedFullName }}</strong>
+        </div>
+        <div class="family-connect-arrow">
+          <i class="bi bi-arrow-left-right"></i>
+        </div>
+        <div class="family-connect-person" id="selected-person">
+          <div class="family-connect-photo family-connect-photo--placeholder" id="selected-photo">?</div>
+          <strong id="selected-name">Sélectionnez une page</strong>
+        </div>
+      </div>
+
+      {# Relations #}
+      <div class="family-relation-row">
+        <div class="family-form-group">
+          <label>{{ page.deceasedFirstName }} est le/la…</label>
+          <select name="relation_from" class="family-select" required
+                  onchange="updateRelationTo(this.value)">
+            <option value="">Choisir…</option>
+            {% for rel in relations %}
+            <option value="{{ rel }}">{{ rel }}</option>
+            {% endfor %}
+          </select>
+          <small class="text-muted">de la page sélectionnée</small>
+        </div>
+        <div class="family-form-group">
+          <label>La page sélectionnée est le/la…</label>
+          <select name="relation_to" class="family-select" required id="relation_to">
+            <option value="">Choisir…</option>
+            {% for rel in relations %}
+            <option value="{{ rel }}">{{ rel }}</option>
+            {% endfor %}
+          </select>
+          <small class="text-muted">de {{ page.deceasedFirstName }}</small>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem;">
+        <button type="button" onclick="cancelSelect()" class="em-btn em-btn--ghost">
+          Annuler
+        </button>
+        <button type="submit" class="em-btn em-btn--primary">
+          <i class="bi bi-link-45deg"></i> Connecter
+        </button>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+var RELATIONS_MAP = {
+  'Père': 'Fils/Fille', 'Mère': 'Fils/Fille',
+  'Fils': 'Père/Mère', 'Fille': 'Père/Mère',
+  'Époux': 'Épouse', 'Épouse': 'Époux',
+  'Frère': 'Frère/Sœur', 'Sœur': 'Frère/Sœur',
+  'Grand-père': 'Petit-fils/Petite-fille', 'Grand-mère': 'Petit-fils/Petite-fille',
+  'Petit-fils': 'Grand-père/Grand-mère', 'Petite-fille': 'Grand-père/Grand-mère',
+  'Oncle': 'Neveu/Nièce', 'Tante': 'Neveu/Nièce',
+  'Neveu': 'Oncle/Tante', 'Nièce': 'Oncle/Tante',
+  'Cousin': 'Cousin/Cousine', 'Cousine': 'Cousin/Cousine',
+  'Autre': 'Autre',
+};
+
+function selectPage(id, name, photo) {
+  document.getElementById('target_id').value = id;
+  document.getElementById('selected-name').textContent = name;
+
+  var photoEl = document.getElementById('selected-photo');
+  if (photo) {
+    photoEl.outerHTML = '<img src="'+(photo.startsWith('http') ? photo : '/'+photo)+'" alt="'+name+'" class="family-connect-photo" id="selected-photo">';
+  } else {
+    photoEl.textContent = name[0].toUpperCase();
+  }
+
+  // Highlight item sélectionné
+  document.querySelectorAll('.family-result-item').forEach(function(el) {
+    el.classList.remove('family-result-item--selected');
+  });
+  document.getElementById('result-'+id)?.classList.add('family-result-item--selected');
+
+  document.getElementById('relation-form').style.display = 'block';
+  document.getElementById('relation-form').scrollIntoView({behavior: 'smooth'});
+}
+
+function cancelSelect() {
+  document.getElementById('target_id').value = '';
+  document.getElementById('relation-form').style.display = 'none';
+}
+
+function updateRelationTo(relFrom) {
+  var relTo = document.getElementById('relation_to');
+  var suggestion = RELATIONS_MAP[relFrom];
+  if (suggestion) {
+    // Chercher l'option la plus proche
+    var found = false;
+    for (var i = 0; i < relTo.options.length; i++) {
+      if (relTo.options[i].value && suggestion.includes(relTo.options[i].value)) {
+        relTo.value = relTo.options[i].value;
+        found = true;
+        break;
+      }
+    }
+  }
+}
+</script>
+{% endblock %}

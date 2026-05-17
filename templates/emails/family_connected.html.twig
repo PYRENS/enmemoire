@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Connexion familiale — EnMémoire.com</title></head>
+<body style="margin:0;padding:0;background:#F4F6F9;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0"
+       style="background:white;border-radius:16px;box-shadow:0 4px 24px rgba(27,43,75,.1);overflow:hidden;max-width:560px;width:100%;">
+
+  <tr><td style="background:linear-gradient(135deg,#1B2B4B,#2C4270);padding:28px 32px;text-align:center;">
+    <h1 style="color:white;font-weight:300;font-size:22px;margin:0;">
+      🌳 <span style="color:#C9A84C;">En</span>Mémoire<span style="color:#C9A84C;">.com</span>
+    </h1>
+  </td></tr>
+
+  <tr><td style="padding:32px;">
+    <h2 style="color:#1B2B4B;font-size:20px;font-weight:400;margin:0 0 16px;">
+      Connexion familiale établie
+    </h2>
+
+    <p style="color:#6B7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+      <strong style="color:#1B2B4B;">{{ requestedBy.fullName }}</strong> a connecté la page mémorielle de
+      <strong style="color:#1B2B4B;">{{ page.deceasedFullName }}</strong>
+      à la page de
+      <strong style="color:#1B2B4B;">{{ target.deceasedFullName }}</strong>.
+    </p>
+
+    <div style="background:#F8F4EE;border-radius:12px;padding:16px;margin-bottom:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div style="text-align:center;">
+          <strong style="color:#1B2B4B;display:block;font-size:.95rem;">{{ page.deceasedFullName }}</strong>
+          <span style="background:#C9A84C;color:#1B2B4B;font-size:.72rem;font-weight:700;
+                       padding:2px 8px;border-radius:10px;margin-top:4px;display:inline-block;">
+            {{ relationFrom }}
+          </span>
+        </div>
+        <div style="font-size:1.5rem;color:#C9A84C;">↔</div>
+        <div style="text-align:center;">
+          <strong style="color:#1B2B4B;display:block;font-size:.95rem;">{{ target.deceasedFullName }}</strong>
+          <span style="background:#C9A84C;color:#1B2B4B;font-size:.72rem;font-weight:700;
+                       padding:2px 8px;border-radius:10px;margin-top:4px;display:inline-block;">
+            {{ relationTo }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="{{ requests_url ?? tree_url }}"
+         style="display:inline-block;background:#1B2B4B;color:white;text-decoration:none;
+                padding:14px 28px;border-radius:8px;font-size:15px;font-weight:600;">
+        ✅ Voir et répondre à la demande
+      </a>
+    </div>
+    <p style="color:#6B7280;font-size:.8rem;text-align:center;margin-top:12px;">
+      Connectez-vous à EnMémoire.com pour accepter ou refuser cette demande.
+    </p>
+
+    <p style="font-size:.78rem;color:#9CA3AF;text-align:center;margin:20px 0 0;">
+      Vous recevez cet email car vous êtes propriétaire de la page mémorielle de {{ target.deceasedFullName }}.
+    </p>
+  </td></tr>
+
+  <tr><td style="background:#F8F4EE;border-top:1px solid #E8E0D4;padding:14px 32px;text-align:center;">
+    <p style="color:#9CA3AF;font-size:12px;margin:0;">
+      © {{ "now"|date("Y") }} EnMémoire.com
+    </p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>

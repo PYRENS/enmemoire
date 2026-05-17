@@ -41,6 +41,17 @@
 </style>
 
 <style>
+
+.gallery-tabs-wrap {
+  display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap;
+  gap: .5rem; margin-bottom: 1.25rem;
+}
+.gallery-tabs-wrap .gallery-tabs {
+  margin-bottom: 0; border-bottom: none; flex: 1;
+  border-bottom: 2px solid var(--em-stone);
+}
+
 /* Onglets galerie */
 .gallery-tabs {
   display: flex; gap: .5rem; margin-bottom: 1.25rem;
@@ -297,16 +308,23 @@
     </div>
     {% else %}
 
-    {# Onglets galerie (tabs sur desktop, accordéon sur mobile) #}
-    <div class="gallery-tabs">
-      <button class="gallery-tab active" onclick="switchGalleryTab('photos', this)">
-        <i class="bi bi-images"></i> Photos
-        <span class="gallery-tab__count">{{ photos|length }}</span>
-      </button>
-      {% if videos is not empty %}
-      <button class="gallery-tab" onclick="switchGalleryTab('videos', this)">
-        <i class="bi bi-play-circle"></i> Vidéos
-        <span class="gallery-tab__count">{{ videos|length }}</span>
+    {# Onglets galerie + bouton upload modérateur #}
+    <div class="gallery-tabs-wrap">
+      <div class="gallery-tabs">
+        <button class="gallery-tab active" onclick="switchGalleryTab('photos', this)">
+          <i class="bi bi-images"></i> Photos
+          <span class="gallery-tab__count">{{ photos|length }}</span>
+        </button>
+        {% if videos is not empty %}
+        <button class="gallery-tab" onclick="switchGalleryTab('videos', this)">
+          <i class="bi bi-play-circle"></i> Vidéos
+          <span class="gallery-tab__count">{{ videos|length }}</span>
+        </button>
+        {% endif %}
+      </div>
+      {% if isModerator %}
+      <button onclick="openUploadModal()" class="em-btn em-btn--primary em-btn--sm">
+        <i class="bi bi-cloud-upload"></i> Ajouter des médias
       </button>
       {% endif %}
     </div>
@@ -629,6 +647,58 @@
     <p id="lightbox-counter" style="color:rgba(255,255,255,.4);font-size:.78rem;margin:4px 0 0;text-align:center;"></p>
   </div>
 </div>
+
+{# Modal Upload Médias (modérateurs) #}
+{% if isModerator %}
+<div id="upload-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:white;border-radius:16px;padding:1.5rem;width:500px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.3);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+      <h4 style="margin:0;color:var(--em-navy);font-size:1.1rem;">
+        <i class="bi bi-cloud-upload"></i> Ajouter des médias
+      </h4>
+      <button onclick="closeUploadModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--em-muted);">&times;</button>
+    </div>
+
+    {# Zone de dépôt #}
+    <div id="pub-dropzone"
+         style="border:2px dashed var(--em-stone);border-radius:12px;padding:2rem;text-align:center;
+                background:var(--em-cream);cursor:pointer;margin-bottom:1rem;transition:all .2s;"
+         ondragover="event.preventDefault();this.style.borderColor='var(--em-gold)';"
+         ondragleave="this.style.borderColor='var(--em-stone)';"
+         ondrop="handlePubDrop(event)"
+         onclick="document.getElementById('pub-file-input').click()">
+      <i class="bi bi-cloud-upload" style="font-size:2rem;color:var(--em-gold);display:block;margin-bottom:.5rem;"></i>
+      <p style="margin:0 0 .5rem;color:var(--em-muted);font-size:.9rem;">Glissez vos fichiers ici ou cliquez</p>
+      <small style="color:var(--em-muted);">Photos JPG/PNG/WebP · Vidéos MP4/WebM · Max 10/100 Mo</small>
+      <input type="file" id="pub-file-input" multiple
+             accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+             style="display:none;" onchange="uploadPubFiles(this.files)">
+    </div>
+
+    {# Légende #}
+    <input type="text" id="pub-caption" placeholder="Légende (optionnelle)"
+           maxlength="255"
+           style="width:100%;padding:.6rem .8rem;border:1.5px solid var(--em-stone);border-radius:8px;
+                  font-size:.875rem;outline:none;box-sizing:border-box;margin-bottom:1rem;">
+
+    {# Progression #}
+    <div id="pub-progress-wrap" style="display:none;margin-bottom:1rem;">
+      <div style="background:var(--em-cream);border-radius:6px;height:8px;overflow:hidden;">
+        <div id="pub-progress-bar" style="height:100%;background:var(--em-gold);width:0%;transition:width .3s;"></div>
+      </div>
+      <p id="pub-progress-label" style="font-size:.78rem;color:var(--em-muted);margin:.4rem 0 0;text-align:center;"></p>
+    </div>
+
+    {# Résultats #}
+    <div id="pub-upload-results"></div>
+
+    <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem;">
+      <button onclick="closeUploadModal()" class="em-btn em-btn--ghost">Fermer</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block javascripts %}
@@ -801,6 +871,126 @@ function switchGalleryTab(tab, btn) {
   var section = document.getElementById('gallery-' + tab);
   if (section) section.style.display = 'block';
   if (btn) btn.classList.add('active');
+}
+
+var PUB_SLUG = '{{ page.slug }}';
+var PUB_CSRF = '{{ csrf_token("media_gallery_" ~ page.id) }}';
+
+function openUploadModal() {
+  document.getElementById('upload-modal').style.display = 'flex';
+  document.getElementById('pub-caption').value = '';
+  document.getElementById('pub-upload-results').innerHTML = '';
+  document.getElementById('pub-progress-wrap').style.display = 'none';
+}
+function closeUploadModal() {
+  document.getElementById('upload-modal').style.display = 'none';
+}
+document.getElementById('upload-modal')?.addEventListener('click', function(e){
+  if (e.target === this) closeUploadModal();
+});
+
+function handlePubDrop(e) {
+  e.preventDefault();
+  document.getElementById('pub-dropzone').style.borderColor = 'var(--em-stone)';
+  uploadPubFiles(e.dataTransfer.files);
+}
+
+async function uploadPubFiles(files) {
+  if (!files || files.length === 0) return;
+  var caption = document.getElementById('pub-caption').value.trim();
+  var results = document.getElementById('pub-upload-results');
+  var progressWrap = document.getElementById('pub-progress-wrap');
+  var progressBar  = document.getElementById('pub-progress-bar');
+  var progressLabel = document.getElementById('pub-progress-label');
+
+  progressWrap.style.display = 'block';
+  results.innerHTML = '';
+
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i];
+    progressLabel.textContent = 'Upload ' + (i+1) + '/' + files.length + ' : ' + file.name;
+    progressBar.style.width = Math.round((i / files.length) * 100) + '%';
+
+    var form = new FormData();
+    form.append('files', file);
+    form.append('caption', caption);
+    form.append('_token', PUB_CSRF);
+
+    try {
+      var resp = await fetch('/memorial/' + PUB_SLUG + '/media/galerie', {
+        method: 'POST', body: form, headers: {'X-Requested-With': 'XMLHttpRequest'}
+      });
+      var data = await resp.json();
+
+      if (data.success && data.uploaded.length > 0) {
+        data.uploaded.forEach(function(m) {
+          addToPublicGallery(m);
+          // Feedback visuel
+          var div = document.createElement('div');
+          div.style.cssText = 'color:var(--em-success);font-size:.8rem;margin:.2rem 0;';
+          div.innerHTML = '<i class="bi bi-check-circle"></i> ' + file.name + ' uploadé';
+          results.appendChild(div);
+        });
+      } else if (data.errors && data.errors.length > 0) {
+        var div = document.createElement('div');
+        div.style.cssText = 'color:var(--em-danger);font-size:.8rem;margin:.2rem 0;';
+        div.innerHTML = '<i class="bi bi-x-circle"></i> ' + (data.errors[0] || 'Erreur');
+        results.appendChild(div);
+      }
+    } catch(e) {
+      var div = document.createElement('div');
+      div.style.cssText = 'color:var(--em-danger);font-size:.8rem;';
+      div.textContent = 'Erreur réseau : ' + file.name;
+      results.appendChild(div);
+    }
+  }
+
+  progressBar.style.width = '100%';
+  progressLabel.textContent = 'Terminé !';
+  setTimeout(function(){ progressWrap.style.display = 'none'; }, 2000);
+}
+
+function addToPublicGallery(media) {
+  var grid = document.getElementById('gallery-photos');
+  if (!grid) return;
+  var galleryDiv = grid.querySelector('.memorial-gallery');
+  if (!galleryDiv) {
+    // Supprimer le panel vide si présent
+    var empty = grid.querySelector('.memorial-empty-panel');
+    if (empty) empty.remove();
+    galleryDiv = document.createElement('div');
+    galleryDiv.className = 'memorial-gallery';
+    grid.appendChild(galleryDiv);
+  }
+
+  var wrap = document.createElement('div');
+  wrap.style.position = 'relative';
+  wrap.id = 'gallery-item-' + media.id;
+
+  var url = media.url;
+  var thumb = media.thumb || url;
+
+  if (media.type === 'video') {
+    wrap.innerHTML = '<a href="javascript:void(0)" class="memorial-gallery__item" data-lightbox="gallery" data-url="'+url+'" data-caption="'+(media.caption||'')+'" data-type="video" onclick="openLightbox(event,this)"><div style="position:relative;width:100%;height:100%;min-height:120px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;"><span style="font-size:3rem;color:white;">▶</span></div></a>';
+    // Ajouter à l'onglet vidéos
+    var videoGrid = document.getElementById('gallery-videos');
+    if (videoGrid) {
+      var vg = videoGrid.querySelector('.memorial-gallery');
+      if (!vg) { vg = document.createElement('div'); vg.className = 'memorial-gallery'; videoGrid.appendChild(vg); }
+      vg.appendChild(wrap);
+    }
+  } else {
+    wrap.innerHTML = '<a href="javascript:void(0)" class="memorial-gallery__item" data-lightbox="gallery" data-url="'+url+'" data-caption="'+(media.caption||'')+'" data-type="photo" onclick="openLightbox(event,this)"><img src="'+thumb+'" alt="'+(media.caption||'')+'" loading="lazy"></a>';
+    galleryDiv.insertBefore(wrap, galleryDiv.firstChild);
+  }
+
+  // Boutons modérateurs
+  var actions = document.createElement('div');
+  actions.className = 'memorial-gallery__mod-actions';
+  var caption = media.caption || '';
+  actions.innerHTML = '<button onclick="editGalleryCaption(' + media.id + ', &quot;' + caption.replace(/"/g, '') + '&quot;)" class="mgal-btn mgal-btn--edit" title="Modifier"><i class="bi bi-pencil"></i></button>'
+    + '<button onclick="deleteGalleryItem(' + media.id + ')" class="mgal-btn mgal-btn--delete" title="Supprimer"><i class="bi bi-trash"></i></button>';
+  wrap.appendChild(actions);
 }
 </script>
 {% endblock %}
