@@ -121,6 +121,7 @@
       </div>
 
       {# Grille galerie existante #}
+      <p style="font-size:.75rem;color:var(--em-muted);margin-bottom:.5rem;"><i class="bi bi-arrows-move"></i> Glissez les médias pour réordonner</p>
       <div class="media-gallery-grid" id="gallery-grid">
         {% set medias = page.mediaGalleries ?? [] %}
         {% for media in medias %}
@@ -139,7 +140,6 @@
                    alt="{{ media.caption ?? '' }}" loading="lazy">
             {% endif %}
 
-            {# Icônes d'actions #}
             <div class="mgal-icons">
               <button onclick="openCaptionModal({{ media.id }}, '{{ media.caption|default('')|e('js') }}')"
                       class="mgal-icon mgal-icon--edit" title="Modifier la légende">
@@ -177,8 +177,7 @@
     <h4 style="margin:0 0 1rem;color:var(--em-navy);font-size:1rem;"><i class="bi bi-pencil"></i> Modifier la légende</h4>
     <input type="text" id="modal-caption-input" maxlength="255"
            placeholder="Ajouter une légende…"
-           style="width:100%;padding:.6rem .8rem;border:1.5px solid #E8E0D4;border-radius:8px;
-                  font-size:.9rem;outline:none;box-sizing:border-box;margin-bottom:1rem;"
+           style="width:100%;padding:.6rem .8rem;border:1.5px solid #E8E0D4;border-radius:8px;font-size:.9rem;outline:none;box-sizing:border-box;margin-bottom:1rem;"
            onkeydown="if(event.key==='Enter')saveCaptionModal();if(event.key==='Escape')closeCaptionModal();">
     <input type="hidden" id="modal-media-id">
     <div style="display:flex;justify-content:flex-end;gap:.5rem;">
@@ -495,11 +494,48 @@ function showMsg(id, msg, type) {
   setTimeout(function() { el.textContent = ''; el.className = 'media-upload-msg'; }, 4000);
 }
 
+// SortableJS init
+</script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+.media-gallery-item--preview { pointer-events: none; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<script>
+// Init SortableJS sur la grille galerie
+document.addEventListener('DOMContentLoaded', function() {
+  var grid = document.getElementById('gallery-grid');
+  if (!grid) return;
+  Sortable.create(grid, {
+    animation: 150,
+    ghostClass: 'media-gallery-item--dragging',
+    handle: '.media-gallery-item',
+    onEnd: async function(evt) {
+      // Récupérer l'ordre des IDs
+      var items = Array.from(grid.querySelectorAll('.media-gallery-item[id]'));
+      var order = items.map(function(el) {
+        return el.id.replace('media-item-', '');
+      });
+      // Envoyer au serveur
+      try {
+        var form = new FormData();
+        order.forEach(function(id, idx) { form.append('order['+idx+']', id); });
+        form.append('_token', '{{ csrf_token("media_reorder") }}');
+        await fetch('/memorial/'+SLUG+'/media/reorder', {
+          method: 'POST',
+          body: form,
+          headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+      } catch(e) { console.error('Reorder failed', e); }
+    }
+  });
+});
+
 function openCaptionModal(id, current) {
   document.getElementById('modal-media-id').value = id;
   document.getElementById('modal-caption-input').value = current;
-  var modal = document.getElementById('caption-modal');
-  modal.style.display = 'flex';
+  document.getElementById('caption-modal').style.display = 'flex';
   setTimeout(function(){ document.getElementById('modal-caption-input').focus(); }, 50);
 }
 function closeCaptionModal() {
@@ -534,7 +570,3 @@ async function saveCaptionModal() {
 }
 document.getElementById('caption-modal')?.addEventListener('click', function(e){ if(e.target===this)closeCaptionModal(); });
 </script>
-<style>
-@keyframes spin { to { transform: rotate(360deg); } }
-.media-gallery-item--preview { pointer-events: none; }
-</style>

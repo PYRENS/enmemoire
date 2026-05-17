@@ -207,6 +207,36 @@ class MediaController extends AbstractController
         return $this->json(['success' => true, 'caption' => $caption]);
     }
 
+
+    // =========================================================
+    // RÉORDONNER LES MÉDIAS (Ajax)
+    // =========================================================
+    #[Route('/reorder', name: 'app_media_reorder', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function reorder(string $slug, Request $request): JsonResponse
+    {
+        $page = $this->getPageOrDeny($slug);
+
+        if (!$this->isCsrfTokenValid('media_reorder', $request->request->get('_token'))) {
+            return $this->json(['error' => 'Token invalide'], 403);
+        }
+
+        $order = $request->request->all('order');
+        if (empty($order)) {
+            return $this->json(['error' => 'Ordre vide'], 400);
+        }
+
+        foreach ($order as $position => $mediaId) {
+            $media = $this->em->getRepository(MediaGallery::class)->find((int)$mediaId);
+            if ($media && $media->getMemorial()->getId() === $page->getId()) {
+                $media->setSortOrder((int)$position);
+            }
+        }
+        $this->em->flush();
+
+        return $this->json(['success' => true]);
+    }
+
     // =========================================================
     // Helper
     // =========================================================

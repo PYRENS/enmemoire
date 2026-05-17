@@ -39,6 +39,38 @@
 .mgal-btn--delete { background: rgba(185,28,28,.9); color: white; }
 .mgal-btn:hover { transform: scale(1.1); }
 </style>
+
+<style>
+/* Onglets galerie */
+.gallery-tabs {
+  display: flex; gap: .5rem; margin-bottom: 1.25rem;
+  border-bottom: 2px solid var(--em-stone); padding-bottom: 0;
+}
+.gallery-tab {
+  display: flex; align-items: center; gap: .4rem;
+  padding: .6rem 1.25rem; border: none; background: none;
+  font-family: var(--font-body); font-size: .9rem; color: var(--em-muted);
+  cursor: pointer; border-bottom: 3px solid transparent;
+  margin-bottom: -2px; transition: all .2s; border-radius: 6px 6px 0 0;
+}
+.gallery-tab:hover { color: var(--em-navy); background: var(--em-cream); }
+.gallery-tab.active { color: var(--em-navy); font-weight: 600; border-bottom-color: var(--em-gold); }
+.gallery-tab__count {
+  background: var(--em-cream); color: var(--em-muted);
+  font-size: .72rem; padding: 1px 6px; border-radius: 10px;
+}
+.gallery-tab.active .gallery-tab__count {
+  background: var(--em-gold); color: var(--em-navy);
+}
+.gallery-section { animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* Mobile : onglets scrollables */
+@media (max-width: 575px) {
+  .gallery-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+  .gallery-tab { white-space: nowrap; flex-shrink: 0; }
+}
+</style>
 {% endblock %}
 
 {% block body %}
@@ -258,96 +290,114 @@
     {% set photos = gallery|filter(m => m.type != 'video') %}
     {% set videos = gallery|filter(m => m.type == 'video') %}
 
-    {# Photos #}
-    {% if photos is not empty %}
-    <h2>Galerie photos</h2>
-    <div class="memorial-gallery">
-      {% for media in photos %}
-      <div style="position:relative;" id="gallery-item-{{ media.id }}">
-        <a href="javascript:void(0)" class="memorial-gallery__item"
-           data-lightbox="gallery"
-           data-url="{{ media.url starts with 'http' ? media.url : asset(media.url) }}"
-           data-caption="{{ media.caption ?? '' }}"
-           data-type="photo"
-           onclick="openLightbox(event,this)">
-          <img src="{{ (media.thumbnailUrl ?? media.url) starts with 'http' ? (media.thumbnailUrl ?? media.url) : asset(media.thumbnailUrl ?? media.url) }}"
-               alt="{{ media.caption ?? 'Photo de ' ~ page.deceasedFullName }}"
-               loading="lazy">
-          {% if media.caption %}
-          <div class="memorial-gallery__caption">{{ media.caption }}</div>
-          {% endif %}
-        </a>
-        {% if isModerator %}
-        <div class="memorial-gallery__mod-actions">
-          <button onclick="editGalleryCaption({{ media.id }}, '{{ media.caption|default('')|e('js') }}')"
-                  class="mgal-btn mgal-btn--edit" title="Modifier la légende">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button onclick="deleteGalleryItem({{ media.id }})"
-                  class="mgal-btn mgal-btn--delete" title="Supprimer">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-        <span class="mgal-csrf-delete" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_delete_' ~ media.id) }}</span>
-        <span class="mgal-csrf-caption" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_caption_' ~ media.id) }}</span>
-        {% endif %}
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="memorial-empty-panel">
-      <i class="bi bi-images"></i>
-      <p>La galerie photos sera alimentée prochainement.</p>
-    </div>
-    {% endif %}
-
-    {# Vidéos #}
-    {% if videos is not empty %}
-    <h2 style="margin-top:2rem;">Galerie vidéos</h2>
-    <div class="memorial-gallery">
-      {% for media in videos %}
-      <div style="position:relative;" id="gallery-item-{{ media.id }}">
-        <a href="javascript:void(0)" class="memorial-gallery__item"
-           data-lightbox="gallery"
-           data-url="{{ media.url starts with 'http' ? media.url : asset(media.url) }}"
-           data-caption="{{ media.caption ?? '' }}"
-           data-type="video"
-           onclick="openLightbox(event,this)">
-          <div style="position:relative;width:100%;height:100%;min-height:120px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;">
-            {% if media.thumbnailUrl and media.thumbnailUrl starts with 'http' %}
-              <img src="{{ media.thumbnailUrl }}" alt="" loading="lazy"
-                   style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.6;">
-            {% endif %}
-            <span style="position:relative;font-size:3rem;color:white;text-shadow:0 2px 12px rgba(0,0,0,.8);z-index:1;">▶</span>
-          </div>
-          {% if media.caption %}
-          <div class="memorial-gallery__caption">{{ media.caption }}</div>
-          {% endif %}
-        </a>
-        {% if isModerator %}
-        <div class="memorial-gallery__mod-actions">
-          <button onclick="editGalleryCaption({{ media.id }}, '{{ media.caption|default('')|e('js') }}')"
-                  class="mgal-btn mgal-btn--edit" title="Modifier la légende">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button onclick="deleteGalleryItem({{ media.id }})"
-                  class="mgal-btn mgal-btn--delete" title="Supprimer">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-        <span class="mgal-csrf-delete" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_delete_' ~ media.id) }}</span>
-        <span class="mgal-csrf-caption" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_caption_' ~ media.id) }}</span>
-        {% endif %}
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
-
     {% if gallery is empty %}
     <div class="memorial-empty-panel">
       <i class="bi bi-images"></i>
       <p>La galerie sera alimentée prochainement.</p>
     </div>
+    {% else %}
+
+    {# Onglets galerie (tabs sur desktop, accordéon sur mobile) #}
+    <div class="gallery-tabs">
+      <button class="gallery-tab active" onclick="switchGalleryTab('photos', this)">
+        <i class="bi bi-images"></i> Photos
+        <span class="gallery-tab__count">{{ photos|length }}</span>
+      </button>
+      {% if videos is not empty %}
+      <button class="gallery-tab" onclick="switchGalleryTab('videos', this)">
+        <i class="bi bi-play-circle"></i> Vidéos
+        <span class="gallery-tab__count">{{ videos|length }}</span>
+      </button>
+      {% endif %}
+    </div>
+
+    {# Section Photos #}
+    <div class="gallery-section" id="gallery-photos">
+      {% if photos is not empty %}
+      <div class="memorial-gallery">
+        {% for media in photos %}
+        <div style="position:relative;" id="gallery-item-{{ media.id }}">
+          <a href="javascript:void(0)" class="memorial-gallery__item"
+             data-lightbox="gallery"
+             data-url="{{ media.url starts with 'http' ? media.url : asset(media.url) }}"
+             data-caption="{{ media.caption ?? '' }}"
+             data-type="photo"
+             onclick="openLightbox(event,this)">
+            <img src="{{ (media.thumbnailUrl ?? media.url) starts with 'http' ? (media.thumbnailUrl ?? media.url) : asset(media.thumbnailUrl ?? media.url) }}"
+                 alt="{{ media.caption ?? 'Photo de ' ~ page.deceasedFullName }}"
+                 loading="lazy">
+            {% if media.caption %}
+            <div class="memorial-gallery__caption">{{ media.caption }}</div>
+            {% endif %}
+          </a>
+          {% if isModerator %}
+          <div class="memorial-gallery__mod-actions">
+            <button onclick="editGalleryCaption({{ media.id }}, '{{ media.caption|default('')|e('js') }}')"
+                    class="mgal-btn mgal-btn--edit" title="Modifier la légende">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button onclick="deleteGalleryItem({{ media.id }})"
+                    class="mgal-btn mgal-btn--delete" title="Supprimer">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          <span class="mgal-csrf-delete" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_delete_' ~ media.id) }}</span>
+          <span class="mgal-csrf-caption" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_caption_' ~ media.id) }}</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="memorial-empty-panel">
+        <i class="bi bi-images"></i>
+        <p>Aucune photo pour l'instant.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Section Vidéos #}
+    {% if videos is not empty %}
+    <div class="gallery-section" id="gallery-videos" style="display:none;">
+      <div class="memorial-gallery">
+        {% for media in videos %}
+        <div style="position:relative;" id="gallery-item-{{ media.id }}">
+          <a href="javascript:void(0)" class="memorial-gallery__item"
+             data-lightbox="gallery"
+             data-url="{{ media.url starts with 'http' ? media.url : asset(media.url) }}"
+             data-caption="{{ media.caption ?? '' }}"
+             data-type="video"
+             onclick="openLightbox(event,this)">
+            <div style="position:relative;width:100%;height:100%;min-height:120px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;">
+              {% if media.thumbnailUrl and media.thumbnailUrl starts with 'http' %}
+                <img src="{{ media.thumbnailUrl }}" alt="" loading="lazy"
+                     style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.6;">
+              {% endif %}
+              <span style="position:relative;font-size:3rem;color:white;text-shadow:0 2px 12px rgba(0,0,0,.8);z-index:1;">▶</span>
+            </div>
+            {% if media.caption %}
+            <div class="memorial-gallery__caption">{{ media.caption }}</div>
+            {% endif %}
+          </a>
+          {% if isModerator %}
+          <div class="memorial-gallery__mod-actions">
+            <button onclick="editGalleryCaption({{ media.id }}, '{{ media.caption|default('')|e('js') }}')"
+                    class="mgal-btn mgal-btn--edit" title="Modifier la légende">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button onclick="deleteGalleryItem({{ media.id }})"
+                    class="mgal-btn mgal-btn--delete" title="Supprimer">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          <span class="mgal-csrf-delete" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_delete_' ~ media.id) }}</span>
+          <span class="mgal-csrf-caption" data-id="{{ media.id }}" style="display:none;">{{ csrf_token('media_caption_' ~ media.id) }}</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
     {% endif %}
 
   </div>
@@ -741,5 +791,16 @@ document.getElementById('lightbox').addEventListener('click',function(e){if(e.ta
 var PAGE_SLUG='{{ page.slug }}';
 async function deleteGalleryItem(id){if(!confirm('Supprimer ce média ?'))return;var csrf=document.querySelector('.mgal-csrf-delete[data-id="'+id+'"]')?.textContent?.trim();var form=new FormData();form.append('_token',csrf);var resp=await fetch('/memorial/'+PAGE_SLUG+'/media/galerie/'+id+'/delete',{method:'POST',body:form,headers:{'X-Requested-With':'XMLHttpRequest'}});var data=await resp.json();if(data.success)document.getElementById('gallery-item-'+id)?.remove();else alert(data.error||'Erreur');}
 function editGalleryCaption(id,current){var caption=prompt('Légende :',current);if(caption===null)return;var csrf=document.querySelector('.mgal-csrf-caption[data-id="'+id+'"]')?.textContent?.trim();var form=new FormData();form.append('_token',csrf);form.append('caption',caption);fetch('/memorial/'+PAGE_SLUG+'/media/galerie/'+id+'/caption',{method:'POST',body:form,headers:{'X-Requested-With':'XMLHttpRequest'}}).then(r=>r.json()).then(data=>{if(data.success){var cap=document.querySelector('#gallery-item-'+id+' .memorial-gallery__caption');if(caption){if(cap)cap.textContent=caption;else{var c=document.createElement('div');c.className='memorial-gallery__caption';c.textContent=caption;document.querySelector('#gallery-item-'+id+' a')?.appendChild(c);}}else if(cap)cap.remove();}});}
+
+function switchGalleryTab(tab, btn) {
+  // Masquer toutes les sections
+  document.querySelectorAll('.gallery-section').forEach(function(s){ s.style.display='none'; });
+  // Désactiver tous les tabs
+  document.querySelectorAll('.gallery-tab').forEach(function(b){ b.classList.remove('active'); });
+  // Afficher la section et activer le tab
+  var section = document.getElementById('gallery-' + tab);
+  if (section) section.style.display = 'block';
+  if (btn) btn.classList.add('active');
+}
 </script>
 {% endblock %}

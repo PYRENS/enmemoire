@@ -253,3 +253,8 @@
 .mgal-icon:hover { opacity: 1; transform: scale(1.1); }
 .mgal-icon--edit   { background: rgba(255,255,255,.95); color: var(--em-navy); }
 .mgal-icon--delete { background: rgba(185,28,28,.9); color: white; }
+
+/* Drag & drop */
+.media-gallery-item--dragging { opacity: .4; }
+.media-gallery-item { cursor: grab; }
+.media-gallery-item:active { cursor: grabbing; }
