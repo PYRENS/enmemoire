@@ -1,0 +1,147 @@
+{% extends 'base.html.twig' %}
+{% block title %}Paiement — {{ page.deceasedFullName }}{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width:600px;padding-top:2.5rem;padding-bottom:4rem;">
+
+  <div class="dashboard-card">
+    <div class="dashboard-card__header">
+      <h3>💳 Paiement — {{ formula ? formula.name : 'Renouvellement' }}</h3>
+    </div>
+    <div class="dashboard-card__body">
+
+      <div style="background:var(--em-cream);border-radius:var(--em-radius);padding:1rem;margin-bottom:1.5rem;">
+        <p style="margin:0;font-size:.875rem;color:var(--em-muted);">
+          Page mémorielle de <strong style="color:var(--em-navy);">{{ page.deceasedFullName }}</strong>
+          — <strong style="color:var(--em-gold);">{{ payment.amount }} {{ payment.currency }}</strong>
+        </p>
+      </div>
+
+      {% if provider == 'stripe' %}
+        {# Formulaire Stripe #}
+        <div id="stripe-form">
+          <div id="payment-element" style="margin-bottom:1.5rem;"></div>
+          <button id="stripe-pay-btn" class="em-btn em-btn--primary w-100">
+            <i class="bi bi-lock-fill"></i> Payer {{ payment.amount }} {{ payment.currency }}
+          </button>
+          <div id="stripe-error" style="color:var(--em-danger);font-size:.875rem;margin-top:.75rem;"></div>
+        </div>
+
+      {% elseif provider == 'paypal' %}
+        <div id="paypal-button-container" style="margin-bottom:1rem;"></div>
+
+      {% elseif provider in ['airtel_money', 'mpesa', 'orange_money'] %}
+        {# Mobile Money #}
+        <div>
+          <label style="font-size:.875rem;font-weight:600;color:var(--em-navy);display:block;margin-bottom:.4rem;">
+            Numéro de téléphone {{ provider == 'airtel_money' ? 'Airtel' : (provider == 'mpesa' ? 'M-Pesa' : 'Orange') }}
+          </label>
+          <div style="display:flex;gap:.5rem;margin-bottom:1rem;">
+            <input type="tel" id="phone-number" placeholder="+243 XXX XXX XXX"
+                   style="flex:1;padding:.7rem 1rem;border:1.5px solid var(--em-stone);border-radius:var(--em-radius-sm);font-size:.9rem;outline:none;">
+            <button onclick="sendMobilePayment()" class="em-btn em-btn--primary">
+              Envoyer
+            </button>
+          </div>
+          <p style="font-size:.78rem;color:var(--em-muted);">
+            Vous recevrez une demande de paiement de <strong>{{ payment.amount }} {{ payment.currency }}</strong> sur votre téléphone.
+          </p>
+          <div id="mobile-status" style="display:none;padding:.75rem;border-radius:var(--em-radius-sm);font-size:.875rem;margin-top:.75rem;"></div>
+        </div>
+
+      {% elseif provider == 'manual' %}
+        {# Virement manuel #}
+        <div style="background:var(--em-cream);border-radius:var(--em-radius);padding:1.25rem;margin-bottom:1.5rem;">
+          <h4 style="margin:0 0 .75rem;font-size:.95rem;color:var(--em-navy);">Coordonnées bancaires</h4>
+          <p style="font-size:.85rem;color:var(--em-muted);margin:.25rem 0;">Banque : <strong>EnMémoire Bank</strong></p>
+          <p style="font-size:.85rem;color:var(--em-muted);margin:.25rem 0;">IBAN : <strong>CD00 0000 0000 0000 0000 0000</strong></p>
+          <p style="font-size:.85rem;color:var(--em-muted);margin:.25rem 0;">Référence : <strong>{{ payment.uuid }}</strong></p>
+          <p style="font-size:.85rem;color:var(--em-muted);margin:.25rem 0;">Montant : <strong>{{ payment.amount }} {{ payment.currency }}</strong></p>
+        </div>
+        <p style="font-size:.825rem;color:var(--em-muted);margin-bottom:1.25rem;">
+          Après virement, cliquez sur "J'ai effectué le virement" pour notifier notre équipe. L'activation sera manuelle sous 24-48h.
+        </p>
+        <form method="POST" action="{{ path('app_renewal_confirm', {slug: page.slug, paymentId: payment.id}) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('confirm_renewal_' ~ payment.id) }}">
+          <button type="submit" class="em-btn em-btn--primary">
+            <i class="bi bi-check-circle"></i> J'ai effectué le virement
+          </button>
+        </form>
+      {% endif %}
+
+      <div style="margin-top:1.5rem;text-align:center;">
+        <a href="{{ path('app_renewal', {slug: page.slug}) }}" style="font-size:.825rem;color:var(--em-muted);">
+          ← Changer de formule ou de moyen de paiement
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{% if provider == 'stripe' %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+var stripe = Stripe('{{ app.request.server.get('STRIPE_PUBLIC_KEY') ?? '' }}');
+var elements = stripe.elements();
+var paymentElement = elements.create('card');
+paymentElement.mount('#payment-element');
+
+document.getElementById('stripe-pay-btn').addEventListener('click', async function() {
+  this.disabled = true;
+  this.innerHTML = '<i class="bi bi-hourglass-split"></i> Traitement…';
+
+  var result = await stripe.confirmCardPayment('{{ payment.uuid }}', {
+    payment_method: { card: paymentElement }
+  });
+
+  if (result.error) {
+    document.getElementById('stripe-error').textContent = result.error.message;
+    this.disabled = false;
+    this.innerHTML = '<i class="bi bi-lock-fill"></i> Payer {{ payment.amount }} {{ payment.currency }}';
+  } else {
+    window.location.href = '{{ successUrl }}?payment_intent=' + result.paymentIntent.id;
+  }
+});
+</script>
+
+{% elseif provider == 'paypal' %}
+<script src="https://www.paypal.com/sdk/js?client-id={{ app.request.server.get('PAYPAL_CLIENT_ID') ?? '' }}&currency={{ payment.currency }}"></script>
+<script>
+paypal.Buttons({
+  createOrder: function(data, actions) {
+    return actions.order.create({
+      purchase_units: [{ amount: { value: '{{ payment.amount }}', currency_code: '{{ payment.currency }}' } }]
+    });
+  },
+  onApprove: function(data, actions) {
+    return actions.order.capture().then(function(details) {
+      window.location.href = '{{ successUrl }}?tx_id=' + details.id;
+    });
+  },
+  onError: function(err) { alert('Erreur PayPal: ' + err); }
+}).render('#paypal-button-container');
+</script>
+
+{% elseif provider in ['airtel_money', 'mpesa', 'orange_money'] %}
+<script>
+async function sendMobilePayment() {
+  var phone = document.getElementById('phone-number').value.trim();
+  if (!phone) { alert('Entrez votre numéro de téléphone.'); return; }
+
+  var status = document.getElementById('mobile-status');
+  status.style.display = 'block';
+  status.style.background = 'rgba(201,168,76,.1)';
+  status.style.color = 'var(--em-navy)';
+  status.textContent = '📱 Demande envoyée sur votre téléphone. Confirmez le paiement…';
+
+  // Simuler vérification (en production: appel API PawaPay/etc.)
+  setTimeout(function() {
+    window.location.href = '{{ successUrl }}?tx_id=mob_' + Date.now();
+  }, 5000);
+}
+</script>
+{% endif %}
+{% endblock %}

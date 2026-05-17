@@ -56,4 +56,36 @@ class MemorialEmailService
 
         $this->mailer->send($email);
     }
+
+    /**
+     * Envoie l'email de confirmation de renouvellement avec reçu.
+     */
+    public function sendRenewalConfirmation(
+        MemorialPage $page,
+        Payment      $payment,
+        User         $owner,
+    ): void {
+        $pageUrl      = $this->router->generate('app_memorial_show',
+            ['slug' => $page->getSlug()], UrlGeneratorInterface::ABSOLUTE_URL);
+        $dashboardUrl = $this->router->generate('app_dashboard_memorial',
+            ['slug' => $page->getSlug()], UrlGeneratorInterface::ABSOLUTE_URL);
+
+        $email = (new TemplatedEmail())
+            ->from(sprintf('%s <%s>', $this->fromName, $this->fromAddress))
+            ->to($owner->getEmail())
+            ->subject(sprintf(
+                '✅ Renouvellement confirmé — %s | EnMémoire.com',
+                $page->getDeceasedFullName()
+            ))
+            ->htmlTemplate('emails/renewal_confirmation.html.twig')
+            ->context([
+                'page'          => $page,
+                'payment'       => $payment,
+                'owner'         => $owner,
+                'page_url'      => $pageUrl,
+                'dashboard_url' => $dashboardUrl,
+            ]);
+
+        $this->mailer->send($email);
+    }
 }

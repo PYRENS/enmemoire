@@ -1,36 +1,87 @@
 {% extends 'base.html.twig' %}
 {% block title %}Simulation de paiement — EnMémoire.com{% endblock %}
 {% block body_class %}create-memorial-page{% endblock %}
-{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/create.css') }}">{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('css/create.css') }}">
+<style>
+.sandbox-badge { display:inline-flex;align-items:center;gap:.4rem;background:rgba(251,191,36,.15);color:#92400E;border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:.3rem .9rem;font-size:.78rem;font-weight:600;margin-bottom:1rem; }
+.sandbox-title { font-family:var(--font-display);font-size:1.5rem;font-weight:300;color:var(--em-navy);margin:.5rem 0 .25rem; }
+.sandbox-subtitle { color:var(--em-muted);font-size:.875rem;margin:0 0 1.5rem; }
+.sandbox-order { background:var(--em-cream);border-radius:var(--em-radius);padding:1rem;margin-bottom:1.5rem; }
+.sandbox-order__row { display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--em-stone);font-size:.875rem; }
+.sandbox-order__row:last-child { border-bottom:none; }
+.sandbox-amount { color:var(--em-gold);font-size:1.1rem; }
+.sandbox-status { background:rgba(251,191,36,.15);color:#92400E;padding:2px 8px;border-radius:8px;font-size:.75rem;font-weight:600; }
+.sandbox-note { background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);border-radius:var(--em-radius);padding:.875rem;font-size:.8rem;color:#3730A3;margin-top:1rem; }
+
+/* Stripe simulé */
+.stripe-form { border:1px solid #E0E0E0;border-radius:8px;padding:1rem;margin-bottom:1rem;background:white; }
+.stripe-field { margin-bottom:.75rem; }
+.stripe-field label { display:block;font-size:.75rem;font-weight:600;color:#6B7C93;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em; }
+.stripe-field input { width:100%;padding:.6rem .8rem;border:1px solid #DEE0E3;border-radius:4px;font-size:.95rem;outline:none;box-sizing:border-box;font-family:monospace; }
+.stripe-field input:focus { border-color:#6772E5;box-shadow:0 0 0 2px rgba(103,114,229,.15); }
+.stripe-field-row { display:grid;grid-template-columns:1fr 1fr;gap:.75rem; }
+.stripe-powered { text-align:center;font-size:.72rem;color:#8898AA;margin-top:.5rem; }
+
+/* PayPal simulé */
+.paypal-btn { background:#FFC439;border:none;border-radius:4px;padding:.75rem;width:100%;cursor:pointer;font-size:1.1rem;font-weight:800;color:#003087;display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:.5rem; }
+.paypal-divider { text-align:center;color:#8898AA;font-size:.8rem;margin:.75rem 0; }
+.paypal-card-btn { background:white;border:1px solid #DEE0E3;border-radius:4px;padding:.6rem;width:100%;cursor:pointer;font-size:.85rem;color:#003087; }
+
+/* Mobile Money simulé */
+.mobile-steps { counter-reset:step; }
+.mobile-step { display:flex;align-items:flex-start;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--em-stone); }
+.mobile-step:last-child { border-bottom:none; }
+.mobile-step__num { counter-increment:step;background:var(--em-navy);color:white;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;margin-top:2px; }
+.mobile-step__text { font-size:.85rem;color:var(--em-navy);line-height:1.5; }
+.mobile-step__text code { background:var(--em-cream);padding:1px 5px;border-radius:4px;font-size:.82rem; }
+.mobile-phone-input { width:100%;padding:.7rem 1rem;border:1.5px solid var(--em-stone);border-radius:var(--em-radius-sm);font-size:.95rem;outline:none;box-sizing:border-box;margin:.75rem 0; }
+.mobile-phone-input:focus { border-color:var(--em-gold); }
+
+/* Virement */
+.virement-detail { display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--em-stone);font-size:.875rem; }
+.virement-detail:last-child { border-bottom:none; }
+.virement-ref { background:var(--em-navy);color:white;text-align:center;padding:.6rem;border-radius:var(--em-radius);font-family:monospace;font-size:1rem;font-weight:700;letter-spacing:.05em;margin:.75rem 0; }
+</style>
+{% endblock %}
 
 {% block body %}
 <div class="wizard-wrapper">
-  <div class="container" style="max-width:520px;padding-top:4rem;padding-bottom:4rem;">
+  <div class="container" style="max-width:520px;padding-top:3rem;padding-bottom:4rem;">
     <div class="wizard-card">
 
-      {# En-tête sandbox #}
-      <div class="sandbox-header">
+      {# En-tête #}
+      <div style="text-align:center;">
         <div class="sandbox-badge">
           <i class="bi bi-bug"></i> Mode développement — Paiement simulé
         </div>
-        <div class="sandbox-provider-icon sandbox-provider-icon--{{ provider }}">
+
+        {# Logo provider #}
+        <div style="margin:.75rem 0;">
           {% if provider == 'stripe' %}
-            <svg viewBox="0 0 60 25" xmlns="http://www.w3.org/2000/svg" width="60" height="25">
+            <svg viewBox="0 0 60 25" xmlns="http://www.w3.org/2000/svg" width="80" height="33">
               <path d="M59.64 14.28h-8.06c.19 1.93 1.63 2.48 3.45 2.48 1.64 0 2.96-.37 4.05-.95v3.32a12.08 12.08 0 0 1-4.56.92c-4.01 0-6.83-2.5-6.83-7.48 0-4.19 2.39-7.52 6.3-7.52 3.92 0 5.96 3.28 5.96 7.5 0 .4-.04 1.26-.31 1.73zm-5.69-5.43c-1.03 0-2.1.73-2.1 2.43h4.18c0-1.77-1.05-2.43-2.08-2.43zM35.3 5.84l-.14-.07a4.36 4.36 0 0 0-1.55-.3c-.98 0-1.5.56-1.5 1.32v.1h3.04v3.43H32.1v9.4H28.3v-9.4h-1.95V6.89h1.95V6.6c0-2.87 1.6-5.06 5.02-5.06 1.07 0 2.04.22 2.8.56l-.82 3.74zM23.41 5.25a2.26 2.26 0 1 1 0-4.51 2.26 2.26 0 0 1 0 4.51zm-1.9 1.64h3.8v12.83h-3.8V6.89zM14.48 10.1c0-1.1.9-1.54 2.04-1.54 1.47 0 3.19.45 4.52 1.26V6.18a12.31 12.31 0 0 0-4.52-.83c-3.72 0-6.2 1.94-6.2 5.17 0 5.06 6.96 4.25 6.96 6.44 0 1.3-1.13 1.71-2.35 1.71-2.04 0-4.16-.83-5.99-1.96v3.71a15.23 15.23 0 0 0 5.95 1.24c3.82 0 6.44-1.87 6.44-5.14 0-5.47-6.85-4.48-6.85-6.42zM0 7.25l3.83-.82.01 11.46H0z" fill="#6772E5"/>
             </svg>
           {% elseif provider == 'paypal' %}
-            <span style="font-size:1.5rem;font-weight:800;color:#003087;">Pay<span style="color:#009cde;">Pal</span></span>
+            <span style="font-size:1.75rem;font-weight:800;color:#003087;">Pay<span style="color:#009cde;">Pal</span></span>
+          {% elseif provider in ['airtel', 'airtel_money'] %}
+            <span style="font-size:1.5rem;font-weight:800;color:#E40000;">Airtel <span style="color:#FF6B00;">Money</span></span>
+          {% elseif provider == 'mpesa' %}
+            <span style="font-size:1.5rem;font-weight:800;color:#00A651;">M-<span style="color:#007A3D;">PESA</span></span>
+          {% elseif provider == 'orange_money' %}
+            <span style="font-size:1.5rem;font-weight:800;color:#FF6600;">Orange <span style="color:#333;">Money</span></span>
+          {% elseif provider == 'pawapay' %}
+            <span style="font-size:1.5rem;font-weight:800;color:#6C47FF;">Pawa<span style="color:#333;">Pay</span></span>
           {% else %}
-            <i class="bi bi-phone" style="font-size:2rem;color:var(--em-gold);"></i>
+            <i class="bi bi-bank" style="font-size:2rem;color:var(--em-navy);"></i>
           {% endif %}
         </div>
-        <h1 class="sandbox-title">Paiement {{ label }}</h1>
-        <p class="sandbox-subtitle">
-          Ceci est une simulation. Aucun vrai paiement n'est effectué.
-        </p>
+
+        <h1 class="sandbox-title">{{ label }}</h1>
+        <p class="sandbox-subtitle">Simulation · Aucun vrai paiement effectué</p>
       </div>
 
-      {# Détails de la commande #}
+      {# Récapitulatif commande #}
       <div class="sandbox-order">
         <div class="sandbox-order__row">
           <span>Référence</span>
@@ -41,40 +92,166 @@
           <strong class="sandbox-amount">{{ payment.amount }} {{ payment.currency }}</strong>
         </div>
         <div class="sandbox-order__row">
-          <span>Provider</span>
-          <strong>{{ label }}</strong>
-        </div>
-        <div class="sandbox-order__row">
           <span>Statut</span>
-          <span class="sandbox-status">En attente</span>
+          <span class="sandbox-status">⏳ En attente</span>
         </div>
       </div>
 
+      {# Interface simulée selon le provider #}
+
+      {% if provider == 'stripe' %}
+      {# ── STRIPE ── #}
+      <div class="stripe-form">
+        <div class="stripe-field">
+          <label>Numéro de carte</label>
+          <input type="text" value="4242 4242 4242 4242" readonly
+                 style="background:#F8F9FA;color:#6B7C93;">
+        </div>
+        <div class="stripe-field-row">
+          <div class="stripe-field">
+            <label>Expiration</label>
+            <input type="text" value="12/28" readonly style="background:#F8F9FA;color:#6B7C93;">
+          </div>
+          <div class="stripe-field">
+            <label>CVC</label>
+            <input type="text" value="***" readonly style="background:#F8F9FA;color:#6B7C93;">
+          </div>
+        </div>
+        <p class="stripe-powered">
+          🔒 Sécurisé par <strong style="color:#6772E5;">Stripe</strong> (simulation)
+        </p>
+      </div>
+
+      {% elseif provider == 'paypal' %}
+      {# ── PAYPAL ── #}
+      <div style="margin-bottom:1rem;">
+        <button class="paypal-btn" onclick="void(0)">
+          <span style="font-size:1.4rem;font-weight:800;color:#003087;">Pay</span>
+          <span style="font-size:1.4rem;font-weight:800;color:#009cde;">Pal</span>
+        </button>
+        <div class="paypal-divider">— ou payer par carte —</div>
+        <button class="paypal-card-btn" onclick="void(0)">💳 Carte de crédit ou débit</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--em-muted);text-align:center;">
+        Compte PayPal sandbox : <strong>buyer@sandbox.paypal.com</strong>
+      </p>
+
+      {% elseif provider in ['airtel', 'airtel_money', 'mpesa', 'orange_money', 'pawapay'] %}
+      {# ── MOBILE MONEY ── #}
+      {% set providerName = provider == 'airtel' or provider == 'airtel_money' ? 'Airtel Money'
+        : (provider == 'mpesa' ? 'M-PESA'
+        : (provider == 'orange_money' ? 'Orange Money' : 'PawaPay')) %}
+      {% set ref = 'EM-%06d'|format(payment.id) %}
+
+      <div class="mobile-steps">
+        <div class="mobile-step">
+          <div class="mobile-step__num">1</div>
+          <div class="mobile-step__text">
+            Composez <code>*{{ provider == 'mpesa' ? '234' : (provider == 'orange_money' ? '144' : '400') }}#</code>
+            sur votre téléphone {{ providerName }}
+          </div>
+        </div>
+        <div class="mobile-step">
+          <div class="mobile-step__num">2</div>
+          <div class="mobile-step__text">
+            Sélectionnez <strong>Envoyer de l'argent</strong> →
+            Entrez le numéro <code>+243 XXX XXX XXX</code>
+          </div>
+        </div>
+        <div class="mobile-step">
+          <div class="mobile-step__num">3</div>
+          <div class="mobile-step__text">
+            Montant : <strong>{{ payment.amount }} {{ payment.currency }}</strong>
+            — Référence obligatoire :
+          </div>
+        </div>
+      </div>
+
+      <div class="virement-ref">{{ ref }}</div>
+
+      <input type="tel" class="mobile-phone-input"
+             placeholder="Votre numéro {{ providerName }} (+243…)"
+             id="sim-phone">
+
+      {% elseif provider == 'virement' %}
+      {# ── VIREMENT ── #}
+      {% set ref = 'EM-%06d'|format(payment.id) %}
+      <div style="background:white;border:1px solid var(--em-stone);border-radius:var(--em-radius);padding:1rem;margin-bottom:1rem;">
+        <div class="virement-detail"><span>Bénéficiaire</span><strong>EnMémoire SAS</strong></div>
+        <div class="virement-detail"><span>IBAN</span><code style="font-size:.8rem;">FR76 XXXX XXXX XXXX XXXX XXXX XXX</code></div>
+        <div class="virement-detail"><span>BIC</span><strong>XXXXXXXX</strong></div>
+        <div class="virement-detail"><span>Montant</span><strong style="color:var(--em-gold);">{{ payment.amount }} {{ payment.currency }}</strong></div>
+        <div class="virement-detail"><span>Délai</span><span>2 à 5 jours ouvrés</span></div>
+      </div>
+      <p style="font-size:.8rem;color:var(--em-muted);">Référence à indiquer obligatoirement :</p>
+      <div class="virement-ref">{{ ref }}</div>
+      {% endif %}
+
       {# Actions #}
-      <form method="POST" class="sandbox-actions">
+      <form method="POST" id="sandbox-form" style="margin-top:1.25rem;">
         <input type="hidden" name="_token" value="{{ csrf_token('sandbox_' ~ payment.id) }}">
 
-        <button type="submit" name="action" value="success"
+        <button type="submit" name="action" value="success" id="pay-btn"
                 class="em-btn em-btn--gold em-btn--lg w-100">
-          <i class="bi bi-check-circle-fill"></i>
-          ✅ Simuler un paiement réussi
+          {% if provider == 'stripe' %}
+            <i class="bi bi-lock-fill"></i> Payer {{ payment.amount }} {{ payment.currency }}
+          {% elseif provider == 'paypal' %}
+            Continuer avec PayPal →
+          {% elseif provider in ['airtel', 'airtel_money', 'mpesa', 'orange_money', 'pawapay'] %}
+            <i class="bi bi-check-circle"></i> J'ai effectué le paiement
+          {% elseif provider == 'virement' %}
+            <i class="bi bi-check-circle"></i> J'ai effectué le virement
+          {% else %}
+            <i class="bi bi-check-circle-fill"></i> Confirmer le paiement
+          {% endif %}
         </button>
 
         <button type="submit" name="action" value="cancel"
                 class="em-btn em-btn--ghost w-100 mt-2"
                 style="color:var(--em-danger);">
-          <i class="bi bi-x-circle"></i>
-          ❌ Simuler un paiement échoué
+          <i class="bi bi-x-circle"></i> Annuler
         </button>
       </form>
 
-      <div class="sandbox-note">
+      <div class="sandbox-note" style="margin-top:1rem;">
         <i class="bi bi-info-circle"></i>
-        En production, cette page sera remplacée par la page de paiement réelle de <strong>{{ label }}</strong>.
-        Configurez les clés API dans votre fichier <code>.env.local</code>.
+        En production, cette page sera remplacée par le vrai formulaire <strong>{{ label }}</strong>.
+        Configurez les clés API dans <code>.env.local</code>.
       </div>
 
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+// Animation de paiement en cours
+document.getElementById('sandbox-form').addEventListener('submit', function(e) {
+  var btn = document.getElementById('pay-btn');
+  var action = e.submitter?.value;
+
+  if (action === 'success') {
+    btn.disabled = true;
+
+    {% if provider == 'stripe' %}
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Vérification de la carte…';
+    setTimeout(function() { btn.innerHTML = '🔐 Authentification 3DS…'; }, 800);
+    setTimeout(function() { btn.innerHTML = '✅ Paiement approuvé !'; }, 1800);
+
+    {% elseif provider == 'paypal' %}
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Connexion PayPal…';
+    setTimeout(function() { btn.innerHTML = '✅ Paiement PayPal confirmé !'; }, 1200);
+
+    {% elseif provider in ['airtel', 'airtel_money', 'mpesa', 'orange_money', 'pawapay'] %}
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Vérification du paiement mobile…';
+    setTimeout(function() { btn.innerHTML = '✅ Paiement mobile confirmé !'; }, 1500);
+
+    {% elseif provider == 'virement' %}
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enregistrement…';
+    setTimeout(function() { btn.innerHTML = '✅ Virement enregistré !'; }, 800);
+    {% endif %}
+  }
+});
+</script>
 {% endblock %}

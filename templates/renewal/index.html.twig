@@ -1,0 +1,255 @@
+{% extends 'base.html.twig' %}
+{% block title %}Renouveler la page — {{ page.deceasedFullName }}{% endblock %}
+{% block stylesheets %}
+<style>
+.renewal-hero { -webkit-text-fill-color: white;
+  background: linear-gradient(135deg, var(--em-navy), #2C4270);
+  color: white; padding: 2.5rem; border-radius: var(--em-radius-xl);
+  margin-bottom: 2rem; text-align: center;
+}
+.renewal-hero h1 { font-size: 1.75rem; font-weight: 300; margin: 0 0 .5rem; }
+.renewal-hero p  { color: rgba(255,255,255,.75); margin: 0; }
+.renewal-status  { display: inline-flex; align-items: center; gap: .4rem;
+  padding: .4rem 1rem; border-radius: 20px; font-size: .85rem; font-weight: 600;
+  margin-bottom: 1rem; }
+.renewal-status--warning { background: rgba(251,191,36,.2); color: #FCD34D; }
+.renewal-status--danger  { background: rgba(239,68,68,.2);  color: #FCA5A5; }
+.renewal-status--expired { background: rgba(239,68,68,.3);  color: #F87171; }
+
+.formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.formula-card {
+  background: white; border: 2px solid var(--em-stone); border-radius: var(--em-radius-xl);
+  padding: 1.5rem; cursor: pointer; transition: all .2s; position: relative;
+}
+.formula-card:hover { border-color: var(--em-navy); transform: translateY(-2px); }
+.formula-card.selected { border-color: var(--em-gold); background: rgba(201,168,76,.05); }
+.formula-card.current  { border-color: var(--em-navy); }
+.formula-card__badge {
+  position: absolute; top: -10px; right: 16px;
+  background: var(--em-gold); color: var(--em-navy);
+  font-size: .72rem; font-weight: 700; padding: 2px 10px; border-radius: 10px;
+}
+.formula-card__name   { font-size: 1.1rem; font-weight: 600; color: var(--em-navy); margin: 0 0 .25rem; }
+.formula-card__price  { font-size: 2rem; font-weight: 700; color: var(--em-navy); }
+.formula-card__price span { font-size: 1rem; font-weight: 400; color: var(--em-muted); }
+.formula-card__duration { color: var(--em-muted); font-size: .85rem; margin: .25rem 0 .75rem; }
+.formula-card__feature { font-size: .8rem; color: var(--em-muted); display: flex; align-items: center; gap: .4rem; margin: .2rem 0; }
+.formula-card__feature i { color: var(--em-success); }
+
+.provider-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .75rem; margin-bottom: 1.5rem; }
+.provider-card {
+  border: 2px solid var(--em-stone); border-radius: var(--em-radius);
+  padding: .875rem; text-align: center; cursor: pointer; transition: all .2s;
+  background: white;
+}
+.provider-card:hover { border-color: var(--em-navy); }
+.provider-card.selected { border-color: var(--em-gold); background: rgba(201,168,76,.05); }
+.provider-card__name { font-size: .8rem; font-weight: 600; color: var(--em-navy); margin: .4rem 0 0; }
+.provider-card__icon { font-size: 1.75rem; }
+
+.renewal-summary {
+  background: var(--em-cream); border: 1px solid var(--em-stone);
+  border-radius: var(--em-radius-lg); padding: 1.25rem; margin-bottom: 1.5rem;
+}
+.renewal-summary__row { display: flex; justify-content: space-between; align-items: center;
+  padding: .4rem 0; border-bottom: 1px solid var(--em-stone); font-size: .9rem; }
+.renewal-summary__row:last-child { border-bottom: none; font-weight: 700; font-size: 1rem; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width:800px;padding-top:2.5rem;padding-bottom:4rem;">
+
+  {# En-tête #}
+  <div class="renewal-hero">
+    {% if daysLeft is not null %}
+      {% if daysLeft < 0 %}
+        <div class="renewal-status renewal-status--expired">❌ Page expirée depuis {{ daysLeft|abs }} jour{{ daysLeft|abs > 1 ? 's' : '' }}</div>
+      {% elseif daysLeft <= 7 %}
+        <div class="renewal-status renewal-status--danger">⚠️ Expire dans {{ daysLeft }} jour{{ daysLeft > 1 ? 's' : '' }}</div>
+      {% elseif daysLeft <= 30 %}
+        <div class="renewal-status renewal-status--warning">⏰ Expire dans {{ daysLeft }} jour{{ daysLeft > 1 ? 's' : '' }}</div>
+      {% endif %}
+    {% endif %}
+    <h1>🔄 Renouveler la page mémorielle</h1>
+    <p>{{ page.deceasedFullName }} — Formule actuelle : <strong>{{ currentFormula ? currentFormula.name : 'Non définie' }}</strong>
+      {% if page.expiresAt %}· Expire le <strong>{{ page.expiresAt|date('d/m/Y') }}</strong>{% endif %}
+    </p>
+  </div>
+
+  {% for type, msgs in app.flashes %}
+    {% for msg in msgs %}
+    <div class="alert alert-{{ type == 'error' ? 'danger' : 'success' }} mb-3">{{ msg }}</div>
+    {% endfor %}
+  {% endfor %}
+
+  <form method="POST" action="{{ path('app_renewal_pay', {slug: page.slug}) }}" id="renewal-form">
+    <input type="hidden" name="_token" value="{{ csrf_token('renewal_' ~ page.id) }}">
+    <input type="hidden" name="formula_id" id="selected-formula-id" value="{{ currentFormula ? currentFormula.id : '' }}">
+    <input type="hidden" name="provider" id="selected-provider" value="stripe">
+
+    {# Étape 1 : Choisir la formule #}
+    <div class="dashboard-card mb-4">
+      <div class="dashboard-card__header">
+        <h3>1. Choisir la formule</h3>
+      </div>
+      <div class="dashboard-card__body">
+        <div class="formula-grid">
+          {% for formula in formulas %}
+          <div class="formula-card {% if currentFormula and formula.id == currentFormula.id %}current selected{% endif %}"
+               onclick="selectFormula({{ formula.id }}, this)"
+               id="formula-{{ formula.id }}">
+            {% if currentFormula and formula.id == currentFormula.id %}
+              <div class="formula-card__badge">Formule actuelle</div>
+            {% endif %}
+            <div class="formula-card__name">{{ formula.name }}</div>
+            <div class="formula-card__price">
+              {{ formula.price }}<span> USD</span>
+            </div>
+            <div class="formula-card__duration">
+              <i class="bi bi-calendar"></i>
+              {% if formula.durationYears %}{{ formula.durationYears }} an{{ formula.durationYears > 1 ? 's' : '' }}{% else %}Perpétuel{% endif %}
+            </div>
+            <div class="formula-card__feature"><i class="bi bi-check-circle-fill"></i> {{ formula.maxMediaGb }} Go de médias</div>
+            <div class="formula-card__feature"><i class="bi bi-check-circle-fill"></i> {{ formula.maxEvents }} événement{{ formula.maxEvents > 1 ? 's' : '' }}</div>
+            {% if formula.hasQrCode %}<div class="formula-card__feature"><i class="bi bi-check-circle-fill"></i> QR Code</div>{% endif %}
+            {% if formula.hasVideo %}<div class="formula-card__feature"><i class="bi bi-check-circle-fill"></i> Vidéos</div>{% endif %}
+            {% if formula.hasLive %}<div class="formula-card__feature"><i class="bi bi-check-circle-fill"></i> Retransmission live</div>{% endif %}
+            {% if formula.hasPremiumThemes %}<div class="formula-card__feature"><i class="bi bi-check-circle-fill"></i> Thèmes premium</div>{% endif %}
+            {% if formula.hasAdvancedStats %}<div class="formula-card__feature"><i class="bi bi-check-circle-fill"></i> Stats avancées</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {# Étape 2 : Choisir le provider #}
+    <div class="dashboard-card mb-4">
+      <div class="dashboard-card__header">
+        <h3>2. Choisir le moyen de paiement</h3>
+      </div>
+      <div class="dashboard-card__body">
+        {% set providerIcons = {
+          'stripe': '💳', 'paypal': '🅿️', 'airtel': '📱',
+          'mpesa': '📱', 'orange_money': '🟠', 'pawapay': '📲', 'virement': '🏦'
+        } %}
+
+        <p style="font-size:.8rem;color:var(--em-muted);margin-bottom:.75rem;">
+          <i class="bi bi-globe"></i> International
+        </p>
+        <div class="provider-grid" style="margin-bottom:1rem;">
+          {% for key, info in providersByZone.international %}
+          <div class="provider-card {% if key == 'stripe' %}selected{% endif %}"
+               onclick="selectProvider('{{ key }}', this)">
+            <div class="provider-card__icon">{{ providerIcons[key] ?? '💰' }}</div>
+            <div class="provider-card__name">{{ info.label }}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <p style="font-size:.8rem;color:var(--em-muted);margin-bottom:.75rem;">
+          <i class="bi bi-phone"></i> RDC & Afrique
+        </p>
+        <div class="provider-grid">
+          {% for key, info in providersByZone.rdc %}
+          <div class="provider-card" onclick="selectProvider('{{ key }}', this)">
+            <div class="provider-card__icon">{{ providerIcons[key] ?? '📱' }}</div>
+            <div class="provider-card__name">{{ info.label }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {# Récapitulatif #}
+    <div class="renewal-summary" id="renewal-summary">
+      <div class="renewal-summary__row">
+        <span>Page mémorielle</span>
+        <span>{{ page.deceasedFullName }}</span>
+      </div>
+      <div class="renewal-summary__row">
+        <span>Formule</span>
+        <span id="sum-formula">{{ currentFormula ? currentFormula.name : '—' }}</span>
+      </div>
+      <div class="renewal-summary__row">
+        <span>Durée</span>
+        <span id="sum-duration">{{ currentFormula ? (currentFormula.durationMonths ?? 12) ~ ' mois' : '—' }}</span>
+      </div>
+      <div class="renewal-summary__row">
+        <span>Nouveau terme</span>
+        <span id="sum-expiry">—</span>
+      </div>
+      <div class="renewal-summary__row">
+        <span>Total</span>
+        <span id="sum-price" style="color:var(--em-gold);">{{ currentFormula ? currentFormula.price ~ ' USD' : '—' }}</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:1rem;justify-content:flex-end;">
+      <a href="{{ path('app_dashboard_memorial', {slug: page.slug}) }}" class="em-btn em-btn--ghost">
+        Annuler
+      </a>
+      <button type="submit" class="em-btn em-btn--primary" id="pay-btn">
+        <i class="bi bi-lock-fill"></i> Payer et renouveler
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+var FORMULAS = {{ formulas|map(f => {
+  'id': f.id,
+  'name': f.name,
+  'price': f.price,
+  'years': f.durationYears ?? 1,
+  'months': f.durationYears is not null ? (f.durationYears * 12) : 0
+})|json_encode|raw }};
+
+// Convertir en objet indexé par ID
+var FORMULAS_MAP = {};
+FORMULAS.forEach(function(f){ FORMULAS_MAP[f.id] = f; });
+FORMULAS = FORMULAS_MAP;
+
+var EXPIRES_AT = {{ page.expiresAt ? page.expiresAt|date('Y-m-d')|json_encode|raw : 'null' }};
+var selectedFormulaId = {{ currentFormula ? currentFormula.id : 'null' }};
+
+function selectFormula(id, el) {
+  document.querySelectorAll('.formula-card').forEach(function(c){ c.classList.remove('selected'); });
+  el.classList.add('selected');
+  selectedFormulaId = id;
+  document.getElementById('selected-formula-id').value = id;
+  updateSummary();
+}
+
+function selectProvider(provider, el) {
+  document.querySelectorAll('.provider-card').forEach(function(c){ c.classList.remove('selected'); });
+  el.classList.add('selected');
+  document.getElementById('selected-provider').value = provider;
+}
+
+function updateSummary() {
+  var f = FORMULAS[String(selectedFormulaId)] || FORMULAS[selectedFormulaId];
+  if (!f) return;
+  document.getElementById('sum-formula').textContent  = f.name;
+  document.getElementById('sum-duration').textContent = f.months > 0 ? (f.years + ' an' + (f.years > 1 ? 's' : '')) : 'Perpétuel';
+  document.getElementById('sum-price').textContent    = f.price + ' USD';
+  // Calculer nouvelle date d'expiration
+  var base = EXPIRES_AT && new Date(EXPIRES_AT) > new Date() ? new Date(EXPIRES_AT) : new Date();
+  if (f.months > 0) base.setMonth(base.getMonth() + f.months);
+  else { document.getElementById('sum-expiry').textContent = 'Perpétuel'; return; }
+  document.getElementById('sum-expiry').textContent = base.toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+// Init
+updateSummary();
+
+document.getElementById('renewal-form').addEventListener('submit', function() {
+  var btn = document.getElementById('pay-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Traitement…';
+});
+</script>
+{% endblock %}

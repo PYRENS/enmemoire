@@ -5,9 +5,10 @@ namespace App\Controller;
 use App\Entity\MemorialPage;
 use App\Entity\Payment;
 use App\Repository\MemorialFormulaRepository;
-use App\Repository\MemorialThemeRepository;
 use App\Service\MemorialPageService;
 use App\Service\Payment\PaymentService;
+use App\Service\Payment\StripeService;
+use App\Service\Payment\PayPalService;
 use App\Entity\MemorialFormula;
 use App\Entity\MemorialTheme;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,6 +18,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Service\MemorialEmailService;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/payment')]
@@ -27,6 +30,9 @@ class PaymentController extends AbstractController
         private readonly PaymentService          $paymentService,
         private readonly MemorialPageService     $memorialService,
         private readonly MemorialEmailService    $memorialEmailService,
+        private readonly StripeService           $stripeService,
+        private readonly PayPalService           $paypalService,
+        private readonly LoggerInterface        $logger,
     ) {}
 
     // =========================================================
@@ -72,15 +78,28 @@ class PaymentController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        // Éviter le double traitement
-        if ($payment->isCompleted()) {
-            // Chercher la page déjà créée
-            $page = $this->em->getRepository(MemorialPage::class)
-                ->findOneBy(['createdBy' => $this->getUser()]);
+        // PayPal : capturer l'ordre si nécessaire
+        $paypalToken = $request->query->get('token');
+        if ($paypalToken && $payment->getProvider() === 'paypal') {
+            $meta = $payment->getMetadata() ?? [];
+            $orderId = $meta['paypal_order_id'] ?? $paypalToken;
+            $this->paypalService->captureOrder($orderId);
+            $payment->setProviderTxId($orderId);
+        }
 
-            if ($page) {
-                return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $page->getSlug()]);
+        // Stripe : vérifier session
+        $stripeSessionId = $request->query->get('session_id');
+        if ($stripeSessionId) {
+            $payment->setProviderTxId($stripeSessionId);
+        }
+        if ($payment->isCompleted()) {
+            $meta = $payment->getMetadata() ?? [];
+            if (!empty($meta['renewal']) && !empty($meta['memorial_slug'])) {
+                $this->addFlash('success', '✅ Renouvellement confirmé ! Un email de confirmation vous a été envoyé.');
+                return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $meta['memorial_slug']]);
             }
+            $page = $this->em->getRepository(MemorialPage::class)->findOneBy(['createdBy' => $this->getUser()]);
+            if ($page) { return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $page->getSlug()]); }
         }
 
         // Confirmer le paiement
@@ -93,6 +112,29 @@ class PaymentController extends AbstractController
         $metadata = $payment->getMetadata() ?? [];
         $s1       = $step1 ?: ($metadata['step1'] ?? []);
         $s2       = $step2 ?: ($metadata['step2'] ?? []);
+
+        // Renouvellement ?
+        if (!empty($metadata['renewal']) && !empty($metadata['memorial_slug'])) {
+            $page = $this->em->getRepository(MemorialPage::class)
+                ->findOneBy(['slug' => $metadata['memorial_slug']]);
+
+            if ($page) {
+                $formula  = $this->em->getRepository(MemorialFormula::class)->find($metadata['formula_id']);
+                $years    = $formula ? ($formula->getDurationYears() ?? 1) : 1;
+                $months   = $years * 12;
+
+                $base = ($page->getExpiresAt() && $page->getExpiresAt() > new \DateTime())
+                    ? $page->getExpiresAt() : new \DateTime();
+                $newExpiry = (clone $base)->modify("+{$months} months");
+
+                $page->setExpiresAt($newExpiry)->setStatus(MemorialPage::STATUS_ACTIVE);
+                if ($formula) $page->setFormula($formula);
+                $this->em->flush();
+
+                $this->addFlash('success', '✅ Page renouvelée jusqu\'au ' . $newExpiry->format('d/m/Y'));
+                return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $page->getSlug()]);
+            }
+        }
 
         if (empty($s1) || empty($s2)) {
             $this->addFlash('success', 'Paiement confirmé ! Créez maintenant votre page mémorielle.');
@@ -126,15 +168,10 @@ class PaymentController extends AbstractController
         $payment->setMetadata($meta);
         $this->em->flush();
 
-        // Envoyer l'email de confirmation + facture au modérateur
+        // Email de confirmation
         try {
-            $this->memorialEmailService->sendMemorialCreatedConfirmation(
-                $page,
-                $payment,
-                $this->getUser(),
-            );
+            $this->memorialEmailService->sendMemorialCreatedConfirmation($page, $payment, $this->getUser());
         } catch (\Exception $e) {
-            // Non bloquant — log uniquement
             error_log('[EnMémoire] Email confirmation failed: ' . $e->getMessage());
         }
 
@@ -178,7 +215,6 @@ class PaymentController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
-            // L'admin devra valider manuellement
             $meta = $payment->getMetadata() ?? [];
             $meta['mobile_confirmation'] = [
                 'submitted_at' => (new \DateTime())->format('Y-m-d H:i:s'),
@@ -191,6 +227,12 @@ class PaymentController extends AbstractController
             $this->em->flush();
 
             $this->addFlash('success', 'Confirmation reçue ! Votre paiement sera validé sous 24h par notre équipe.');
+
+            // Renouvellement ?
+            if (!empty($meta['renewal'])) {
+                return $this->redirectToRoute('app_dashboard');
+            }
+
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -198,23 +240,117 @@ class PaymentController extends AbstractController
     }
 
     // =========================================================
-    // WEBHOOK STRIPE
+    // WEBHOOK STRIPE (production)
     // =========================================================
     #[Route('/webhook/stripe', name: 'app_payment_webhook_stripe', methods: ['POST'])]
-    public function webhookStripe(Request $request): JsonResponse
-    {
-        // En production : vérifier la signature Stripe
-        // $sig = $request->headers->get('Stripe-Signature');
-        // $event = \Stripe\Webhook::constructEvent($request->getContent(), $sig, $webhookSecret);
+    public function webhookStripe(
+        Request $request,
+        #[Autowire('%env(STRIPE_WEBHOOK_SECRET)%')] string $webhookSecret = '',
+    ): JsonResponse {
+        $payload = $request->getContent();
+        $sig     = $request->headers->get('Stripe-Signature', '');
 
-        $payload = json_decode($request->getContent(), true);
-        $type    = $payload['type'] ?? '';
+        // Décoder l'événement
+        $raw  = json_decode($payload, true);
+        $type = $raw['type'] ?? '';
+
+        // Vérifier la signature si configurée
+        if ($webhookSecret && $sig) {
+            $verified = $this->stripeService->verifyWebhook($payload, $sig, $webhookSecret);
+            if (!$verified) {
+                return $this->json(['error' => 'Invalid signature'], 400);
+            }
+        }
+
+        $this->logger->info('[STRIPE] Webhook reçu: ' . $type);
 
         if ($type === 'checkout.session.completed') {
-            $paymentId = $payload['data']['object']['metadata']['payment_id'] ?? null;
-            if ($paymentId) {
-                $payment = $this->em->getRepository(Payment::class)->find($paymentId);
-                if ($payment) {
+            // L'objet session Stripe
+            $session   = $raw['data']['object'] ?? [];
+            $metadata  = $session['metadata'] ?? [];
+            $paymentId = $metadata['payment_id'] ?? null;
+            $sessionId = $session['id'] ?? '';
+
+            $this->logger->info('[STRIPE] payment_id: ' . ($paymentId ?? 'NULL') . ' | session: ' . $sessionId);
+
+            if (!$paymentId) {
+                return $this->json(['received' => true, 'warning' => 'no payment_id']);
+            }
+
+            $payment = $this->em->getRepository(Payment::class)->find($paymentId);
+            if (!$payment) {
+                return $this->json(['received' => true, 'warning' => 'payment not found']);
+            }
+
+            // Confirmer le paiement si pas encore fait
+            if (!$payment->isCompleted()) {
+                $payment->setProviderTxId($sessionId);
+                $this->paymentService->confirmPayment($payment);
+                $this->logger->info('[STRIPE] Paiement ' . $paymentId . ' confirmé');
+            }
+
+            // Traiter le renouvellement + email (même si déjà completed)
+            $meta = $payment->getMetadata() ?? [];
+            if (!empty($meta['renewal']) && !empty($meta['memorial_slug']) && empty($meta['email_sent'])) {
+                $page = $this->em->getRepository(MemorialPage::class)
+                    ->findOneBy(['slug' => $meta['memorial_slug']]);
+
+                if ($page) {
+                    // Mettre à jour la date d'expiration
+                    $formula = $this->em->getRepository(\App\Entity\MemorialFormula::class)
+                        ->find($meta['formula_id'] ?? 0);
+                    $years   = $formula ? ($formula->getDurationYears() ?? 1) : 1;
+                    $months  = $years * 12;
+                    $base    = ($page->getExpiresAt() && $page->getExpiresAt() > new \DateTime())
+                        ? $page->getExpiresAt() : new \DateTime();
+                    $newExpiry = (clone $base)->modify("+{$months} months");
+
+                    $page->setExpiresAt($newExpiry)->setStatus(MemorialPage::STATUS_ACTIVE);
+                    if ($formula) $page->setFormula($formula);
+
+                    // Marquer email envoyé
+                    $meta['email_sent'] = true;
+                    $payment->setMetadata($meta);
+                    $this->em->flush();
+
+                    $this->logger->info('[STRIPE] Page renouvelée jusqu au ' . $newExpiry->format('Y-m-d'));
+
+                    // Envoyer email de confirmation
+                    $owner = $payment->getUser();
+                    if ($owner) {
+                        try {
+                            $this->memorialEmailService->sendRenewalConfirmation($page, $payment, $owner);
+                            $this->logger->info('[STRIPE] Email envoyé à ' . $owner->getEmail());
+                        } catch (\Exception $e) {
+                            $this->logger->error('[STRIPE] Email FAILED: ' . $e->getMessage());
+                        }
+                    }
+                }
+            }
+        }
+
+        return $this->json(['received' => true]);
+    }
+
+    // =========================================================
+    // WEBHOOK PAYPAL (production)
+    // =========================================================
+    #[Route('/webhook/paypal', name: 'app_payment_webhook_paypal', methods: ['POST'])]
+    public function webhookPaypal(Request $request): JsonResponse
+    {
+        $data   = json_decode($request->getContent(), true);
+        $event  = $data['event_type'] ?? '';
+        $resource = $data['resource'] ?? [];
+
+        if ($event === 'CHECKOUT.ORDER.APPROVED' || $event === 'PAYMENT.CAPTURE.COMPLETED') {
+            $customId = $resource['purchase_units'][0]['custom_id']
+                ?? $resource['custom_id']
+                ?? null;
+
+            if ($customId) {
+                $payment = $this->em->getRepository(Payment::class)->find($customId);
+                if ($payment && !$payment->isCompleted()) {
+                    $payment->setProviderTxId($resource['id'] ?? '');
                     $this->paymentService->confirmPayment($payment);
                 }
             }

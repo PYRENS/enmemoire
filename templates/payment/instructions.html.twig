@@ -1,139 +1,65 @@
 {% extends 'base.html.twig' %}
 {% block title %}Instructions de paiement — EnMémoire.com{% endblock %}
-{% block body_class %}create-memorial-page{% endblock %}
-{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/create.css') }}">{% endblock %}
 
 {% block body %}
-<div class="wizard-wrapper">
-  <div class="container" style="max-width:600px;padding-top:3rem;padding-bottom:4rem;">
-    <div class="wizard-card">
+<div class="container" style="max-width:600px;padding-top:2.5rem;padding-bottom:4rem;">
 
-      <div class="wizard-card__header">
-        <div class="wizard-step-icon">
-          {% if instructions.provider == 'virement' %}🏦{% else %}📱{% endif %}
-        </div>
-        <h1 class="wizard-title">Instructions de paiement</h1>
-        <p class="wizard-subtitle">
-          Paiement via <strong>{{ instructions.provider_label }}</strong> —
+  <div class="dashboard-card">
+    <div class="dashboard-card__header">
+      <h3>📋 Instructions de paiement</h3>
+    </div>
+    <div class="dashboard-card__body">
+
+      <div style="background:var(--em-cream);border-radius:var(--em-radius);padding:1rem;margin-bottom:1.5rem;">
+        <p style="margin:0;font-size:.875rem;">
+          <strong style="color:var(--em-navy);">{{ instructions.provider_label ?? payment.provider }}</strong>
+          — Montant : <strong style="color:var(--em-gold);">{{ instructions.amount ?? payment.amount }} {{ instructions.currency ?? payment.currency }}</strong>
+        </p>
+        {% if instructions.reference is defined %}
+        <p style="margin:.25rem 0 0;font-size:.8rem;color:var(--em-muted);">
           Référence : <strong>{{ instructions.reference }}</strong>
         </p>
-      </div>
-
-      {# Récap montant #}
-      <div class="instructions-amount-box">
-        <div class="instructions-amount-label">Montant à envoyer</div>
-        <div class="instructions-amount">
-          {{ instructions.amount }}
-          <span class="instructions-currency">{{ instructions.currency }}</span>
-        </div>
-        <div class="instructions-ref">
-          Référence : <strong>{{ instructions.reference }}</strong>
-          <button type="button" class="copy-btn"
-                  onclick="copyRef('{{ instructions.reference }}')"
-                  title="Copier la référence">
-            <i class="bi bi-clipboard"></i>
-          </button>
-        </div>
+        {% endif %}
       </div>
 
       {# Étapes #}
-      <div class="instructions-steps">
-        {% for i, step in instructions.instructions %}
-        <div class="instructions-step">
-          <div class="instructions-step__num">{{ loop.index }}</div>
-          <div class="instructions-step__text">{{ step }}</div>
+      <ol style="padding-left:1.25rem;margin-bottom:1.5rem;">
+        {% for step in instructions.instructions ?? [] %}
+        <li style="margin-bottom:.5rem;font-size:.9rem;color:var(--em-navy);line-height:1.5;">
+          {{ step }}
+        </li>
+        {% endfor %}
+      </ol>
+
+      {# Coordonnées bancaires (virement) #}
+      {% if instructions.bank_details is defined %}
+      <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:var(--em-radius);padding:1rem;margin-bottom:1.5rem;">
+        <h4 style="margin:0 0 .75rem;font-size:.9rem;color:#14532D;">🏦 Coordonnées bancaires</h4>
+        {% for key, val in instructions.bank_details %}
+        <div style="display:flex;justify-content:space-between;padding:.25rem 0;font-size:.85rem;border-bottom:1px solid #BBF7D0;">
+          <span style="color:#16A34A;font-weight:600;">{{ key|capitalize }}</span>
+          <span style="color:#14532D;">{{ val }}</span>
         </div>
         {% endfor %}
       </div>
+      {% endif %}
 
-      {# Coordonnées bancaires si virement #}
-      {% if instructions.provider == 'virement' and instructions.bank_details is defined %}
-      <div class="bank-details">
-        <h3><i class="bi bi-bank"></i> Coordonnées bancaires</h3>
-        <div class="bank-details__grid">
-          <div class="bank-detail-row">
-            <span>IBAN</span>
-            <strong>{{ instructions.bank_details.iban }}</strong>
-            <button type="button" class="copy-btn" onclick="copyRef('{{ instructions.bank_details.iban }}')">
-              <i class="bi bi-clipboard"></i>
-            </button>
-          </div>
-          <div class="bank-detail-row">
-            <span>BIC</span>
-            <strong>{{ instructions.bank_details.bic }}</strong>
-          </div>
-          <div class="bank-detail-row">
-            <span>Bénéficiaire</span>
-            <strong>{{ instructions.bank_details.beneficiaire }}</strong>
-          </div>
-          <div class="bank-detail-row">
-            <span>Référence</span>
-            <strong>{{ instructions.reference }}</strong>
-          </div>
-        </div>
+      {# Bouton confirmer #}
+      {% if instructions.confirm_url is defined %}
+      <div style="text-align:center;margin-top:1.5rem;">
+        <a href="{{ instructions.confirm_url }}" class="em-btn em-btn--primary">
+          <i class="bi bi-check-circle"></i> J'ai effectué le paiement
+        </a>
       </div>
       {% endif %}
 
-      {# Confirmation #}
-      <div class="instructions-confirm-section">
-        <h3>Confirmez votre paiement</h3>
-        <p>
-          Une fois le paiement effectué, confirmez-le en uploadant la preuve
-          (capture d'écran SMS, reçu de virement…).
-        </p>
-
-        <form action="{{ instructions.confirm_url }}" method="POST"
-              enctype="multipart/form-data" class="confirm-form">
-          <input type="hidden" name="_token" value="{{ csrf_token('mobile_confirm_' ~ payment.id) }}">
-
-          <div class="wf-group">
-            <label class="wf-label">Votre numéro de téléphone</label>
-            <input type="tel" name="phone" class="wf-input"
-                   placeholder="+243 81X XXX XXXX">
-          </div>
-
-          <div class="wf-group">
-            <label class="wf-label">ID / Référence de la transaction</label>
-            <input type="text" name="tx_id" class="wf-input"
-                   placeholder="Ex : TXN123456789">
-          </div>
-
-          <div class="wf-group">
-            <label class="wf-label">Note <span class="wf-optional">optionnel</span></label>
-            <textarea name="note" class="wf-input" rows="2"
-                      placeholder="Informations complémentaires..."></textarea>
-          </div>
-
-          <button type="submit" class="em-btn em-btn--primary w-100">
-            <i class="bi bi-check-lg"></i> Confirmer mon paiement
-          </button>
-        </form>
-      </div>
-
-      <div class="instructions-note">
-        <i class="bi bi-clock-history"></i>
-        Votre page mémorielle sera créée dans les <strong>24h</strong> après validation
-        de votre paiement par notre équipe.
-        <br><br>
-        Des questions ? <a href="{{ path('app_contact') }}">Contactez-nous</a>
+      <div style="margin-top:1rem;text-align:center;">
+        <a href="{{ path('app_dashboard') }}" style="font-size:.825rem;color:var(--em-muted);">
+          ← Retour au dashboard
+        </a>
       </div>
 
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block javascripts %}
-<script>
-function copyRef(text) {
-  navigator.clipboard.writeText(text).then(function() {
-    var btns = document.querySelectorAll('.copy-btn');
-    btns.forEach(function(btn) {
-      var orig = btn.innerHTML;
-      btn.innerHTML = '<i class="bi bi-check-lg" style="color:#2D7A4F"></i>';
-      setTimeout(function() { btn.innerHTML = orig; }, 1500);
-    });
-  });
-}
-</script>
 {% endblock %}

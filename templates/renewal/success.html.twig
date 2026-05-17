@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+{% block title %}Renouvellement confirmé — {{ page.deceasedFullName }}{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width:560px;padding-top:4rem;padding-bottom:4rem;text-align:center;">
+
+  <div style="font-size:4rem;margin-bottom:1rem;">✅</div>
+  <h1 style="font-family:var(--font-display);font-weight:300;color:var(--em-navy);margin-bottom:.5rem;">
+    Renouvellement confirmé !
+  </h1>
+  <p style="color:var(--em-muted);margin-bottom:2rem;">
+    La page mémorielle de <strong>{{ page.deceasedFullName }}</strong> est active
+    jusqu'au <strong style="color:var(--em-navy);">{{ page.expiresAt|date('d/m/Y') }}</strong>.
+  </p>
+
+  <div style="background:var(--em-cream);border-radius:var(--em-radius-xl);padding:1.5rem;margin-bottom:2rem;text-align:left;">
+    <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--em-stone);font-size:.875rem;">
+      <span style="color:var(--em-muted);">Référence</span>
+      <span style="font-weight:600;color:var(--em-navy);">{{ payment.uuid|slice(0, 8)|upper }}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--em-stone);font-size:.875rem;">
+      <span style="color:var(--em-muted);">Montant</span>
+      <span style="font-weight:600;color:var(--em-navy);">{{ payment.amount }} {{ payment.currency }}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--em-stone);font-size:.875rem;">
+      <span style="color:var(--em-muted);">Provider</span>
+      <span style="font-weight:600;color:var(--em-navy);">{{ payment.provider|replace({'_': ' '})|title }}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:.5rem 0;font-size:.875rem;">
+      <span style="color:var(--em-muted);">Valide jusqu'au</span>
+      <span style="font-weight:600;color:var(--em-gold);">{{ page.expiresAt|date('d/m/Y') }}</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:.75rem;">
+    <a href="{{ path('app_dashboard_memorial', {slug: page.slug}) }}" class="em-btn em-btn--primary">
+      <i class="bi bi-speedometer2"></i> Retour au dashboard
+    </a>
+    <a href="{{ path('app_memorial_show', {slug: page.slug}) }}" class="em-btn em-btn--ghost">
+      <i class="bi bi-eye"></i> Voir la page mémorielle
+    </a>
+  </div>
+
+</div>
+{% endblock %}
