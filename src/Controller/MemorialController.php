@@ -86,7 +86,7 @@ class MemorialController extends AbstractController
 
         // Connexions familiales acceptées
         $familyConnections = $this->em->getRepository(\App\Entity\FamilyConnection::class)
-            ->findBy(['memorialFrom' => $page, 'status' => 'accepted']);
+            ->findAcceptedForPage($page);
 
         // Statistiques
         $stats = $this->memorialService->getStats($page);

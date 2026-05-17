@@ -40,11 +40,11 @@
 
   {# Switcher vue #}
   <div class="family-view-switch">
-    <button class="family-view-btn active d-none d-md-flex" onclick="switchView('graph')" id="btn-graph">
-      <i class="bi bi-diagram-3"></i> Graphique
-    </button>
     <button class="family-view-btn" onclick="switchView('list')" id="btn-list">
       <i class="bi bi-list-ul"></i> Liste
+    </button>
+    <button class="family-view-btn active" onclick="switchView('graph')" id="btn-graph">
+      <i class="bi bi-diagram-3"></i> Graphique
     </button>
   </div>
 
@@ -86,7 +86,7 @@
 
       <div class="family-list-item" id="conn-{{ connection.id }}">
         <div class="family-list-item__relation">{{ relation }}</div>
-        <a href="{{ path('app_memorial_show', {slug: relative.slug}) }}" class="family-list-item__person" style="min-width:0;">
+        <a href="{{ path('app_memorial_show', {slug: relative.slug}) }}" class="family-list-item__person">
           <div class="family-list-avatar">
             {% if relative.mainPhotoUrl %}
               <img src="{{ relative.mainPhotoUrl starts with 'http' ? relative.mainPhotoUrl : asset(relative.mainPhotoUrl) }}"
@@ -123,6 +123,128 @@
 {% block javascripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script>
+var TREE_DATA = {{ treeData|json_encode|raw }};
+var PAGE_SLUG = '{{ page.slug }}';
+var IS_MOBILE = window.innerWidth < 768;
+var _svg=null,_zoom=null,_sim=null,_graphInit=false;
+
+function switchView(view) {
+  document.getElementById('view-graph').style.display = view==='graph' ? 'block' : 'none';
+  document.getElementById('view-list').style.display  = view==='list'  ? 'block' : 'none';
+  document.getElementById('btn-graph').classList.toggle('active', view==='graph');
+  document.getElementById('btn-list').classList.toggle('active', view==='list');
+  if (view==='graph' && !_graphInit) { _graphInit=true; setTimeout(initGraph, 100); }
+}
+
+document.addEventListener('DOMContentLoaded', function(){ switchView('list'); });
+
+function initGraph() {
+  if (!TREE_DATA.nodes.length) return;
+  var svgEl = document.getElementById('family-svg');
+  if (!svgEl) return;
+  var W = svgEl.parentElement.clientWidth || 800;
+  var H = 580;
+  svgEl.setAttribute('width', W);
+  svgEl.setAttribute('height', H);
+  d3.select('#family-svg').selectAll('*').remove();
+  _svg = d3.select('#family-svg');
+  _zoom = d3.zoom().scaleExtent([0.2,4]).on('zoom',function(e){ gMain.attr('transform',e.transform); });
+  _svg.call(_zoom);
+  var gMain = _svg.append('g');
+  var nodes = TREE_DATA.nodes.map(function(d){ return Object.assign({},d); });
+  var edges = TREE_DATA.edges.map(function(d){
+    var e = {};
+    e.source = String(d.from);
+    e.target = String(d.to);
+    e.relFrom = d.relationFrom;
+    e.relTo = d.relationTo;
+    e.id = d.id;
+    return e;
+  });
+  var cx=W/2, cy=H/2;
+  nodes.forEach(function(n,i){
+    n.x = n.isCentral ? cx : cx+220*Math.cos(2*Math.PI*i/Math.max(nodes.length,1));
+    n.y = n.isCentral ? cy : cy+160*Math.sin(2*Math.PI*i/Math.max(nodes.length,1));
+  });
+  var defs=_svg.append('defs');
+  nodes.forEach(function(n){
+    if(n.photo){ defs.append('clipPath').attr('id','clip-'+n.id).append('circle').attr('r',n.isCentral?38:28); }
+  });
+  var linkSel = gMain.append('g').selectAll('line').data(edges).enter().append('line')
+    .attr('stroke','#C9A84C').attr('stroke-width',2).attr('opacity',0.8);
+  var labelSel = gMain.append('g').selectAll('text').data(edges).enter().append('text')
+    .attr('text-anchor','middle').attr('font-size','10px').attr('fill','#9CA3AF')
+    .text(function(d){ return d.relFrom+' / '+d.relTo; });
+  var nodeSel = gMain.append('g').selectAll('g').data(nodes).enter().append('g')
+    .style('cursor','pointer')
+    .on('click',function(e,d){ if(!e.defaultPrevented) window.location.href='/memorial/'+d.slug; })
+    .call(d3.drag()
+      .on('start',function(e,d){ if(!e.active)_sim.alphaTarget(0.3).restart(); d.fx=d.x;d.fy=d.y; })
+      .on('drag', function(e,d){ d.fx=e.x;d.fy=e.y; })
+      .on('end',  function(e,d){ if(!e.active)_sim.alphaTarget(0); d.fx=d.x;d.fy=d.y; })
+    );
+  nodeSel.append('circle')
+    .attr('r',function(d){ return d.isCentral?40:30; })
+    .attr('fill',function(d){ return d.isCentral?'#F8F4EE':'white'; })
+    .attr('stroke',function(d){ return d.isCentral?'#C9A84C':'#1B2B4B'; })
+    .attr('stroke-width',function(d){ return d.isCentral?3:2; });
+  nodeSel.each(function(d){
+    var n=d3.select(this),r=d.isCentral?38:28;
+    if(d.photo){
+      var url=d.photo.startsWith('http')?d.photo:'/'+d.photo.replace(/^\//,'');
+      n.append('image').attr('href',url).attr('x',-r).attr('y',-r).attr('width',r*2).attr('height',r*2)
+        .attr('clip-path','url(#clip-'+d.id+')');
+    } else {
+      n.append('text').attr('text-anchor','middle').attr('dy','0.35em')
+        .attr('font-size',d.isCentral?'1.2rem':'1rem').attr('fill','#1B2B4B')
+        .text(d.label.split(' ').slice(0,2).map(function(w){ return w[0]; }).join('').toUpperCase());
+    }
+  });
+  nodeSel.append('text').attr('text-anchor','middle')
+    .attr('y',function(d){ return d.isCentral?56:44; })
+    .attr('font-size','12px').attr('font-weight','600').attr('fill','#1B2B4B')
+    .text(function(d){ return d.label.split(' ')[0]; });
+  nodeSel.append('text').attr('text-anchor','middle')
+    .attr('y',function(d){ return d.isCentral?70:58; })
+    .attr('font-size','10px').attr('fill','#9CA3AF')
+    .text(function(d){ return d.dates||''; });
+  _sim = d3.forceSimulation(nodes)
+    .force('link',d3.forceLink(edges).id(function(d){ return String(d.id); }).distance(200).strength(0.8))
+    .force('charge',d3.forceManyBody().strength(-500))
+    .force('center',d3.forceCenter(cx,cy))
+    .force('collision',d3.forceCollide(70))
+    .on('tick',function(){
+      linkSel
+        .attr('x1',function(d){ return d.source?d.source.x:cx; })
+        .attr('y1',function(d){ return d.source?d.source.y:cy; })
+        .attr('x2',function(d){ return d.target?d.target.x:cx; })
+        .attr('y2',function(d){ return d.target?d.target.y:cy; });
+      labelSel
+        .attr('x',function(d){ return d.source&&d.target?(d.source.x+d.target.x)/2:cx; })
+        .attr('y',function(d){ return d.source&&d.target?(d.source.y+d.target.y)/2-6:cy; });
+      nodeSel.attr('transform',function(d){
+        return 'translate('+(isNaN(d.x)?cx:d.x)+','+(isNaN(d.y)?cy:d.y)+')';
+      });
+    });
+}
+
+function zoomIn()    { if(_svg&&_zoom) _svg.transition().duration(300).call(_zoom.scaleBy,1.5); }
+function zoomOut()   { if(_svg&&_zoom) _svg.transition().duration(300).call(_zoom.scaleBy,0.67); }
+function resetZoom() { if(_svg&&_zoom) _svg.transition().duration(300).call(_zoom.transform,d3.zoomIdentity); }
+
+async function deleteConnection(id) {
+  if(!confirm('Supprimer cette connexion familiale ?')) return;
+  var csrf=document.querySelector('.csrf-family-delete[data-id="'+id+'"]')?.textContent?.trim();
+  var form=new FormData(); form.append('_token',csrf);
+  var resp=await fetch('/memorial/'+PAGE_SLUG+'/famille/supprimer/'+id,{
+    method:'POST',body:form,headers:{'X-Requested-With':'XMLHttpRequest'}
+  });
+  var data=await resp.json();
+  if(data.success){ document.getElementById('conn-'+id)?.remove(); }
+  else alert(data.error||'Erreur');
+}
+</script>
+<script>
 // Données de l'arbre
 var TREE_DATA = {{ treeData|json_encode|raw }};
 var PAGE_SLUG = '{{ page.slug }}';
@@ -139,180 +261,4 @@ function switchView(view) {
 
 // Auto-switch mobile
 if (IS_MOBILE) switchView('list');
-
-// ── Graphique D3 ──────────────────────────────────────────
-var svg, g, zoom, simulation;
-
-function initGraph() {
-  var container = document.getElementById('family-svg');
-  if (!container || !TREE_DATA.nodes.length) return;
-
-  var W = container.clientWidth || 800;
-  var H = 600;
-
-  // Nettoyer
-  d3.select('#family-svg').selectAll('*').remove();
-
-  svg = d3.select('#family-svg')
-    .attr('viewBox', [0, 0, W, H]);
-
-  // Zoom
-  zoom = d3.zoom()
-    .scaleExtent([0.3, 3])
-    .on('zoom', function(event) { g.attr('transform', event.transform); });
-
-  svg.call(zoom);
-  g = svg.append('g');
-
-  // Defs — clip paths pour photos rondes
-  var defs = svg.append('defs');
-
-  TREE_DATA.nodes.forEach(function(node) {
-    if (node.photo) {
-      defs.append('clipPath')
-        .attr('id', 'clip-' + node.id)
-        .append('circle')
-        .attr('r', node.isCentral ? 38 : 28);
-    }
-  });
-
-  // Simulation force
-  simulation = d3.forceSimulation(TREE_DATA.nodes)
-    .force('link', d3.forceLink(TREE_DATA.edges).id(function(d){ return d.id; }).distance(180))
-    .force('charge', d3.forceManyBody().strength(-400))
-    .force('center', d3.forceCenter(W/2, H/2))
-    .force('collision', d3.forceCollide(80));
-
-  // Liens
-  var link = g.append('g').selectAll('line')
-    .data(TREE_DATA.edges).enter().append('line')
-    .attr('class', 'family-edge');
-
-  // Labels des liens
-  var linkLabel = g.append('g').selectAll('text')
-    .data(TREE_DATA.edges).enter().append('text')
-    .attr('class', 'family-edge-label')
-    .text(function(d){ return d.relationFrom + ' / ' + d.relationTo; });
-
-  // Nœuds
-  var node = g.append('g').selectAll('g')
-    .data(TREE_DATA.nodes).enter().append('g')
-    .attr('class', 'family-node')
-    .call(d3.drag()
-      .on('start', dragStart)
-      .on('drag', dragged)
-      .on('end', dragEnd)
-    )
-    .on('click', function(event, d) {
-      if (!event.defaultPrevented)
-        window.location.href = '/memorial/' + d.slug;
-    });
-
-  // Cercle de fond
-  node.append('circle')
-    .attr('r', function(d){ return d.isCentral ? 42 : 32; })
-    .attr('class', function(d){ return 'family-node-circle' + (d.isCentral ? ' family-node-circle--central' : ''); });
-
-  // Photo ou initiales
-  node.each(function(d) {
-    var n = d3.select(this);
-    if (d.photo) {
-      var photoUrl = d.photo.startsWith('http') ? d.photo : '/' + d.photo.replace(/^\//, '');
-      n.append('image')
-        .attr('href', photoUrl)
-        .attr('x', function(){ return d.isCentral ? -38 : -28; })
-        .attr('y', function(){ return d.isCentral ? -38 : -28; })
-        .attr('width', function(){ return d.isCentral ? 76 : 56; })
-        .attr('height', function(){ return d.isCentral ? 76 : 56; })
-        .attr('clip-path', 'url(#clip-' + d.id + ')');
-    } else {
-      n.append('text')
-        .attr('class', 'family-node-initial')
-        .attr('text-anchor', 'middle')
-        .attr('dy', '0.35em')
-        .attr('font-size', function(){ return d.isCentral ? '1.4rem' : '1.1rem'; })
-        .text(d.label.split(' ').map(function(w){ return w[0]; }).join('').slice(0, 2).toUpperCase());
-    }
-  });
-
-  // Nom sous le nœud
-  node.append('text')
-    .attr('class', 'family-node-label')
-    .attr('text-anchor', 'middle')
-    .attr('y', function(d){ return d.isCentral ? 55 : 44; })
-    .text(function(d){ return d.label.split(' ')[0]; }); // Prénom seulement
-
-  // Dates
-  node.append('text')
-    .attr('class', 'family-node-dates')
-    .attr('text-anchor', 'middle')
-    .attr('y', function(d){ return d.isCentral ? 70 : 58; })
-    .text(function(d){ return d.dates; });
-
-  // Tick
-  simulation.on('tick', function() {
-    link
-      .attr('x1', function(d){ return d.source.x; })
-      .attr('y1', function(d){ return d.source.y; })
-      .attr('x2', function(d){ return d.target.x; })
-      .attr('y2', function(d){ return d.target.y; });
-
-    linkLabel
-      .attr('x', function(d){ return (d.source.x + d.target.x) / 2; })
-      .attr('y', function(d){ return (d.source.y + d.target.y) / 2; });
-
-    node.attr('transform', function(d){ return 'translate(' + d.x + ',' + d.y + ')'; });
-  });
-
-  // Centrer le nœud central après init
-  simulation.on('end', function() {
-    var central = TREE_DATA.nodes.find(function(n){ return n.isCentral; });
-    if (central) {
-      var tx = W/2 - central.x;
-      var ty = H/2 - central.y;
-      svg.call(zoom.transform, d3.zoomIdentity.translate(tx, ty));
-    }
-  });
-}
-
-function dragStart(event, d) {
-  if (!event.active) simulation.alphaTarget(0.3).restart();
-  d.fx = d.x; d.fy = d.y;
-}
-function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
-function dragEnd(event, d) {
-  if (!event.active) simulation.alphaTarget(0);
-  // Garder la position après drag
-  d.fx = d.x;
-  d.fy = d.y;
-}
-
-function zoomIn()    { svg.transition().call(zoom.scaleBy, 1.4); }
-function zoomOut()   { svg.transition().call(zoom.scaleBy, 0.7); }
-function resetZoom() { svg.transition().call(zoom.transform, d3.zoomIdentity.translate(400, 300)); }
-
-// Init graphique si desktop
-if (!IS_MOBILE && TREE_DATA.nodes.length > 0) {
-  window.addEventListener('load', initGraph);
-}
-
-// ── Suppression connexion ─────────────────────────────────
-async function deleteConnection(id) {
-  if (!confirm('Supprimer cette connexion familiale ?')) return;
-  var csrf = document.querySelector('.csrf-family-delete[data-id="'+id+'"]')?.textContent?.trim();
-  var form = new FormData();
-  form.append('_token', csrf);
-  var resp = await fetch('/memorial/'+PAGE_SLUG+'/famille/supprimer/'+id, {
-    method: 'POST', body: form, headers: {'X-Requested-With': 'XMLHttpRequest'}
-  });
-  var data = await resp.json();
-  if (data.success) {
-    document.getElementById('conn-'+id)?.remove();
-    // Recharger le graphique
-    var newNodes = TREE_DATA.nodes;
-    TREE_DATA.edges = TREE_DATA.edges.filter(function(e){ return e.id !== id; });
-    initGraph();
-  } else alert(data.error || 'Erreur');
-}
-</script>
 {% endblock %}

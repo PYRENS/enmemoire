@@ -82,8 +82,8 @@
   .gallery-tab { white-space: nowrap; flex-shrink: 0; }
 }
 </style>
+<style>.memorial-family-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.5rem}.memorial-family-header h2{margin:0}.memorial-family-list{display:flex;flex-direction:column;gap:.5rem}.memorial-family-item{display:flex;align-items:center;gap:1rem;padding:.875rem 1rem;border-radius:var(--em-radius);border:1px solid var(--em-stone);text-decoration:none;color:inherit;transition:var(--em-transition)}.memorial-family-item:hover{background:var(--em-cream);border-color:var(--em-gold)}.memorial-family-item__avatar{width:46px;height:46px;border-radius:50%;flex-shrink:0;background:var(--em-navy);color:white;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:600;overflow:hidden;border:2px solid var(--em-stone)}.memorial-family-item__avatar img{width:100%;height:100%;object-fit:cover}.memorial-family-item__info{flex:1;min-width:0}.memorial-family-item__info strong{display:block;color:var(--em-navy);font-size:.9rem}.memorial-family-item__info small{color:var(--em-muted);font-size:.78rem}.memorial-family-item__relation{background:rgba(201,168,76,.15);color:var(--em-navy);font-size:.75rem;font-weight:600;padding:3px 8px;border-radius:8px;flex-shrink:0}</style>
 {% endblock %}
-
 {% block body %}
 
 {# ── HERO / EN-TÊTE DE LA PAGE ────────────────────────────── #}
@@ -221,6 +221,9 @@
       </button>
       <button class="memorial-tab" onclick="openTab('guestbook')"   id="tab-guestbook">
         <i class="bi bi-book"></i> Livre d'or <span class="tab-count">{{ guestbooks|length }}</span>
+      </button>
+      <button class="memorial-tab" onclick="openTab('family')" id="tab-family">
+        <i class="bi bi-diagram-3"></i> Famille
       </button>
       {% if events %}
       <button class="memorial-tab" onclick="openTab('events')"     id="tab-events">
@@ -576,6 +579,66 @@
     </div>
   </div>
   {% endif %}
+
+  {# FAMILLE #}
+  <div class="memorial-panel" id="panel-family">
+    {% if familyConnections is defined and familyConnections is not empty %}
+
+    {# Switcher graphique / liste #}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+      <h2 style="margin:0;">Arbre familial</h2>
+      <div style="display:flex;gap:.4rem;">
+        <button onclick="switchFamilyView('list')" id="fam-btn-list" class="em-btn em-btn--primary em-btn--sm">
+          <i class="bi bi-list-ul"></i> Liste
+        </button>
+        <button onclick="switchFamilyView('graph')" id="fam-btn-graph" class="em-btn em-btn--ghost em-btn--sm">
+          <i class="bi bi-diagram-3"></i> Graphique
+        </button>
+        <a href="{{ path('app_family_tree', {slug: page.slug}) }}" 
+           class="em-btn em-btn--ghost em-btn--sm">
+          <i class="bi bi-arrows-fullscreen"></i>
+        </a>
+      </div>
+    </div>
+
+    {# Vue graphique #}
+    <div id="fam-view-graph" style="display:none;background:var(--em-cream);border-radius:var(--em-radius-lg);overflow:hidden;position:relative;width:100%;">
+      <svg id="fam-svg" width="100%" height="500" style="display:block;"></svg>
+    </div>
+
+    {# Vue liste #}
+    <div id="fam-view-list">
+      <div class="memorial-family-list">
+        {% for conn in familyConnections %}
+          {% set isCentral = conn.memorialFrom.id == page.id %}
+          {% set relative  = isCentral ? conn.memorialTo : conn.memorialFrom %}
+          {% set relation  = isCentral ? conn.relationFrom : conn.relationTo %}
+          <a href="{{ path('app_memorial_show', {slug: relative.slug}) }}" class="memorial-family-item">
+            <div class="memorial-family-item__avatar">
+              {% if relative.mainPhotoUrl %}
+                <img src="{{ relative.mainPhotoUrl starts with 'http' ? relative.mainPhotoUrl : asset(relative.mainPhotoUrl) }}"
+                     alt="{{ relative.deceasedFullName }}">
+              {% else %}
+                {{ relative.deceasedFirstName|first|upper }}
+              {% endif %}
+            </div>
+            <div class="memorial-family-item__info">
+              <strong>{{ relative.deceasedFullName }}</strong>
+              <small>{{ relative.deceasedBirthDate|date('Y') }} – {{ relative.deceasedDeathDate|date('Y') }}</small>
+            </div>
+            <span class="memorial-family-item__relation">{{ relation }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% else %}
+    <div class="memorial-empty-panel">
+      <i class="bi bi-diagram-3"></i>
+      <p>L'arbre familial n'a pas encore été constitué.</p>
+    </div>
+    {% endif %}
+  </div>
 
 </div>{# /.container #}
 
@@ -991,6 +1054,121 @@ function addToPublicGallery(media) {
   actions.innerHTML = '<button onclick="editGalleryCaption(' + media.id + ', &quot;' + caption.replace(/"/g, '') + '&quot;)" class="mgal-btn mgal-btn--edit" title="Modifier"><i class="bi bi-pencil"></i></button>'
     + '<button onclick="deleteGalleryItem(' + media.id + ')" class="mgal-btn mgal-btn--delete" title="Supprimer"><i class="bi bi-trash"></i></button>';
   wrap.appendChild(actions);
+}
+</script>
+
+{# D3 famille #}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+// Données arbre famille
+var FAM_DATA = {
+  nodes: [
+    { id: {{ page.id }}, label: '{{ page.deceasedFullName|e('js') }}', slug: '{{ page.slug }}',
+      dates: '{{ page.deceasedBirthDate|date('Y') }}–{{ page.deceasedDeathDate|date('Y') }}',
+      photo: '{{ page.mainPhotoUrl ?? '' }}', isCentral: true }{% if familyConnections is defined and familyConnections is not empty %},
+    {% for conn in familyConnections %}
+      {% set rel = conn.memorialFrom.id == page.id ? conn.memorialTo : conn.memorialFrom %}
+      { id: {{ rel.id }}, label: '{{ rel.deceasedFullName|e('js') }}', slug: '{{ rel.slug }}',
+        dates: '{{ rel.deceasedBirthDate|date('Y') }}–{{ rel.deceasedDeathDate|date('Y') }}',
+        photo: '{{ rel.mainPhotoUrl ?? '' }}', isCentral: false }{% if not loop.last %},{% endif %}
+    {% endfor %}
+    {% endif %}
+  ],
+  edges: [{% if familyConnections is defined and familyConnections is not empty %}
+    {% for conn in familyConnections %}
+      { from: {{ conn.memorialFrom.id }}, to: {{ conn.memorialTo.id }},
+        relFrom: '{{ conn.relationFrom|e('js') }}', relTo: '{{ conn.relationTo|e('js') }}' }{% if not loop.last %},{% endif %}
+    {% endfor %}
+    {% endif %}
+  ]
+};
+
+var _famSvg=null, _famZoom=null, _famSim=null, _famInit=false;
+
+function switchFamilyView(view) { if(view==='graph'){var w=document.getElementById('fam-view-graph').parentElement.clientWidth||800;document.getElementById('fam-svg').setAttribute('width',w);}
+  document.getElementById('fam-view-graph').style.display = view==='graph' ? 'block' : 'none';
+  document.getElementById('fam-view-list').style.display  = view==='list'  ? 'block' : 'none';
+  document.getElementById('fam-btn-graph').className = 'em-btn em-btn--sm ' + (view==='graph' ? 'em-btn--primary' : 'em-btn--ghost');
+  document.getElementById('fam-btn-list').className  = 'em-btn em-btn--sm ' + (view==='list'  ? 'em-btn--primary' : 'em-btn--ghost');
+  if (view==='graph' && !_famInit) { setTimeout(initFamGraph, 80); _famInit=true; }
+}
+
+// Init quand l'onglet famille est ouvert
+var _origOpenTab = typeof openTab !== 'undefined' ? openTab : null;
+document.addEventListener('DOMContentLoaded', function(){
+  var origOpenTab = window.openTab;
+  window.openTab = function(name) {
+    origOpenTab(name);
+    if (name==='family' && !_famInit) { setTimeout(initFamGraph, 100); _famInit=true; }
+  };
+});
+
+function initFamGraph() {
+  if (!FAM_DATA.nodes.length) return;
+  var svgEl = document.getElementById('fam-svg');
+  if (!svgEl) return;
+  var W = Math.max(svgEl.getBoundingClientRect().width, svgEl.parentElement.getBoundingClientRect().width, svgEl.offsetParent ? svgEl.offsetParent.clientWidth : 0, 600);
+  var H = 500;
+  svgEl.setAttribute('width', W);
+  d3.select('#fam-svg').selectAll('*').remove();
+  _famSvg = d3.select('#fam-svg');
+  _famZoom = d3.zoom().scaleExtent([0.2,4]).on('zoom', function(e){ gFam.attr('transform', e.transform); });
+  _famSvg.call(_famZoom);
+  var gFam = _famSvg.append('g');
+  var nodes = FAM_DATA.nodes.map(function(d){ return Object.assign({},d); });
+  var edges = FAM_DATA.edges.map(function(d){ return {source:String(d.from),target:String(d.to),relFrom:d.relFrom,relTo:d.relTo}; });
+  var cx=W/2, cy=H/2;
+  nodes.forEach(function(n,i){
+    n.x = n.isCentral ? cx : cx+200*Math.cos(2*Math.PI*i/Math.max(nodes.length,1));
+    n.y = n.isCentral ? cy : cy+140*Math.sin(2*Math.PI*i/Math.max(nodes.length,1));
+  });
+  var defs=_famSvg.append('defs');
+  nodes.forEach(function(n){ if(n.photo){ defs.append('clipPath').attr('id','fclip-'+n.id).append('circle').attr('r',n.isCentral?34:24); }});
+  var lnk = gFam.append('g').selectAll('line').data(edges).enter().append('line')
+    .attr('stroke','#C9A84C').attr('stroke-width',2).attr('opacity',0.7);
+  var lbl = gFam.append('g').selectAll('text').data(edges).enter().append('text')
+    .attr('text-anchor','middle').attr('font-size','9px').attr('fill','#9CA3AF')
+    .text(function(d){ return d.relFrom+'/'+d.relTo; });
+  var ndG = gFam.append('g').selectAll('g').data(nodes).enter().append('g')
+    .style('cursor','pointer')
+    .on('click',function(e,d){ if(!e.defaultPrevented) window.location.href='/memorial/'+d.slug; })
+    .call(d3.drag()
+      .on('start',function(e,d){ if(!e.active)_famSim.alphaTarget(0.3).restart(); d.fx=d.x;d.fy=d.y; })
+      .on('drag', function(e,d){ d.fx=e.x;d.fy=e.y; })
+      .on('end',  function(e,d){ if(!e.active)_famSim.alphaTarget(0); d.fx=d.x;d.fy=d.y; })
+    );
+  ndG.append('circle')
+    .attr('r',function(d){ return d.isCentral?36:26; })
+    .attr('fill',function(d){ return d.isCentral?'#F8F4EE':'white'; })
+    .attr('stroke',function(d){ return d.isCentral?'#C9A84C':'#1B2B4B'; })
+    .attr('stroke-width',function(d){ return d.isCentral?3:2; });
+  ndG.each(function(d){
+    var n=d3.select(this),r=d.isCentral?34:24;
+    if(d.photo){
+      var url=d.photo.startsWith('http')?d.photo:'/'+d.photo.replace(/^\//,'');
+      n.append('image').attr('href',url).attr('x',-r).attr('y',-r).attr('width',r*2).attr('height',r*2).attr('clip-path','url(#fclip-'+d.id+')');
+    } else {
+      n.append('text').attr('text-anchor','middle').attr('dy','0.35em').attr('font-size',d.isCentral?'1.1rem':'0.9rem').attr('fill','#1B2B4B')
+        .text(d.label.split(' ').slice(0,2).map(function(w){return w[0];}).join('').toUpperCase());
+    }
+  });
+  ndG.append('text').attr('text-anchor','middle').attr('y',function(d){return d.isCentral?50:38;})
+    .attr('font-size','11px').attr('font-weight','600').attr('fill','#1B2B4B')
+    .text(function(d){ return d.label.split(' ')[0]; });
+  ndG.append('text').attr('text-anchor','middle').attr('y',function(d){return d.isCentral?63:50;})
+    .attr('font-size','9px').attr('fill','#9CA3AF').text(function(d){ return d.dates||''; });
+  _famSim = d3.forceSimulation(nodes)
+    .force('link',d3.forceLink(edges).id(function(d){return String(d.id);}).distance(180).strength(0.8))
+    .force('charge',d3.forceManyBody().strength(-400))
+    .force('center',d3.forceCenter(cx,cy))
+    .force('collision',d3.forceCollide(60))
+    .on('tick',function(){
+      lnk.attr('x1',function(d){return d.source?d.source.x:cx;}).attr('y1',function(d){return d.source?d.source.y:cy;})
+         .attr('x2',function(d){return d.target?d.target.x:cx;}).attr('y2',function(d){return d.target?d.target.y:cy;});
+      lbl.attr('x',function(d){return d.source&&d.target?(d.source.x+d.target.x)/2:cx;})
+         .attr('y',function(d){return d.source&&d.target?(d.source.y+d.target.y)/2-5:cy;});
+      ndG.attr('transform',function(d){return 'translate('+(isNaN(d.x)?cx:d.x)+','+(isNaN(d.y)?cy:d.y)+')';});
+    });
 }
 </script>
 {% endblock %}
