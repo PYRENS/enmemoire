@@ -1,0 +1,160 @@
+{% extends 'base.html.twig' %}
+{% block title %}Paiement Mobile Money — EnMémoire.com{% endblock %}
+{% block body_class %}create-memorial-page{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('css/create.css') }}">{% endblock %}
+
+{% block body %}
+<div class="wizard-wrapper">
+  <div class="container" style="max-width:520px;padding-top:3rem;padding-bottom:4rem;">
+    <div class="wizard-card">
+
+      <div style="text-align:center;margin-bottom:1.5rem;">
+        <div style="font-size:3rem;">📱</div>
+        <h1 style="font-family:var(--font-display);font-weight:300;color:var(--em-navy);font-size:1.5rem;margin:.5rem 0 .25rem;">
+          {{ label }}
+        </h1>
+        <p style="color:var(--em-muted);font-size:.875rem;margin:0;">
+          Montant : <strong style="color:var(--em-gold);">{{ payment.amount }} {{ payment.currency }}</strong>
+          — Réf : <strong>EM-{{ '%06d'|format(payment.id) }}</strong>
+        </p>
+      </div>
+
+      <div id="step-phone">
+        <label style="font-size:.875rem;font-weight:600;color:var(--em-navy);display:block;margin-bottom:.4rem;">
+          Votre numéro de téléphone
+        </label>
+        <div style="display:flex;gap:.5rem;margin-bottom:.75rem;">
+          <select id="country-code" style="padding:.7rem;border:1.5px solid var(--em-stone);border-radius:var(--em-radius-sm);font-size:.9rem;outline:none;">
+            <option value="243">🇨🇩 +243</option>
+            <option value="250">🇷🇼 +250</option>
+            <option value="255">🇹🇿 +255</option>
+            <option value="254">🇰🇪 +254</option>
+            <option value="256">🇺🇬 +256</option>
+          </select>
+          <input type="tel" id="phone-number" placeholder="812345678"
+                 style="flex:1;padding:.7rem 1rem;border:1.5px solid var(--em-stone);border-radius:var(--em-radius-sm);font-size:.95rem;outline:none;">
+        </div>
+        <p style="font-size:.78rem;color:var(--em-muted);margin-bottom:1.25rem;">
+          Vous recevrez une demande de paiement sur votre téléphone à confirmer avec votre PIN.
+        </p>
+
+        <button onclick="sendPaymentRequest()" id="send-btn" class="em-btn em-btn--primary w-100">
+          <i class="bi bi-send"></i> Envoyer la demande de paiement
+        </button>
+      </div>
+
+      <div id="step-waiting" style="display:none;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:1rem;">⏳</div>
+        <h3 style="color:var(--em-navy);font-weight:400;margin:0 0 .5rem;">Demande envoyée !</h3>
+        <p style="color:var(--em-muted);font-size:.875rem;margin-bottom:1.5rem;">
+          Confirmez le paiement sur votre téléphone avec votre PIN {{ label }}.
+          Vérification automatique dans <span id="countdown">30</span>s…
+        </p>
+        <div style="background:var(--em-cream);border-radius:var(--em-radius);padding:.75rem;font-size:.825rem;color:var(--em-muted);">
+          Référence : <strong>EM-{{ '%06d'|format(payment.id) }}</strong>
+        </div>
+        <button onclick="checkStatus()" class="em-btn em-btn--ghost w-100 mt-3" style="font-size:.825rem;">
+          Vérifier maintenant
+        </button>
+      </div>
+
+      <div id="step-success" style="display:none;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:1rem;">✅</div>
+        <h3 style="color:var(--em-navy);font-weight:400;">Paiement confirmé !</h3>
+        <p style="color:var(--em-muted);font-size:.875rem;">Redirection en cours…</p>
+      </div>
+
+      <div id="step-failed" style="display:none;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:1rem;">❌</div>
+        <h3 style="color:var(--em-danger);font-weight:400;">Paiement échoué</h3>
+        <p style="color:var(--em-muted);font-size:.875rem;margin-bottom:1rem;">
+          Le paiement n'a pas abouti. Vérifiez votre solde et réessayez.
+        </p>
+        <button onclick="resetForm()" class="em-btn em-btn--primary">Réessayer</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+var PAYMENT_ID  = {{ payment.id }};
+var DEPOSIT_ID  = '{{ depositId }}';
+var SUCCESS_URL = '{{ successUrl }}';
+var CHECK_URL   = '{{ checkUrl }}';
+var SEND_URL    = '{{ sendUrl }}';
+var checkInterval;
+var countdown = 30;
+
+function sendPaymentRequest() {
+  var phone = document.getElementById('country-code').value + document.getElementById('phone-number').value.replace(/[^0-9]/g,'');
+  if (phone.length < 10) { alert('Entrez un numéro valide.'); return; }
+
+  var btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Envoi…';
+
+  fetch(SEND_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+    body: JSON.stringify({phone: phone, deposit_id: DEPOSIT_ID})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    document.getElementById('step-phone').style.display = 'none';
+    document.getElementById('step-waiting').style.display = 'block';
+    startCountdown();
+    startPolling();
+  })
+  .catch(function() {
+    // Même en cas d'erreur, afficher l'attente
+    document.getElementById('step-phone').style.display = 'none';
+    document.getElementById('step-waiting').style.display = 'block';
+    startCountdown();
+    startPolling();
+  });
+}
+
+function startCountdown() {
+  var el = document.getElementById('countdown');
+  countdown = 30;
+  var timer = setInterval(function() {
+    countdown--;
+    el.textContent = countdown;
+    if (countdown <= 0) clearInterval(timer);
+  }, 1000);
+}
+
+function startPolling() {
+  checkInterval = setInterval(checkStatus, 5000);
+}
+
+function checkStatus() {
+  fetch(CHECK_URL + '?deposit_id=' + DEPOSIT_ID, {
+    headers: {'X-Requested-With': 'XMLHttpRequest'}
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (data.status === 'COMPLETED') {
+      clearInterval(checkInterval);
+      document.getElementById('step-waiting').style.display = 'none';
+      document.getElementById('step-success').style.display = 'block';
+      setTimeout(function(){ window.location.href = SUCCESS_URL; }, 2000);
+    } else if (data.status === 'FAILED' || data.status === 'REJECTED') {
+      clearInterval(checkInterval);
+      document.getElementById('step-waiting').style.display = 'none';
+      document.getElementById('step-failed').style.display = 'block';
+    }
+  });
+}
+
+function resetForm() {
+  document.getElementById('step-failed').style.display = 'none';
+  document.getElementById('step-phone').style.display = 'block';
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('send-btn').innerHTML = '<i class="bi bi-send"></i> Envoyer la demande de paiement';
+}
+</script>
+{% endblock %}

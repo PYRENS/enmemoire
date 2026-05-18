@@ -9,6 +9,8 @@ use App\Service\MemorialPageService;
 use App\Service\Payment\PaymentService;
 use App\Service\Payment\StripeService;
 use App\Service\Payment\PayPalService;
+use App\Service\Payment\PawaPayService;
+use App\Service\Payment\MobileMoneyService;
 use App\Entity\MemorialFormula;
 use App\Entity\MemorialTheme;
 use Doctrine\ORM\EntityManagerInterface;
@@ -33,9 +35,9 @@ class PaymentController extends AbstractController
         private readonly StripeService           $stripeService,
         private readonly PayPalService           $paypalService,
         private readonly LoggerInterface        $logger,
+        private readonly PawaPayService         $pawaPayService,
+        private readonly MobileMoneyService     $mobileMoneyService,
     ) {}
-
-    // =========================================================
     // SANDBOX — simulation de paiement en développement
     // =========================================================
     #[Route('/sandbox/{paymentId}/{provider}', name: 'app_payment_sandbox')]
@@ -330,6 +332,188 @@ class PaymentController extends AbstractController
         }
 
         return $this->json(['received' => true]);
+    }
+
+
+    // =========================================================
+    // PAWAPAY — Retour utilisateur après paiement
+    // =========================================================
+    #[Route('/pawapay/retour', name: 'app_payment_pawapay_return', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function pawaPayReturn(Request $request): Response
+    {
+        $ref = $request->query->get('ref', ''); $paymentId = (int) str_replace(['EM-', '-'], ['', ''], $ref); $payment = $this->em->getRepository(Payment::class)->find($paymentId);
+        $cancelled = $request->query->get('cancel', false);
+
+        if (!$payment || $payment->getUser() !== $this->getUser()) {
+            throw $this->createNotFoundException();
+        }
+
+        if ($cancelled) {
+            $this->paymentService->failPayment($payment, "PawaPay: annulé par l'utilisateur");
+            $this->addFlash('warning', 'Paiement annulé. Vous pouvez réessayer.');
+            return $this->redirectToRoute('app_renewal', [
+                'slug' => $payment->getMetadata()['memorial_slug'] ?? '',
+            ]);
+        }
+
+        // Déjà confirmé
+        if ($payment->isCompleted()) {
+            $this->addFlash('success', '✅ Renouvellement confirmé ! Un email vous a été envoyé.');
+            return $this->redirectToRoute('app_dashboard_memorial', [
+                'slug' => $payment->getMetadata()['memorial_slug'] ?? '',
+            ]);
+        }
+
+        // Vérifier le statut PawaPay
+        $meta      = $payment->getMetadata() ?? [];
+        $depositId = $meta['pawapay_deposit_id'] ?? '';
+
+        if ($depositId) {
+            $result = $this->pawaPayService->checkDepositStatus($depositId);
+            $status = $result['status'] ?? '';
+
+            if ($status === 'COMPLETED') {
+                $payment->setProviderTxId($depositId);
+                $this->paymentService->confirmPayment($payment);
+                $this->processRenewal($payment);
+                $this->addFlash('success', '✅ Paiement Mobile Money confirmé !');
+                return $this->redirectToRoute('app_dashboard_memorial', [
+                    'slug' => $meta['memorial_slug'] ?? '',
+                ]);
+            }
+
+            if (in_array($status, ['FAILED', 'CANCELLED', 'REJECTED', 'TIMED_OUT'], true)) {
+                $this->paymentService->failPayment($payment, 'PawaPay: ' . $status);
+                $this->addFlash('error', 'Le paiement Mobile Money a échoué. Réessayez.');
+                return $this->redirectToRoute('app_renewal', [
+                    'slug' => $meta['memorial_slug'] ?? '',
+                ]);
+            }
+        }
+
+        // En attente — afficher page de polling
+        return $this->render('payment/pawapay_pending.html.twig', [
+            'payment'   => $payment,
+            'depositId' => $depositId,
+            'checkUrl'  => $this->generateUrl('app_payment_pawapay_check', [
+                'paymentId' => $paymentId,
+            ]),
+        ]);
+    }
+
+    // =========================================================
+    // PAWAPAY — Vérification statut (polling AJAX)
+    // =========================================================
+    #[Route('/pawapay/check/{paymentId}', name: 'app_payment_pawapay_check', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function pawaPayCheck(int $paymentId): JsonResponse
+    {
+        $payment = $this->em->getRepository(Payment::class)->find($paymentId);
+        if (!$payment || $payment->getUser() !== $this->getUser()) {
+            return $this->json(['error' => 'Not found'], 404);
+        }
+
+        $meta      = $payment->getMetadata() ?? [];
+        $depositId = $meta['pawapay_deposit_id'] ?? '';
+        $result    = $this->pawaPayService->checkDepositStatus($depositId);
+        $status    = $result['status'] ?? 'PENDING';
+
+        if ($status === 'COMPLETED' && !$payment->isCompleted()) {
+            $payment->setProviderTxId($depositId);
+            $this->paymentService->confirmPayment($payment);
+            $this->processRenewal($payment);
+        }
+
+        return $this->json([
+            'status'      => $status,
+            'redirectUrl' => $status === 'COMPLETED'
+                ? $this->generateUrl('app_dashboard_memorial', ['slug' => $meta['memorial_slug'] ?? ''])
+                : null,
+        ]);
+    }
+
+    // =========================================================
+    // WEBHOOK PAWAPAY
+    // =========================================================
+    #[Route('/webhook/pawapay', name: 'app_payment_webhook_pawapay', methods: ['POST'])]
+    public function webhookPawaPay(Request $request): Response
+    {
+        $payload = json_decode($request->getContent(), true) ?? [];
+
+        if (!$this->pawaPayService->verifyWebhook($payload)) {
+            return new \Symfony\Component\HttpFoundation\Response('Bad Request', 400);
+        }
+
+        $depositId   = $payload['depositId'] ?? null;
+        $status      = $payload['status'] ?? '';
+        $internalRef = null;
+
+        foreach ($payload['metadata'] ?? [] as $meta) {
+            if (isset($meta['orderId'])) { $internalRef = $meta['orderId']; break; }
+        }
+
+        // Retrouver le paiement par depositId
+        $payment = $depositId
+            ? $this->em->getRepository(Payment::class)->findOneBy(['providerTxId' => $depositId])
+            : null;
+
+        if (!$payment && $internalRef) {
+            // Chercher par référence dans metadata
+            $payments = $this->em->getRepository(Payment::class)->findAll();
+            foreach ($payments as $p) {
+                if (($p->getMetadata()['pawapay_ref'] ?? '') === $internalRef) {
+                    $payment = $p;
+                    break;
+                }
+            }
+        }
+
+        if (!$payment) {
+            return new \Symfony\Component\HttpFoundation\Response('OK', 200);
+        }
+
+        if ($status === 'COMPLETED' && !$payment->isCompleted()) {
+            $payment->setProviderTxId($depositId);
+            $this->paymentService->confirmPayment($payment);
+            $this->processRenewal($payment);
+        } elseif ($status === 'FAILED') {
+            $this->paymentService->failPayment($payment, 'PawaPay webhook: FAILED');
+        }
+
+        return new \Symfony\Component\HttpFoundation\Response('OK', 200);
+    }
+
+    // =========================================================
+    // HELPER — Traitement renouvellement
+    // =========================================================
+    private function processRenewal(Payment $payment): void
+    {
+        $meta = $payment->getMetadata() ?? [];
+        if (empty($meta['renewal']) || empty($meta['memorial_slug']) || !empty($meta['email_sent'])) {
+            return;
+        }
+
+        $page = $this->em->getRepository(MemorialPage::class)->findOneBy(['slug' => $meta['memorial_slug']]);
+        if (!$page) return;
+
+        $formula   = $this->em->getRepository(\App\Entity\MemorialFormula::class)->find($meta['formula_id'] ?? 0);
+        $years     = $formula ? ($formula->getDurationYears() ?? 1) : 1;
+        $base      = ($page->getExpiresAt() && $page->getExpiresAt() > new \DateTime()) ? $page->getExpiresAt() : new \DateTime();
+        $newExpiry = (clone $base)->modify('+' . ($years * 12) . ' months');
+
+        $page->setExpiresAt($newExpiry)->setStatus(MemorialPage::STATUS_ACTIVE);
+        if ($formula) $page->setFormula($formula);
+
+        $meta['email_sent'] = true;
+        $payment->setMetadata($meta);
+        $this->em->flush();
+
+        try {
+            $this->memorialEmailService->sendRenewalConfirmation($page, $payment, $payment->getUser());
+        } catch (\Exception $e) {
+            $this->logger->error('[EnMémoire] Email renouvellement échoué: ' . $e->getMessage());
+        }
     }
 
     // =========================================================

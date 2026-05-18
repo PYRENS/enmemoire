@@ -7,24 +7,72 @@ use App\Entity\Payment;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
+/**
+ * Mobile Money via PawaPay Payment Page (page hébergée).
+ * Couvre M-Pesa, Airtel Money, Orange Money RDC automatiquement.
+ */
 class MobileMoneyService
 {
     private const LABELS = [
         'airtel'       => 'Airtel Money',
         'mpesa'        => 'M-PESA',
         'orange_money' => 'Orange Money',
-        'pawapay'      => 'PawaPay',
+        'pawapay'      => 'Mobile Money (PawaPay)',
     ];
 
     public function __construct(
         #[Autowire('%env(PAWAPAY_API_KEY)%')]  private readonly string $pawaPayKey,
         #[Autowire('%env(PAWAPAY_BASE_URL)%')] private readonly string $pawaPayUrl,
         private readonly UrlGeneratorInterface $router,
+        private readonly PawaPayService        $pawaPayService,
     ) {}
 
     public function initiate(Payment $payment, MemorialFormula $formula, string $provider): PaymentIntent
     {
         $ref = 'EM-' . str_pad((string)$payment->getId(), 6, '0', STR_PAD_LEFT);
+
+        error_log("[PAWAPAY] isConfigured: " . ($this->pawaPayService->isConfigured() ? "true" : "false")); if ($this->pawaPayService->isConfigured()) {
+            return $this->initiatePawaPayPage($payment, $formula, $provider, $ref);
+        }
+
+        return $this->manualInstructions($payment, $provider, $ref);
+    }
+
+    private function initiatePawaPayPage(
+        Payment $payment,
+        MemorialFormula $formula,
+        string $provider,
+        string $ref
+    ): PaymentIntent {
+        // Convertir USD -> CDF (~2800 CDF/USD)
+        $amountCdf = (int) round((float)$payment->getAmount() * 2800);
+
+        $result = $this->pawaPayService->initiatePaymentPage(
+            $ref,
+            $amountCdf,
+            '',
+            'EnMemoire ' . str_replace('-', '', $ref)
+        );
+
+        if ($result['success'] && $result['redirectUrl']) {
+            $meta = $payment->getMetadata() ?? [];
+            $meta['pawapay_deposit_id'] = $result['depositId'];
+            $meta['pawapay_ref']        = $ref;
+            $meta['amount_cdf']         = $amountCdf;
+            $payment->setMetadata($meta);
+            $payment->setProviderTxId($result['depositId']);
+
+            return PaymentIntent::redirect($payment, $result['redirectUrl']);
+        }
+
+        return $this->manualInstructions($payment, $provider, $ref);
+    }
+
+    private function manualInstructions(Payment $payment, string $provider, string $ref): PaymentIntent
+    {
+        $confirmUrl = $this->router->generate('app_payment_mobile_confirm', [
+            'paymentId' => $payment->getId(),
+        ], UrlGeneratorInterface::ABSOLUTE_URL);
 
         return PaymentIntent::instructions($payment, [
             'provider'       => $provider,
@@ -34,32 +82,33 @@ class MobileMoneyService
             'reference'      => $ref,
             'instructions'   => match($provider) {
                 'airtel' => [
-                    "Envoyez {$payment->getAmount()} {$payment->getCurrency()} via Airtel Money",
-                    "Numéro de destination : +243 XXX XXX XXX",
-                    "Référence obligatoire : {$ref}",
-                    "Envoyez la capture à support@enmemoire.com",
+                    "Composez *400# sur votre telephone Airtel",
+                    "Selectionnez Envoyer de l'argent",
+                    "Numero : +243 XXX XXX XXX",
+                    "Montant : {$payment->getAmount()} {$payment->getCurrency()}",
+                    "Reference : {$ref}",
                 ],
                 'mpesa' => [
-                    "Envoyez {$payment->getAmount()} {$payment->getCurrency()} via M-PESA",
-                    "Numéro de destination : +243 XXX XXX XXX",
-                    "Référence : {$ref}",
-                    "Envoyez la confirmation SMS à support@enmemoire.com",
+                    "Composez *234# sur votre telephone Vodacom",
+                    "Selectionnez M-PESA -> Envoyer de l'argent",
+                    "Numero : +243 XXX XXX XXX",
+                    "Montant : {$payment->getAmount()} {$payment->getCurrency()}",
+                    "Reference : {$ref}",
                 ],
                 'orange_money' => [
-                    "Envoyez {$payment->getAmount()} {$payment->getCurrency()} via Orange Money",
-                    "Numéro : +243 XXX XXX XXX",
-                    "Référence : {$ref}",
+                    "Composez #144# sur votre telephone Orange",
+                    "Selectionnez Transfert d'argent",
+                    "Numero : +243 XXX XXX XXX",
+                    "Montant : {$payment->getAmount()} {$payment->getCurrency()}",
+                    "Reference : {$ref}",
                 ],
-                'pawapay' => [
-                    "Paiement via PawaPay en cours de configuration",
-                    "Référence : {$ref}",
+                default => [
+                    "Paiement via Mobile Money",
+                    "Reference : {$ref}",
                     "Contactez support@enmemoire.com",
                 ],
-                default => ["Contactez support@enmemoire.com avec la référence {$ref}"],
             },
-            'confirm_url' => $this->router->generate('app_payment_mobile_confirm', [
-                'paymentId' => $payment->getId(),
-            ], UrlGeneratorInterface::ABSOLUTE_URL),
+            'confirm_url' => $confirmUrl,
         ]);
     }
 }

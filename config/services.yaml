@@ -21,3 +21,10 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    App\Service\Payment\PawaPayService:
+        arguments:
+            $apiToken:   '%env(PAWAPAY_API_KEY)%'
+            $returnUrl:  '%env(PAWAPAY_RETURN_URL)%'
+            $webhookUrl: '%env(PAWAPAY_WEBHOOK_URL)%'
+            $mode:       'sandbox'

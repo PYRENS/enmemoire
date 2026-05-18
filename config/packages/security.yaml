@@ -41,6 +41,8 @@ security:
         - { path: ^/dashboard, roles: ROLE_USER }
         - { path: ^/memorial/create, roles: ROLE_USER }
         - { path: '^/memorial/[^/]+/manage', roles: ROLE_USER }  #empoie de ''
+        - { path: ^/payment/webhook/pawapay, roles: PUBLIC_ACCESS }
+        - { path: ^/payment/pawapay/retour, roles: PUBLIC_ACCESS }
 
 when@test:
     security:

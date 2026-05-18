@@ -1,0 +1,87 @@
+{% extends 'base.html.twig' %}
+{% block title %}Vérification Mobile Money — EnMémoire.com{% endblock %}
+{% block body_class %}create-memorial-page{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<link rel="stylesheet" href="{{ asset('css/create.css') }}">
+<style>
+@keyframes pulse { from { opacity:.3; transform:scale(.8); } to { opacity:1; transform:scale(1.2); } }
+@keyframes spinPulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.15); } }
+.spin-icon { animation: spinPulse 2s ease-in-out infinite; display:inline-block; }
+.dot { width:8px;height:8px;border-radius:50%;background:var(--em-gold);display:inline-block;margin:0 3px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="wizard-wrapper">
+  <div class="container" style="max-width:520px;padding-top:4rem;padding-bottom:4rem;">
+    <div class="wizard-card" style="text-align:center;">
+
+      <div id="state-pending">
+        <div class="spin-icon" style="font-size:3.5rem;margin-bottom:1rem;">📱</div>
+        <h1 style="font-family:var(--font-display);font-weight:300;color:var(--em-navy);font-size:1.5rem;margin:0 0 .5rem;">
+          Vérification en cours…
+        </h1>
+        <p style="color:var(--em-muted);font-size:.875rem;margin-bottom:1.5rem;">
+          Votre paiement Mobile Money est en cours de traitement.
+          Confirmez sur votre téléphone si ce n'est pas encore fait.
+        </p>
+        <div style="background:var(--em-cream);border-radius:var(--em-radius);padding:1rem;margin-bottom:1.5rem;font-size:.825rem;">
+          <div style="color:var(--em-muted);">Référence</div>
+          <div style="font-weight:700;color:var(--em-navy);font-family:monospace;">{{ depositId|slice(0, 16) }}…</div>
+        </div>
+        <div style="margin-bottom:1rem;">
+          <span class="dot" style="animation:pulse .4s ease-in-out infinite alternate;"></span>
+          <span class="dot" style="animation:pulse .7s ease-in-out infinite alternate;"></span>
+          <span class="dot" style="animation:pulse 1s ease-in-out infinite alternate;"></span>
+        </div>
+        <p style="font-size:.78rem;color:var(--em-muted);">Vérification automatique toutes les 5 secondes…</p>
+      </div>
+
+      <div id="state-success" style="display:none;">
+        <div style="font-size:3.5rem;margin-bottom:1rem;">✅</div>
+        <h1 style="font-family:var(--font-display);font-weight:300;color:var(--em-navy);font-size:1.5rem;">Paiement confirmé !</h1>
+        <p style="color:var(--em-muted);">Redirection en cours…</p>
+      </div>
+
+      <div id="state-failed" style="display:none;">
+        <div style="font-size:3.5rem;margin-bottom:1rem;">❌</div>
+        <h1 style="font-family:var(--font-display);font-weight:300;color:var(--em-danger);font-size:1.5rem;">Paiement échoué</h1>
+        <p style="color:var(--em-muted);margin-bottom:1rem;">Le paiement n'a pas abouti. Vérifiez votre solde et réessayez.</p>
+        <a href="{{ path('app_dashboard') }}" class="em-btn em-btn--primary">Retour au dashboard</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+var CHECK_URL = '{{ checkUrl }}';
+var interval;
+
+function checkStatus() {
+  fetch(CHECK_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (data.status === 'COMPLETED') {
+        clearInterval(interval);
+        document.getElementById('state-pending').style.display = 'none';
+        document.getElementById('state-success').style.display = 'block';
+        setTimeout(function(){ window.location.href = data.redirectUrl || '/dashboard'; }, 2000);
+      } else if (['FAILED','CANCELLED','REJECTED','TIMED_OUT'].includes(data.status)) {
+        clearInterval(interval);
+        document.getElementById('state-pending').style.display = 'none';
+        document.getElementById('state-failed').style.display = 'block';
+      }
+    })
+    .catch(function(){});
+}
+
+interval = setInterval(checkStatus, 5000);
+setTimeout(checkStatus, 1500);
+</script>
+{% endblock %}
