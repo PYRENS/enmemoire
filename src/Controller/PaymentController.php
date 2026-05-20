@@ -34,10 +34,12 @@ class PaymentController extends AbstractController
         private readonly MemorialEmailService    $memorialEmailService,
         private readonly StripeService           $stripeService,
         private readonly PayPalService           $paypalService,
-        private readonly LoggerInterface        $logger,
-        private readonly PawaPayService         $pawaPayService,
-        private readonly MobileMoneyService     $mobileMoneyService,
+        private readonly LoggerInterface         $logger,
+        private readonly PawaPayService          $pawaPayService,
+        private readonly MobileMoneyService      $mobileMoneyService,
     ) {}
+
+    // =========================================================
     // SANDBOX — simulation de paiement en développement
     // =========================================================
     #[Route('/sandbox/{paymentId}/{provider}', name: 'app_payment_sandbox')]
@@ -80,20 +82,40 @@ class PaymentController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        // PayPal : capturer l'ordre si nécessaire
+        // ── PayPal : capturer l'ordre + renouvellement + email ──────────────
         $paypalToken = $request->query->get('token');
         if ($paypalToken && $payment->getProvider() === 'paypal') {
-            $meta = $payment->getMetadata() ?? [];
+            $meta    = $payment->getMetadata() ?? [];
             $orderId = $meta['paypal_order_id'] ?? $paypalToken;
-            $this->paypalService->captureOrder($orderId);
+
+            $captured = $this->paypalService->captureOrder($orderId);
             $payment->setProviderTxId($orderId);
+
+            if ($captured && !$payment->isCompleted()) {
+                $this->paymentService->confirmPayment($payment);
+                $this->logger->info('[PAYPAL] Paiement ' . $paymentId . ' capturé et confirmé');
+
+                // Renouvellement + email
+                $this->processRenewal($payment);
+
+                $meta2 = $payment->getMetadata() ?? [];
+                $this->addFlash('success', '✅ Paiement PayPal confirmé ! Un email vous a été envoyé.');
+
+                if (!empty($meta2['memorial_slug'])) {
+                    return $this->redirectToRoute('app_dashboard_memorial', [
+                        'slug' => $meta2['memorial_slug'],
+                    ]);
+                }
+            }
         }
 
-        // Stripe : vérifier session
+        // ── Stripe : vérifier session ────────────────────────────────────────
         $stripeSessionId = $request->query->get('session_id');
         if ($stripeSessionId) {
             $payment->setProviderTxId($stripeSessionId);
         }
+
+        // Déjà completed (ex: webhook Stripe arrivé avant le retour)
         if ($payment->isCompleted()) {
             $meta = $payment->getMetadata() ?? [];
             if (!empty($meta['renewal']) && !empty($meta['memorial_slug'])) {
@@ -101,10 +123,12 @@ class PaymentController extends AbstractController
                 return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $meta['memorial_slug']]);
             }
             $page = $this->em->getRepository(MemorialPage::class)->findOneBy(['createdBy' => $this->getUser()]);
-            if ($page) { return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $page->getSlug()]); }
+            if ($page) {
+                return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $page->getSlug()]);
+            }
         }
 
-        // Confirmer le paiement
+        // Confirmer le paiement (Stripe retour sans webhook, sandbox, etc.)
         $this->paymentService->confirmPayment($payment);
 
         // Récupérer les données de session
@@ -115,23 +139,36 @@ class PaymentController extends AbstractController
         $s1       = $step1 ?: ($metadata['step1'] ?? []);
         $s2       = $step2 ?: ($metadata['step2'] ?? []);
 
-        // Renouvellement ?
+        // Renouvellement (fallback si webhook pas encore arrivé)
         if (!empty($metadata['renewal']) && !empty($metadata['memorial_slug'])) {
             $page = $this->em->getRepository(MemorialPage::class)
                 ->findOneBy(['slug' => $metadata['memorial_slug']]);
 
             if ($page) {
-                $formula  = $this->em->getRepository(MemorialFormula::class)->find($metadata['formula_id']);
-                $years    = $formula ? ($formula->getDurationYears() ?? 1) : 1;
-                $months   = $years * 12;
-
-                $base = ($page->getExpiresAt() && $page->getExpiresAt() > new \DateTime())
+                $formula   = $this->em->getRepository(MemorialFormula::class)->find($metadata['formula_id']);
+                $years     = $formula ? ($formula->getDurationYears() ?? 1) : 1;
+                $months    = $years * 12;
+                $base      = ($page->getExpiresAt() && $page->getExpiresAt() > new \DateTime())
                     ? $page->getExpiresAt() : new \DateTime();
                 $newExpiry = (clone $base)->modify("+{$months} months");
 
                 $page->setExpiresAt($newExpiry)->setStatus(MemorialPage::STATUS_ACTIVE);
                 if ($formula) $page->setFormula($formula);
-                $this->em->flush();
+
+                // Email si pas encore envoyé
+                if (empty($metadata['email_sent'])) {
+                    $metadata['email_sent'] = true;
+                    $payment->setMetadata($metadata);
+                    $this->em->flush();
+
+                    try {
+                        $this->memorialEmailService->sendRenewalConfirmation($page, $payment, $payment->getUser());
+                    } catch (\Exception $e) {
+                        $this->logger->error('[SUCCESS] Email renouvellement échoué: ' . $e->getMessage());
+                    }
+                } else {
+                    $this->em->flush();
+                }
 
                 $this->addFlash('success', '✅ Page renouvelée jusqu\'au ' . $newExpiry->format('d/m/Y'));
                 return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $page->getSlug()]);
@@ -170,7 +207,7 @@ class PaymentController extends AbstractController
         $payment->setMetadata($meta);
         $this->em->flush();
 
-        // Email de confirmation
+        // Email de confirmation création
         try {
             $this->memorialEmailService->sendMemorialCreatedConfirmation($page, $payment, $this->getUser());
         } catch (\Exception $e) {
@@ -230,11 +267,6 @@ class PaymentController extends AbstractController
 
             $this->addFlash('success', 'Confirmation reçue ! Votre paiement sera validé sous 24h par notre équipe.');
 
-            // Renouvellement ?
-            if (!empty($meta['renewal'])) {
-                return $this->redirectToRoute('app_dashboard');
-            }
-
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -252,11 +284,9 @@ class PaymentController extends AbstractController
         $payload = $request->getContent();
         $sig     = $request->headers->get('Stripe-Signature', '');
 
-        // Décoder l'événement
         $raw  = json_decode($payload, true);
         $type = $raw['type'] ?? '';
 
-        // Vérifier la signature si configurée
         if ($webhookSecret && $sig) {
             $verified = $this->stripeService->verifyWebhook($payload, $sig, $webhookSecret);
             if (!$verified) {
@@ -267,7 +297,6 @@ class PaymentController extends AbstractController
         $this->logger->info('[STRIPE] Webhook reçu: ' . $type);
 
         if ($type === 'checkout.session.completed') {
-            // L'objet session Stripe
             $session   = $raw['data']['object'] ?? [];
             $metadata  = $session['metadata'] ?? [];
             $paymentId = $metadata['payment_id'] ?? null;
@@ -284,40 +313,34 @@ class PaymentController extends AbstractController
                 return $this->json(['received' => true, 'warning' => 'payment not found']);
             }
 
-            // Confirmer le paiement si pas encore fait
             if (!$payment->isCompleted()) {
                 $payment->setProviderTxId($sessionId);
                 $this->paymentService->confirmPayment($payment);
                 $this->logger->info('[STRIPE] Paiement ' . $paymentId . ' confirmé');
             }
 
-            // Traiter le renouvellement + email (même si déjà completed)
             $meta = $payment->getMetadata() ?? [];
             if (!empty($meta['renewal']) && !empty($meta['memorial_slug']) && empty($meta['email_sent'])) {
                 $page = $this->em->getRepository(MemorialPage::class)
                     ->findOneBy(['slug' => $meta['memorial_slug']]);
 
                 if ($page) {
-                    // Mettre à jour la date d'expiration
-                    $formula = $this->em->getRepository(\App\Entity\MemorialFormula::class)
-                        ->find($meta['formula_id'] ?? 0);
-                    $years   = $formula ? ($formula->getDurationYears() ?? 1) : 1;
-                    $months  = $years * 12;
-                    $base    = ($page->getExpiresAt() && $page->getExpiresAt() > new \DateTime())
+                    $formula   = $this->em->getRepository(MemorialFormula::class)->find($meta['formula_id'] ?? 0);
+                    $years     = $formula ? ($formula->getDurationYears() ?? 1) : 1;
+                    $months    = $years * 12;
+                    $base      = ($page->getExpiresAt() && $page->getExpiresAt() > new \DateTime())
                         ? $page->getExpiresAt() : new \DateTime();
                     $newExpiry = (clone $base)->modify("+{$months} months");
 
                     $page->setExpiresAt($newExpiry)->setStatus(MemorialPage::STATUS_ACTIVE);
                     if ($formula) $page->setFormula($formula);
 
-                    // Marquer email envoyé
                     $meta['email_sent'] = true;
                     $payment->setMetadata($meta);
                     $this->em->flush();
 
                     $this->logger->info('[STRIPE] Page renouvelée jusqu au ' . $newExpiry->format('Y-m-d'));
 
-                    // Envoyer email de confirmation
                     $owner = $payment->getUser();
                     if ($owner) {
                         try {
@@ -334,7 +357,6 @@ class PaymentController extends AbstractController
         return $this->json(['received' => true]);
     }
 
-
     // =========================================================
     // PAWAPAY — Retour utilisateur après paiement
     // =========================================================
@@ -342,7 +364,10 @@ class PaymentController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function pawaPayReturn(Request $request): Response
     {
-        $ref = $request->query->get('ref', ''); $paymentId = (int) str_replace(['EM-', '-'], ['', ''], $ref); $payment = $this->em->getRepository(Payment::class)->find($paymentId);
+        $ref       = $request->query->get('ref', '');
+        $depositId = $request->query->get('depositId', '');
+        $paymentId = (int) str_replace(['EM-', '-'], ['', ''], $ref);
+        $payment   = $this->em->getRepository(Payment::class)->find($paymentId);
         $cancelled = $request->query->get('cancel', false);
 
         if (!$payment || $payment->getUser() !== $this->getUser()) {
@@ -354,6 +379,18 @@ class PaymentController extends AbstractController
             $this->addFlash('warning', 'Paiement annulé. Vous pouvez réessayer.');
             return $this->redirectToRoute('app_renewal', [
                 'slug' => $payment->getMetadata()['memorial_slug'] ?? '',
+            ]);
+        }
+
+        // ✅ Sauvegarder le depositId depuis l'URL si absent en base
+        $meta = $payment->getMetadata() ?? [];
+        if ($depositId && empty($meta['pawapay_deposit_id'])) {
+            $meta['pawapay_deposit_id'] = $depositId;
+            $payment->setMetadata($meta);
+            $this->em->flush();
+            $this->logger->info('[PAWAPAY] depositId sauvegardé depuis URL retour', [
+                'paymentId' => $paymentId,
+                'depositId' => $depositId,
             ]);
         }
 
@@ -442,7 +479,7 @@ class PaymentController extends AbstractController
         $payload = json_decode($request->getContent(), true) ?? [];
 
         if (!$this->pawaPayService->verifyWebhook($payload)) {
-            return new \Symfony\Component\HttpFoundation\Response('Bad Request', 400);
+            return new Response('Bad Request', 400);
         }
 
         $depositId   = $payload['depositId'] ?? null;
@@ -453,13 +490,13 @@ class PaymentController extends AbstractController
             if (isset($meta['orderId'])) { $internalRef = $meta['orderId']; break; }
         }
 
-        // Retrouver le paiement par depositId
+        // Retrouver le paiement par depositId (providerTxId)
         $payment = $depositId
             ? $this->em->getRepository(Payment::class)->findOneBy(['providerTxId' => $depositId])
             : null;
 
+        // Fallback : chercher par pawapay_ref dans metadata
         if (!$payment && $internalRef) {
-            // Chercher par référence dans metadata
             $payments = $this->em->getRepository(Payment::class)->findAll();
             foreach ($payments as $p) {
                 if (($p->getMetadata()['pawapay_ref'] ?? '') === $internalRef) {
@@ -470,7 +507,7 @@ class PaymentController extends AbstractController
         }
 
         if (!$payment) {
-            return new \Symfony\Component\HttpFoundation\Response('OK', 200);
+            return new Response('OK', 200);
         }
 
         if ($status === 'COMPLETED' && !$payment->isCompleted()) {
@@ -481,11 +518,11 @@ class PaymentController extends AbstractController
             $this->paymentService->failPayment($payment, 'PawaPay webhook: FAILED');
         }
 
-        return new \Symfony\Component\HttpFoundation\Response('OK', 200);
+        return new Response('OK', 200);
     }
 
     // =========================================================
-    // HELPER — Traitement renouvellement
+    // HELPER — Traitement renouvellement + email
     // =========================================================
     private function processRenewal(Payment $payment): void
     {
@@ -497,9 +534,10 @@ class PaymentController extends AbstractController
         $page = $this->em->getRepository(MemorialPage::class)->findOneBy(['slug' => $meta['memorial_slug']]);
         if (!$page) return;
 
-        $formula   = $this->em->getRepository(\App\Entity\MemorialFormula::class)->find($meta['formula_id'] ?? 0);
+        $formula   = $this->em->getRepository(MemorialFormula::class)->find($meta['formula_id'] ?? 0);
         $years     = $formula ? ($formula->getDurationYears() ?? 1) : 1;
-        $base      = ($page->getExpiresAt() && $page->getExpiresAt() > new \DateTime()) ? $page->getExpiresAt() : new \DateTime();
+        $base      = ($page->getExpiresAt() && $page->getExpiresAt() > new \DateTime())
+            ? $page->getExpiresAt() : new \DateTime();
         $newExpiry = (clone $base)->modify('+' . ($years * 12) . ' months');
 
         $page->setExpiresAt($newExpiry)->setStatus(MemorialPage::STATUS_ACTIVE);
@@ -511,8 +549,9 @@ class PaymentController extends AbstractController
 
         try {
             $this->memorialEmailService->sendRenewalConfirmation($page, $payment, $payment->getUser());
+            $this->logger->info('[RENEWAL] Email envoyé pour ' . $meta['memorial_slug']);
         } catch (\Exception $e) {
-            $this->logger->error('[EnMémoire] Email renouvellement échoué: ' . $e->getMessage());
+            $this->logger->error('[RENEWAL] Email échoué: ' . $e->getMessage());
         }
     }
 
@@ -522,8 +561,8 @@ class PaymentController extends AbstractController
     #[Route('/webhook/paypal', name: 'app_payment_webhook_paypal', methods: ['POST'])]
     public function webhookPaypal(Request $request): JsonResponse
     {
-        $data   = json_decode($request->getContent(), true);
-        $event  = $data['event_type'] ?? '';
+        $data     = json_decode($request->getContent(), true);
+        $event    = $data['event_type'] ?? '';
         $resource = $data['resource'] ?? [];
 
         if ($event === 'CHECKOUT.ORDER.APPROVED' || $event === 'PAYMENT.CAPTURE.COMPLETED') {
@@ -536,6 +575,7 @@ class PaymentController extends AbstractController
                 if ($payment && !$payment->isCompleted()) {
                     $payment->setProviderTxId($resource['id'] ?? '');
                     $this->paymentService->confirmPayment($payment);
+                    $this->processRenewal($payment);
                 }
             }
         }

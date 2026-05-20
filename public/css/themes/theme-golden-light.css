@@ -1,0 +1,48 @@
+/* ── Lumière Dorée — Golden Light ────────────────────────────── */
+@import url('theme-base.css');
+
+:root {
+  --em-primary:      #B45309;
+  --em-primary-dark: #92400E;
+  --em-primary-light:#F59E0B;
+  --em-accent:       #FDE68A;
+  --em-gold:         #F59E0B;
+  --em-navy:         #451A03;
+  --em-bg:           #FFFBEB;
+  --em-bg-card:      #FFFFFF;
+  --em-bg-hero:      linear-gradient(160deg, #451A03 0%, #92400E 40%, #B45309 70%, #D97706 100%);
+  --em-text:         #451A03;
+  --em-text-light:   #B45309;
+  --em-border:       #FDE68A;
+  --em-shadow:       rgba(180, 83, 9, 0.14);
+  --em-hero-overlay: rgba(69, 26, 3, 0.55);
+}
+
+.memorial-hero { background: var(--em-bg-hero); }
+.memorial-hero__name {
+  color: #FEF3C7;
+  text-shadow: 0 2px 16px rgba(245,158,11,.5);
+}
+.memorial-hero__dates { color: #FDE68A; }
+.memorial-nav { background: #451A03; border-bottom: 2px solid #D97706; }
+.memorial-nav__link.active,
+.memorial-nav__link:hover { color: #FDE68A; border-bottom-color: #F59E0B; }
+.memorial-section__title { color: #92400E; border-left-color: #F59E0B; }
+.em-card {
+  border-top: 3px solid #F59E0B;
+  box-shadow: 0 4px 20px var(--em-shadow);
+}
+.em-btn--primary { background: #B45309; }
+.em-btn--primary:hover { background: #92400E; }
+.memorial-stat__value { color: #B45309; }
+.timeline-item::before { background: #F59E0B; border-color: #B45309; }
+.timeline-item__date { color: #B45309; }
+
+/* Reflet doré subtil sur les cards */
+.em-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #F59E0B, transparent);
+}

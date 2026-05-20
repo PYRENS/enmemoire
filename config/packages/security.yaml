@@ -28,21 +28,23 @@ security:
             entry_point: App\Security\LoginFormAuthenticator
 
     role_hierarchy:
-        ROLE_MAKER:     [ROLE_USER]
-        ROLE_MANAGER:   [ROLE_MAKER]
-        ROLE_ADMIN:     [ROLE_MANAGER]
+        ROLE_MAKER:       [ROLE_USER]
+        ROLE_MANAGER:     [ROLE_MAKER]
+        ROLE_ADMIN:       [ROLE_MANAGER]
         ROLE_SUPER_ADMIN: [ROLE_ADMIN]
 
     access_control:
-        - { path: ^/payment/webhook, roles: PUBLIC_ACCESS }
-        - { path: ^/admin, roles: ROLE_ADMIN }
-        - { path: ^/gestionnaire, roles: ROLE_MANAGER }
-        - { path: ^/maker, roles: ROLE_MAKER }
-        - { path: ^/dashboard, roles: ROLE_USER }
-        - { path: ^/memorial/create, roles: ROLE_USER }
-        - { path: '^/memorial/[^/]+/manage', roles: ROLE_USER }  #empoie de ''
-        - { path: ^/payment/webhook/pawapay, roles: PUBLIC_ACCESS }
+        # ── Routes publiques (toujours en premier) ──────────────
+        - { path: ^/payment/webhook,        roles: PUBLIC_ACCESS }
         - { path: ^/payment/pawapay/retour, roles: PUBLIC_ACCESS }
+
+        # ── Zones protégées ─────────────────────────────────────
+        - { path: ^/admin,                          roles: ROLE_ADMIN }
+        - { path: ^/gestionnaire,                   roles: ROLE_MANAGER }
+        - { path: ^/maker,                          roles: ROLE_MAKER }
+        - { path: ^/dashboard,                      roles: ROLE_USER }
+        - { path: ^/memorial/create,                roles: ROLE_USER }
+        - { path: '^/memorial/[^/]+/manage',        roles: ROLE_USER }
 
 when@test:
     security:

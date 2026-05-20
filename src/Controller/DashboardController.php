@@ -10,6 +10,7 @@ use App\Entity\LifeTimeline;
 use App\Entity\MemorialEvent;
 use App\Entity\MemorialModerator;
 use App\Entity\MemorialPage;
+use App\Entity\MemorialTheme;
 use App\Entity\ModeratorTrustList;
 use App\Entity\Testimonial;
 use App\Entity\User;
@@ -79,6 +80,8 @@ class DashboardController extends AbstractController
             'moderators'  => $this->moderatorRepo->findActiveModeratorsForPage($page),
             'events'      => $page->getEvents()->toArray(),
             'storageMode' => $this->mediaService->getStorageMode(),
+            'themes'      => $this->em->getRepository(MemorialTheme::class)
+                ->findBy(['isActive' => true], ['sortOrder' => 'ASC']),
         ]);
     }
 
@@ -209,6 +212,22 @@ class DashboardController extends AbstractController
         return $this->redirectToRoute('app_dashboard_events', ['slug' => $slug]);
     }
 
+    #[Route('/memorial/{slug}/events/{eventId}/delete', name: 'app_dashboard_event_delete', methods: ['POST'])]
+    public function eventDelete(string $slug, int $eventId, Request $request): Response
+    {
+        $page  = $this->getPageOrDeny($slug);
+        $event = $this->em->getRepository(MemorialEvent::class)->find($eventId);
+
+        if ($event && $event->getMemorial() === $page) {
+            if ($this->isCsrfTokenValid('event_delete_' . $eventId, $request->request->get('_token'))) {
+                $this->em->remove($event);
+                $this->em->flush();
+                $this->addFlash('success', 'Événement supprimé.');
+            }
+        }
+        return $this->redirectToRoute('app_dashboard_events', ['slug' => $slug]);
+    }
+
     // =========================================================
     // MODÉRATION DES PUBLICATIONS
     // =========================================================
@@ -218,14 +237,20 @@ class DashboardController extends AbstractController
         $page = $this->getPageOrDeny($slug);
 
         return $this->render('dashboard/moderate.html.twig', [
-            'page'         => $page,
-            'condolences'  => $this->em->getRepository(Condolence::class)
+            'page'                => $page,
+            'condolences'         => $this->em->getRepository(Condolence::class)
                 ->findBy(['memorial' => $page, 'status' => 'pending'], ['createdAt' => 'ASC']),
-            'testimonials' => $this->em->getRepository(Testimonial::class)
+            'testimonials'        => $this->em->getRepository(Testimonial::class)
                 ->findBy(['memorial' => $page, 'status' => 'pending'], ['createdAt' => 'ASC']),
-            'guestbooks'   => $this->em->getRepository(GuestBook::class)
+            'guestbooks'          => $this->em->getRepository(GuestBook::class)
                 ->findBy(['memorial' => $page, 'status' => 'pending'], ['signedAt' => 'ASC']),
-            'pending'      => $this->moderationService->getPendingCount($page),
+            'rejectedCondolences' => $this->em->getRepository(Condolence::class)
+                ->findBy(['memorial' => $page, 'status' => 'rejected'], ['createdAt' => 'DESC']),
+            'rejectedTestimonials'=> $this->em->getRepository(Testimonial::class)
+                ->findBy(['memorial' => $page, 'status' => 'rejected'], ['createdAt' => 'DESC']),
+            'rejectedGuestbooks'  => $this->em->getRepository(GuestBook::class)
+                ->findBy(['memorial' => $page, 'status' => 'rejected'], ['signedAt' => 'DESC']),
+            'pending'             => $this->moderationService->getPendingCount($page),
         ]);
     }
 
@@ -268,8 +293,34 @@ class DashboardController extends AbstractController
             /** @var User $user */
             $user = $this->getUser();
             if ($action === 'approve') $this->moderationService->approveTestimonial($item, $user);
+            else {
+                $item->setStatus('rejected');
+                $this->em->flush();
+            }
             $this->addFlash('success', 'Témoignage ' . ($action === 'approve' ? 'approuvé' : 'rejeté') . '.');
         }
+        return $this->redirectToRoute('app_dashboard_moderate', ['slug' => $slug]);
+    }
+
+    #[Route('/memorial/{slug}/moderate/guestbook/{id}/{action}', name: 'app_dashboard_moderate_guestbook', methods: ['POST'])]
+    public function moderateGuestbook(string $slug, int $id, string $action, Request $request): Response
+    {
+        $page = $this->getPageOrDeny($slug);
+
+        if (!$this->isCsrfTokenValid('moderate_' . $id, $request->request->get('_token'))) {
+            $this->addFlash('danger', 'Token invalide.');
+            return $this->redirectToRoute('app_dashboard_moderate', ['slug' => $slug]);
+        }
+
+        $item = $this->em->getRepository(GuestBook::class)->find($id);
+        if ($item && $item->getMemorial() === $page) {
+            $item->setStatus($action === 'approve' ? 'approved' : 'rejected');
+            $item->setModeratedBy($this->getUser());
+            $item->setModeratedAt(new \DateTime());
+            $this->em->flush();
+            $this->addFlash('success', 'Signature ' . ($action === 'approve' ? 'approuvée' : 'rejetée') . '.');
+        }
+
         return $this->redirectToRoute('app_dashboard_moderate', ['slug' => $slug]);
     }
 
@@ -466,23 +517,43 @@ class DashboardController extends AbstractController
     public function changeTheme(string $slug, Request $request): Response
     {
         $page = $this->getPageOrDeny($slug);
+        $isAjax = $request->isXmlHttpRequest();
 
         if (!$this->isCsrfTokenValid('theme_' . $page->getId(), $request->request->get('_token'))) {
+            if ($isAjax) return $this->json(['success' => false, 'error' => 'Token invalide.'], 403);
             $this->addFlash('danger', 'Token invalide.');
             return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $slug]);
         }
 
         $themeId = (int) $request->request->get('theme_id');
-        $theme   = $this->em->getRepository(\App\Entity\MemorialTheme::class)->find($themeId);
+        $theme   = $this->em->getRepository(MemorialTheme::class)->find($themeId);
 
-        if ($theme && ($theme->isFree() || $page->getFormula()?->isHasPremiumThemes())) {
-            $page->setTheme($theme);
-            $this->em->flush();
-            $this->addFlash('success', 'Thème « ' . $theme->getName() . ' » appliqué.');
-        } else {
-            $this->addFlash('warning', 'Ce thème n\'est pas disponible avec votre formule.');
+        if (!$theme || !$theme->isActive()) {
+            if ($isAjax) return $this->json(['success' => false, 'error' => 'Thème introuvable.'], 404);
+            $this->addFlash('warning', 'Thème introuvable.');
+            return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $slug]);
         }
 
+        // Thème spécial : réservé aux admins
+        if ($theme->isSpecial() && !$this->isGranted('ROLE_ADMIN')) {
+            if ($isAjax) return $this->json(['success' => false, 'error' => 'Thème réservé aux administrateurs.'], 403);
+            $this->addFlash('warning', 'Ce thème est réservé aux administrateurs.');
+            return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $slug]);
+        }
+
+        $page->setTheme($theme);
+        $this->em->flush();
+
+        if ($isAjax) {
+            return $this->json([
+                'success'   => true,
+                'themeName' => $theme->getName(),
+                'themeSlug' => $theme->getSlug(),
+                'message'   => 'Thème "' . $theme->getName() . '" appliqué avec succès !',
+            ]);
+        }
+
+        $this->addFlash('success', 'Thème « ' . $theme->getName() . ' » appliqué.');
         return $this->redirectToRoute('app_dashboard_memorial', ['slug' => $slug]);
     }
 

@@ -204,10 +204,10 @@
 <div class="memorial-tabs-wrap" id="memorial-tabs">
   <div class="container-xl">
     <div class="memorial-tabs">
-      <button class="memorial-tab active" onclick="openTab('obituary')"    id="tab-obituary">
+      <button class="memorial-tab {{ defaultTab == 'obituary' ? 'active' : '' }}" onclick="openTab('obituary')" id="tab-obituary">
         <i class="bi bi-file-text"></i> Avis de décès
       </button>
-      <button class="memorial-tab" onclick="openTab('timeline')"   id="tab-timeline">
+      <button class="memorial-tab {{ defaultTab == 'timeline' ? 'active' : '' }}" onclick="openTab('timeline')" id="tab-timeline">
         <i class="bi bi-hourglass-split"></i> Biographie
       </button>
       <button class="memorial-tab" onclick="openTab('gallery')"    id="tab-gallery">
@@ -238,7 +238,7 @@
 <div class="container-xl memorial-content">
 
   {# AVIS DE DÉCÈS #}
-  <div class="memorial-panel active" id="panel-obituary">
+  <div class="memorial-panel {{ defaultTab == 'obituary' ? 'active' : '' }}" id="panel-obituary">
     {% if page.obituaryText %}
     <div class="memorial-obituary">
       <h2>Avis de décès</h2>
@@ -274,7 +274,7 @@
   </div>
 
   {# BIOGRAPHIE / LIGNE DE VIE #}
-  <div class="memorial-panel" id="panel-timeline">
+  <div class="memorial-panel {{ defaultTab == 'timeline' ? 'active' : '' }}" id="panel-timeline">
     {% if lifeTimeline %}
     <h2>Biographie</h2>
     <div class="memorial-timeline">
@@ -285,7 +285,7 @@
         <div class="memorial-timeline__content">
           <h4>{{ event.title }}</h4>
           {% if event.description %}<p>{{ event.description }}</p>{% endif %}
-          {% if event.location %}<small><i class="bi bi-geo-alt"></i> {{ event.location }}</small>{% endif %}
+          {% if event.locationName %}<small><i class="bi bi-geo-alt"></i> {{ event.locationName }}</small>{% endif %}
         </div>
       </div>
       {% endfor %}
@@ -559,7 +559,8 @@
     <h2>Événements</h2>
     <div class="memorial-events">
       {% for event in events %}
-      <div class="memorial-event-card">
+      <a href="{{ path('app_memorial_event_show', {slug: page.slug, eventId: event.id}) }}"
+         class="memorial-event-card" style="text-decoration:none;display:flex;">
         <div class="memorial-event-card__date">
           <span class="memorial-event-card__day">{{ event.eventDate|date('d') }}</span>
           <span class="memorial-event-card__month">{{ event.eventDate|date('M')|upper }}</span>
@@ -567,14 +568,19 @@
         <div class="memorial-event-card__info">
           <h4>{{ event.title }}</h4>
           <p>{{ event.eventDate|date('H:i') }}
-            {% if event.location %} · <i class="bi bi-geo-alt"></i> {{ event.location }}{% endif %}
+            {% if event.locationName %} · <i class="bi bi-geo-alt"></i> {{ event.locationName }}{% endif %}
           </p>
           {% if event.description %}<p class="text-muted">{{ event.description }}</p>{% endif %}
         </div>
-        {% if event.isLiveStream %}
+        {% if event.isLive %}
         <span class="memorial-live-badge"><i class="bi bi-broadcast"></i> Live</span>
         {% endif %}
-      </div>
+        <div class="ms-auto d-flex align-items-center ps-3">
+          <span class="em-btn em-btn--outline em-btn--sm">
+            <i class="bi bi-arrow-right"></i>
+          </span>
+        </div>
+      </a>
       {% endfor %}
     </div>
   </div>
@@ -1123,7 +1129,12 @@ function initFamGraph() {
     n.y = n.isCentral ? cy : cy+140*Math.sin(2*Math.PI*i/Math.max(nodes.length,1));
   });
   var defs=_famSvg.append('defs');
-  nodes.forEach(function(n){ if(n.photo){ defs.append('clipPath').attr('id','fclip-'+n.id).append('circle').attr('r',n.isCentral?34:24); }});
+  nodes.forEach(function(n){
+    if(n.photo){
+      defs.append('clipPath').attr('id','fclip-'+n.id)
+        .append('circle').attr('cx',0).attr('cy',0).attr('r',n.isCentral?34:24);
+    }
+  });
   var lnk = gFam.append('g').selectAll('line').data(edges).enter().append('line')
     .attr('stroke','#C9A84C').attr('stroke-width',2).attr('opacity',0.7);
   var lbl = gFam.append('g').selectAll('text').data(edges).enter().append('text')
@@ -1146,7 +1157,8 @@ function initFamGraph() {
     var n=d3.select(this),r=d.isCentral?34:24;
     if(d.photo){
       var url=d.photo.startsWith('http')?d.photo:'/'+d.photo.replace(/^\//,'');
-      n.append('image').attr('href',url).attr('x',-r).attr('y',-r).attr('width',r*2).attr('height',r*2).attr('clip-path','url(#fclip-'+d.id+')');
+      n.append('image').attr('href',url).attr('x',-r).attr('y',-r).attr('width',r*2).attr('height',r*2)
+        .attr('preserveAspectRatio','xMidYMid slice').attr('clip-path','url(#fclip-'+d.id+')');
     } else {
       n.append('text').attr('text-anchor','middle').attr('dy','0.35em').attr('font-size',d.isCentral?'1.1rem':'0.9rem').attr('fill','#1B2B4B')
         .text(d.label.split(' ').slice(0,2).map(function(w){return w[0];}).join('').toUpperCase());

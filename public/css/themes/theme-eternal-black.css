@@ -1,0 +1,101 @@
+/* ── Éternité Noire — Eternal Black (Special) ────────────────── */
+@import url('theme-base.css');
+
+:root {
+  --em-primary:      #D4AF37;
+  --em-primary-dark: #B8943F;
+  --em-primary-light:#F0D060;
+  --em-accent:       #D4AF37;
+  --em-gold:         #D4AF37;
+  --em-navy:         #0A0A0A;
+  --em-bg:           #111111;
+  --em-bg-card:      #1A1A1A;
+  --em-bg-hero:      linear-gradient(160deg, #000000 0%, #0D0D0D 50%, #1A1A1A 100%);
+  --em-text:         #E5E5E5;
+  --em-text-light:   #D4AF37;
+  --em-border:       #2A2A2A;
+  --em-shadow:       rgba(212, 175, 55, 0.12);
+  --em-hero-overlay: rgba(0, 0, 0, 0.70);
+}
+
+/* Override globaux pour fond sombre */
+body { background: var(--em-bg); color: var(--em-text); }
+.memorial-section { background: var(--em-bg); }
+.memorial-section--alt { background: #161616; }
+
+.memorial-hero {
+  background: var(--em-bg-hero);
+  border-bottom: 1px solid #D4AF37;
+}
+.memorial-hero__name {
+  color: #FFFFFF;
+  text-shadow: 0 0 30px rgba(212,175,55,.6), 0 2px 8px rgba(0,0,0,.8);
+}
+.memorial-hero__dates { color: #D4AF37; letter-spacing: 0.1em; }
+.memorial-hero__tagline { color: #AAAAAA; }
+
+.memorial-nav {
+  background: #0D0D0D;
+  border-bottom: 1px solid #2A2A2A;
+}
+.memorial-nav__link { color: #AAAAAA; }
+.memorial-nav__link.active,
+.memorial-nav__link:hover {
+  color: #D4AF37;
+  border-bottom-color: #D4AF37;
+}
+
+.memorial-section__title {
+  color: #D4AF37;
+  border-left-color: #D4AF37;
+}
+
+.em-card {
+  background: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-top: 2px solid #D4AF37;
+  box-shadow: 0 4px 24px rgba(0,0,0,.5), 0 0 0 1px rgba(212,175,55,.05);
+  color: #E5E5E5;
+}
+.em-card .card-title,
+.em-card h5, .em-card h4 { color: #D4AF37; }
+.em-card .text-muted { color: #888888 !important; }
+
+.em-btn--primary {
+  background: #D4AF37;
+  color: #000000;
+  font-weight: 700;
+}
+.em-btn--primary:hover { background: #F0D060; color: #000000; }
+
+.memorial-stat__value { color: #D4AF37; }
+.memorial-stat__label { color: #888888; }
+
+.timeline-item::before {
+  background: #D4AF37;
+  border-color: #B8943F;
+  box-shadow: 0 0 8px rgba(212,175,55,.4);
+}
+.timeline-item__date { color: #D4AF37; }
+.timeline-item__content { background: #1A1A1A; border-color: #2A2A2A; color: #E5E5E5; }
+
+/* Séparateurs dorés */
+hr { border-color: #2A2A2A; }
+.memorial-section + .memorial-section { border-top: 1px solid #2A2A2A; }
+
+/* Badges dorés */
+.badge { background: #D4AF37 !important; color: #000 !important; }
+
+/* Input/textarea en mode sombre */
+.form-control, .form-select {
+  background: #222222;
+  border-color: #3A3A3A;
+  color: #E5E5E5;
+}
+.form-control:focus, .form-select:focus {
+  background: #2A2A2A;
+  border-color: #D4AF37;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 2px rgba(212,175,55,.2);
+}
+.form-control::placeholder { color: #666666; }

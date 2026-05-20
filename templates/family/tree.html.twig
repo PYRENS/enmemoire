@@ -168,7 +168,13 @@ function initGraph() {
   });
   var defs=_svg.append('defs');
   nodes.forEach(function(n){
-    if(n.photo){ defs.append('clipPath').attr('id','clip-'+n.id).append('circle').attr('r',n.isCentral?38:28); }
+    if(n.photo){
+      defs.append('clipPath').attr('id','clip-'+n.id)
+        .append('circle')
+          .attr('cx', 0)
+          .attr('cy', 0)
+          .attr('r', n.isCentral ? 38 : 28);
+    }
   });
   var linkSel = gMain.append('g').selectAll('line').data(edges).enter().append('line')
     .attr('stroke','#C9A84C').attr('stroke-width',2).attr('opacity',0.8);
@@ -192,8 +198,14 @@ function initGraph() {
     var n=d3.select(this),r=d.isCentral?38:28;
     if(d.photo){
       var url=d.photo.startsWith('http')?d.photo:'/'+d.photo.replace(/^\//,'');
-      n.append('image').attr('href',url).attr('x',-r).attr('y',-r).attr('width',r*2).attr('height',r*2)
-        .attr('clip-path','url(#clip-'+d.id+')');
+      n.append('image')
+        .attr('href', url)
+        .attr('x', -r)
+        .attr('y', -r)
+        .attr('width', r*2)
+        .attr('height', r*2)
+        .attr('preserveAspectRatio', 'xMidYMid slice')
+        .attr('clip-path', 'url(#clip-'+d.id+')');
     } else {
       n.append('text').attr('text-anchor','middle').attr('dy','0.35em')
         .attr('font-size',d.isCentral?'1.2rem':'1rem').attr('fill','#1B2B4B')
@@ -244,21 +256,4 @@ async function deleteConnection(id) {
   else alert(data.error||'Erreur');
 }
 </script>
-<script>
-// Données de l'arbre
-var TREE_DATA = {{ treeData|json_encode|raw }};
-var PAGE_SLUG = '{{ page.slug }}';
-var IS_MOBILE = window.innerWidth < 768;
-
-// ── Switch vue ────────────────────────────────────────────
-function switchView(view) {
-  document.getElementById('view-graph').style.display = view === 'graph' ? 'block' : 'none';
-  document.getElementById('view-list').style.display  = view === 'list'  ? 'block' : 'none';
-  document.getElementById('btn-graph').classList.toggle('active', view === 'graph');
-  document.getElementById('btn-list').classList.toggle('active', view === 'list');
-  if (view === 'graph') initGraph();
-}
-
-// Auto-switch mobile
-if (IS_MOBILE) switchView('list');
 {% endblock %}

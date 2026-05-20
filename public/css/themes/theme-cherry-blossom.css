@@ -1,0 +1,45 @@
+/* ── Fleurs de Cerisier — Cherry Blossom ─────────────────────── */
+@import url('theme-base.css');
+
+:root {
+  --em-primary:      #BE185D;
+  --em-primary-dark: #9D174D;
+  --em-primary-light:#F472B6;
+  --em-accent:       #FBCFE8;
+  --em-gold:         #F9A8D4;
+  --em-navy:         #500724;
+  --em-bg:           #FFF1F2;
+  --em-bg-card:      #FFFFFF;
+  --em-bg-hero:      linear-gradient(160deg, #500724 0%, #9D174D 50%, #BE185D 100%);
+  --em-text:         #500724;
+  --em-text-light:   #BE185D;
+  --em-border:       #FBCFE8;
+  --em-shadow:       rgba(190, 24, 93, 0.12);
+  --em-hero-overlay: rgba(80, 7, 36, 0.60);
+}
+
+.memorial-hero { background: var(--em-bg-hero); }
+.memorial-hero__name { color: #FDF2F8; text-shadow: 0 2px 12px rgba(244,114,182,.4); }
+.memorial-hero__dates { color: #FBCFE8; }
+.memorial-nav { background: #500724; border-bottom: 2px solid #BE185D; }
+.memorial-nav__link.active,
+.memorial-nav__link:hover { color: #F9A8D4; border-bottom-color: #F472B6; }
+.memorial-section__title { color: #9D174D; border-left-color: #F472B6; }
+.em-card { border-top: 3px solid #F472B6; box-shadow: 0 4px 20px var(--em-shadow); }
+.em-btn--primary { background: #BE185D; }
+.em-btn--primary:hover { background: #9D174D; }
+.memorial-stat__value { color: #BE185D; }
+.timeline-item::before { background: #F472B6; border-color: #BE185D; }
+.timeline-item__date { color: #BE185D; }
+
+/* Pétales décoratifs subtils */
+.memorial-hero::after {
+  content: '🌸';
+  position: absolute;
+  font-size: 8rem;
+  opacity: 0.07;
+  right: 5%;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}

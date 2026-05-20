@@ -58,7 +58,7 @@
     <div class="events-admin-list">
       {% for event in events %}
       <div class="event-admin-card event-admin-card--{{ event.status }}">
-        <div>
+        <div class="flex-grow-1">
           <div class="d-flex align-items-center gap-2 mb-1">
             <span class="em-badge em-badge--{{ event.isLive ? 'active' : (event.isUpcoming ? 'info' : 'pending') }}">
               {{ event.status == 'live' ? '🔴 EN DIRECT' : (event.status == 'upcoming' ? '📅 À venir' : '✅ Terminé') }}
@@ -69,11 +69,24 @@
             <i class="bi bi-calendar3"></i> {{ event.eventDate|date('d/m/Y à H:i') }}
             {% if event.locationName %} · <i class="bi bi-geo-alt"></i> {{ event.locationName }}{% endif %}
           </small>
+        </div>
+        <div class="d-flex gap-2 align-items-center ms-3">
           {% if event.liveUrl %}
-            <a href="{{ event.liveUrl }}" target="_blank" class="em-btn em-btn--outline em-btn--sm mt-2">
-              <i class="bi bi-play-circle"></i> Lien live
+            <a href="{{ event.liveUrl }}" target="_blank" class="em-btn em-btn--outline em-btn--sm">
+              <i class="bi bi-play-circle"></i> Live
             </a>
           {% endif %}
+          <a href="{{ path('app_memorial_event_show', {slug: page.slug, eventId: event.id}) }}"
+             target="_blank" class="em-btn em-btn--outline em-btn--sm">
+            <i class="bi bi-eye"></i> Voir
+          </a>
+          <form action="{{ path('app_dashboard_event_delete', {slug: page.slug, eventId: event.id}) }}" method="POST"
+                onsubmit="return confirm('Supprimer cet événement ?')">
+            <input type="hidden" name="_token" value="{{ csrf_token('event_delete_' ~ event.id) }}">
+            <button type="submit" class="em-btn em-btn--sm" style="background:#fee2e2;color:#dc2626;border:none;">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
         </div>
       </div>
       {% else %}

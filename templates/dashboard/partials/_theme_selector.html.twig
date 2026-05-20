@@ -1,0 +1,248 @@
+{# ─────────────────────────────────────────────────────────────────
+   templates/dashboard/partials/_theme_selector.html.twig
+   À inclure dans le dashboard mémoriel :
+   {{ include('dashboard/partials/_theme_selector.html.twig') }}
+   ──────────────────────────────────────────────────────────────── #}
+
+{% set themes = [
+  { slug: 'classic-white',   name: 'Classique Blanc',    type: 'free',    colors: ['#FFFFFF','#1B2B4B','#C9A84C'], desc: 'Sobre et élégant' },
+  { slug: 'nature-green',    name: 'Nature & Sérénité',  type: 'free',    colors: ['#F0FDF4','#14532D','#22C55E'], desc: 'Tons verts apaisants' },
+  { slug: 'ocean-blue',      name: 'Océan Bleu',         type: 'free',    colors: ['#EFF6FF','#1E3A5F','#3B82F6'], desc: 'Paix et éternité' },
+  { slug: 'sunset-warm',     name: 'Coucher de Soleil',  type: 'free',    colors: ['#FFF7ED','#7C2D12','#F97316'], desc: 'Chaleureux et mémoriel' },
+  { slug: 'night-stars',     name: 'Étoiles de Nuit',    type: 'free',    colors: ['#0F172A','#E2E8F0','#818CF8'], desc: 'Poétique et sobre' },
+  { slug: 'african-gold',    name: 'Afrique Dorée',      type: 'paid',    colors: ['#FEF3C7','#3B1F00','#D97706'], desc: 'Or et bordeaux africain' },
+  { slug: 'royal-purple',    name: 'Majesté Violette',   type: 'paid',    colors: ['#FAF5FF','#1E1B4B','#A855F7'], desc: 'Violet royal et noblesse' },
+  { slug: 'cherry-blossom',  name: 'Fleurs de Cerisier', type: 'paid',    colors: ['#FFF1F2','#500724','#F472B6'], desc: 'Rose tendre et poétique' },
+  { slug: 'golden-light',    name: 'Lumière Dorée',      type: 'paid',    colors: ['#FFFBEB','#451A03','#F59E0B'], desc: 'Hommage solennel et lumineux' },
+  { slug: 'eternal-black',   name: 'Éternité Noire',     type: 'special', colors: ['#111111','#1A1A1A','#D4AF37'], desc: 'Sobre, puissant, intemporel' },
+] %}
+
+<div class="dashboard-section" id="section-theme">
+  <div class="dashboard-section__header">
+    <h3 class="dashboard-section__title">
+      <i class="bi bi-palette me-2"></i>Thème de la page mémorielle
+    </h3>
+    <p class="text-muted small mb-0">Le thème personnalise les couleurs et l'ambiance de la page publique.</p>
+  </div>
+
+  <div class="theme-grid mt-4" id="theme-grid">
+    {% for theme in themes %}
+      <div class="theme-card {% if page.theme and page.theme.slug == theme.slug %}theme-card--active{% endif %}"
+           data-slug="{{ theme.slug }}"
+           data-name="{{ theme.name }}"
+           data-type="{{ theme.type }}"
+           onclick="selectTheme('{{ theme.slug }}', '{{ theme.name }}', '{{ theme.type }}')">
+
+        {# Aperçu couleurs #}
+        <div class="theme-card__preview">
+          {% for color in theme.colors %}
+            <div class="theme-card__color" style="background: {{ color }};"></div>
+          {% endfor %}
+          {% if page.theme and page.theme.slug == theme.slug %}
+            <div class="theme-card__active-badge">
+              <i class="bi bi-check-circle-fill"></i>
+            </div>
+          {% endif %}
+        </div>
+
+        {# Infos #}
+        <div class="theme-card__body">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <strong class="theme-card__name">{{ theme.name }}</strong>
+            {% if theme.type == 'free' %}
+              <span class="badge bg-success-subtle text-success">Gratuit</span>
+            {% elseif theme.type == 'paid' %}
+              <span class="badge bg-warning-subtle text-warning">Premium</span>
+            {% else %}
+              <span class="badge bg-danger-subtle text-danger">
+                <i class="bi bi-star-fill me-1"></i>Spécial
+              </span>
+            {% endif %}
+          </div>
+          <small class="text-muted">{{ theme.desc }}</small>
+        </div>
+
+      </div>
+    {% endfor %}
+  </div>
+
+  {# Bouton confirmer (apparaît au survol) #}
+  <div id="theme-confirm-bar" class="theme-confirm-bar d-none mt-3">
+    <div class="alert alert-info d-flex align-items-center justify-content-between mb-0 py-2">
+      <span>
+        <i class="bi bi-palette me-2"></i>
+        Thème sélectionné : <strong id="theme-confirm-name"></strong>
+      </span>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary" onclick="cancelThemeSelection()">Annuler</button>
+        <button class="btn btn-sm btn-primary" onclick="applyTheme()">
+          <i class="bi bi-check me-1"></i>Appliquer ce thème
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {# Aperçu rapide #}
+  <div class="mt-3">
+    <a href="{{ path('app_memorial_show', {slug: page.slug}) }}" target="_blank"
+       class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-eye me-1"></i>Voir la page publique
+    </a>
+  </div>
+</div>
+
+<style>
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.theme-card {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all .2s ease;
+  background: white;
+}
+.theme-card:hover {
+  border-color: #6B7280;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+.theme-card--active {
+  border-color: #1B2B4B !important;
+  box-shadow: 0 0 0 3px rgba(27,43,75,.2), 0 8px 24px rgba(0,0,0,.12);
+}
+.theme-card--selected {
+  border-color: #3B82F6 !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.25);
+}
+
+.theme-card__preview {
+  display: flex;
+  height: 60px;
+  position: relative;
+}
+.theme-card__color {
+  flex: 1;
+}
+.theme-card__active-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 1.5rem;
+  text-shadow: 0 1px 4px rgba(0,0,0,.5);
+}
+
+.theme-card__body {
+  padding: .65rem .75rem;
+}
+.theme-card__name {
+  font-size: .85rem;
+}
+
+.theme-confirm-bar {
+  position: sticky;
+  bottom: 1rem;
+  z-index: 100;
+}
+</style>
+
+<script>
+(function() {
+  var selectedSlug = null;
+  var originalSlug = {{ (page.theme ? page.theme.slug : 'classic-white')|json_encode|raw }};
+  var themeUrl     = {{ path('app_dashboard_theme', {slug: page.slug})|json_encode|raw }};
+
+  window.selectTheme = function(slug, name, type) {
+    if (type === 'special' && !{{ is_granted('ROLE_ADMIN') ? 'true' : 'false' }}) {
+      showToast('Ce thème est réservé aux administrateurs.', 'warning');
+      return;
+    }
+
+    selectedSlug = slug;
+
+    // Mettre à jour visuellement
+    document.querySelectorAll('.theme-card').forEach(function(el) {
+      el.classList.remove('theme-card--selected');
+    });
+    document.querySelector('[data-slug="' + slug + '"]').classList.add('theme-card--selected');
+
+    // Afficher la barre de confirmation
+    document.getElementById('theme-confirm-name').textContent = name;
+    document.getElementById('theme-confirm-bar').classList.remove('d-none');
+  };
+
+  window.cancelThemeSelection = function() {
+    selectedSlug = null;
+    document.querySelectorAll('.theme-card').forEach(function(el) {
+      el.classList.remove('theme-card--selected');
+    });
+    document.getElementById('theme-confirm-bar').classList.add('d-none');
+  };
+
+  window.applyTheme = function() {
+    if (!selectedSlug) return;
+
+    var btn = document.querySelector('#theme-confirm-bar .btn-primary');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Application…';
+
+    var formData = new FormData();
+    formData.append('theme', selectedSlug);
+
+    fetch(themeUrl, {
+      method: 'POST',
+      body: formData,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        // Mettre à jour le visuel actif
+        document.querySelectorAll('.theme-card').forEach(function(el) {
+          el.classList.remove('theme-card--active', 'theme-card--selected');
+          el.querySelector('.theme-card__active-badge') &&
+            el.querySelector('.theme-card__active-badge').remove();
+        });
+        var activeCard = document.querySelector('[data-slug="' + selectedSlug + '"]');
+        activeCard.classList.add('theme-card--active');
+
+        var badge = document.createElement('div');
+        badge.className = 'theme-card__active-badge';
+        badge.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+        activeCard.querySelector('.theme-card__preview').appendChild(badge);
+
+        document.getElementById('theme-confirm-bar').classList.add('d-none');
+        showToast('✅ ' + data.message, 'success');
+
+        originalSlug = selectedSlug;
+        selectedSlug = null;
+      } else {
+        showToast('❌ ' + (data.error || 'Erreur inconnue'), 'danger');
+      }
+    })
+    .catch(function() {
+      showToast('❌ Erreur réseau. Réessayez.', 'danger');
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-check me-1"></i>Appliquer ce thème';
+    });
+  };
+
+  // Toast helper (utilise Bootstrap si disponible)
+  function showToast(msg, type) {
+    var toast = document.createElement('div');
+    toast.className = 'alert alert-' + type + ' position-fixed bottom-0 end-0 m-3 shadow';
+    toast.style.cssText = 'z-index:9999;min-width:280px;animation:fadeIn .3s';
+    toast.innerHTML = msg;
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.remove(); }, 4000);
+  }
+})();
+</script>

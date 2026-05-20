@@ -4,13 +4,10 @@ namespace App\Service\Payment;
 
 use App\Entity\MemorialFormula;
 use App\Entity\Payment;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
-/**
- * Mobile Money via PawaPay Payment Page (page hébergée).
- * Couvre M-Pesa, Airtel Money, Orange Money RDC automatiquement.
- */
 class MobileMoneyService
 {
     private const LABELS = [
@@ -23,15 +20,16 @@ class MobileMoneyService
     public function __construct(
         #[Autowire('%env(PAWAPAY_API_KEY)%')]  private readonly string $pawaPayKey,
         #[Autowire('%env(PAWAPAY_BASE_URL)%')] private readonly string $pawaPayUrl,
-        private readonly UrlGeneratorInterface $router,
-        private readonly PawaPayService        $pawaPayService,
+        private readonly UrlGeneratorInterface  $router,
+        private readonly PawaPayService         $pawaPayService,
+        private readonly EntityManagerInterface $em,   // ← AJOUTÉ
     ) {}
 
     public function initiate(Payment $payment, MemorialFormula $formula, string $provider): PaymentIntent
     {
         $ref = 'EM-' . str_pad((string)$payment->getId(), 6, '0', STR_PAD_LEFT);
 
-        error_log("[PAWAPAY] isConfigured: " . ($this->pawaPayService->isConfigured() ? "true" : "false")); if ($this->pawaPayService->isConfigured()) {
+        if ($this->pawaPayService->isConfigured()) {
             return $this->initiatePawaPayPage($payment, $formula, $provider, $ref);
         }
 
@@ -61,6 +59,7 @@ class MobileMoneyService
             $meta['amount_cdf']         = $amountCdf;
             $payment->setMetadata($meta);
             $payment->setProviderTxId($result['depositId']);
+            $this->em->flush(); // ← AJOUTÉ — persiste avant la redirection
 
             return PaymentIntent::redirect($payment, $result['redirectUrl']);
         }

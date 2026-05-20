@@ -1,0 +1,568 @@
+{% extends 'base.html.twig' %}
+{% set memorial_theme = page.theme ? page.theme.slug : 'classic-white' %}
+{% block title %}{{ event.title }} — {{ page.deceasedFullName }} — EnMémoire.com{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('css/memorial.css') }}">
+<link rel="stylesheet" href="{{ asset('css/themes/theme-' ~ memorial_theme ~ '.css') }}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<style>
+.sortable-ghost   { opacity: .3; border: 2px dashed var(--em-gold, #C9A84C) !important; }
+.sortable-chosen  { box-shadow: 0 8px 24px rgba(0,0,0,.3) !important; transform: scale(1.04); z-index: 10; }
+.sortable-drag    { opacity: .9; }
+
+/* Onglets galerie */
+.gallery-tabs { display: flex; gap: .5rem; margin-bottom: 1.25rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
+.gallery-tab { display: flex; align-items: center; gap: .4rem; padding: .6rem 1.25rem; border: none; background: none; font-size: .9rem; color: #6B7280; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s; border-radius: 6px 6px 0 0; }
+.gallery-tab:hover { color: var(--em-navy, #1B2B4B); background: #f9fafb; }
+.gallery-tab.active { color: var(--em-navy, #1B2B4B); font-weight: 600; border-bottom-color: var(--em-gold, #C9A84C); }
+.gallery-tab__count { background: #f3f4f6; color: #6B7280; font-size: .72rem; padding: 1px 6px; border-radius: 10px; }
+.gallery-tab.active .gallery-tab__count { background: var(--em-gold, #C9A84C); color: var(--em-navy, #1B2B4B); }
+.gallery-section { animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+.event-hero { background: var(--em-bg-hero, linear-gradient(160deg,#1B2B4B,#2d4270)); padding: 3rem 0 2rem; color: white; position: relative; }
+.event-hero__back { display: inline-flex; align-items: center; gap: .4rem; color: rgba(255,255,255,.7); text-decoration: none; font-size: .85rem; margin-bottom: 1.5rem; transition: color .2s; }
+.event-hero__back:hover { color: white; }
+.event-hero__inner { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+.event-hero__left { flex: 1; }
+.event-hero__portrait { display: flex; flex-direction: column; align-items: center; gap: .6rem; flex-shrink: 0; }
+.event-hero__portrait-img { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid var(--em-gold, #C9A84C); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
+.event-hero__portrait-placeholder { width: 110px; height: 110px; border-radius: 50%; background: rgba(255,255,255,.15); border: 3px solid var(--em-gold, #C9A84C); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: rgba(255,255,255,.5); }
+.event-hero__portrait-name { text-align: center; color: white; font-weight: 600; font-size: .9rem; line-height: 1.3; }
+.event-hero__portrait-dates { color: rgba(255,255,255,.7); font-size: .78rem; text-align: center; }
+.event-hero__type { display: inline-flex; align-items: center; gap: .4rem; background: rgba(255,255,255,.15); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.2); padding: .3rem .85rem; border-radius: 20px; font-size: .8rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 1rem; color: rgba(255,255,255,.9); }
+.event-hero__title { font-size: clamp(1.6rem, 4vw, 2.5rem); font-weight: 700; margin-bottom: .75rem; color: white; }
+.event-hero__meta { display: flex; flex-wrap: wrap; gap: 1.25rem; color: rgba(255,255,255,.8); font-size: .9rem; }
+.event-hero__meta-item { display: flex; align-items: center; gap: .4rem; }
+.event-live-badge { display: inline-flex; align-items: center; gap: .4rem; background: #ef4444; color: white; padding: .3rem .85rem; border-radius: 20px; font-size: .8rem; font-weight: 700; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+@media (max-width:575px) { .event-hero__inner { flex-direction: column-reverse; align-items: flex-start; } .event-hero__portrait { flex-direction: row; gap: .75rem; } .event-hero__portrait-img, .event-hero__portrait-placeholder { width: 56px; height: 56px; font-size: 1.4rem; } }
+
+.event-content { max-width: 900px; margin: 0 auto; padding: 2.5rem 1rem; }
+.event-section { margin-bottom: 2.5rem; }
+.event-section__title { font-size: 1.1rem; font-weight: 700; color: var(--em-navy, #1B2B4B); border-left: 3px solid var(--em-gold, #C9A84C); padding-left: .75rem; margin-bottom: 1.25rem; }
+.event-description { background: var(--em-bg-card, #fff); border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 12px rgba(0,0,0,.06); line-height: 1.75; color: var(--em-text, #1B2B4B); }
+
+.event-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .75rem; }
+.event-gallery__item { aspect-ratio: 1; border-radius: 10px; overflow: hidden; cursor: pointer; position: relative; box-shadow: 0 2px 8px rgba(0,0,0,.1); transition: transform .2s, box-shadow .2s; display: block; }
+.event-gallery__item:hover { transform: scale(1.03); box-shadow: 0 6px 20px rgba(0,0,0,.15); }
+.event-gallery__item img { width: 100%; height: 100%; object-fit: cover; }
+.event-gallery__empty { text-align: center; padding: 2rem; color: #9CA3AF; font-size: .9rem; }
+
+.event-upload-zone { border: 2px dashed var(--em-border, #e5e7eb); border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; background: var(--em-bg-card, #fff); margin-bottom: 1rem; }
+.event-upload-zone:hover { border-color: var(--em-gold, #C9A84C); background: #fffdf5; }
+.event-upload-zone input { display: none; }
+
+.event-comment { background: var(--em-bg-card, #fff); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: .75rem; box-shadow: 0 1px 6px rgba(0,0,0,.06); display: flex; gap: 1rem; }
+.event-comment__avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--em-navy, #1B2B4B); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; flex-shrink: 0; }
+.event-comment__body { flex: 1; }
+.event-comment__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .3rem; }
+.event-comment__name { font-weight: 600; font-size: .9rem; }
+.event-comment__date { font-size: .75rem; color: #9CA3AF; }
+.event-comment__text { font-size: .9rem; line-height: 1.6; color: #374151; }
+
+.event-comment-form { background: var(--em-bg-card, #fff); border-radius: 12px; padding: 1.25rem; box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 1.5rem; }
+.event-comment-form textarea { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 8px; padding: .75rem 1rem; font-size: .9rem; resize: vertical; min-height: 90px; font-family: inherit; transition: border-color .2s; }
+.event-comment-form textarea:focus { outline: none; border-color: var(--em-gold, #C9A84C); }
+</style>
+{% endblock %}
+
+{% block body %}
+<section class="event-hero">
+  <div class="container-xl">
+    <a href="{{ path('app_memorial_show', {slug: page.slug}) }}" class="event-hero__back">
+      <i class="bi bi-arrow-left"></i> Retour à la page de {{ page.deceasedFirstName }}
+    </a>
+    <div class="event-hero__inner">
+      <div class="event-hero__left">
+        <div class="event-hero__type">
+          {% if event.type == 'funeral' %}⚰️ Funérailles
+          {% elseif event.type == 'commemoration' %}🕊️ Commémoration
+          {% elseif event.type == 'anniversary_mass' %}⛪ Messe anniversaire
+          {% elseif event.type == 'reception' %}🤝 Réception
+          {% else %}📌 {{ event.customType ?? 'Événement' }}{% endif %}
+        </div>
+        {% if event.isLive %}<div class="event-live-badge mb-2"><i class="bi bi-broadcast"></i> EN DIRECT</div>{% endif %}
+        <h1 class="event-hero__title">{{ event.title }}</h1>
+        <div class="event-hero__meta">
+          <span class="event-hero__meta-item"><i class="bi bi-calendar3"></i> {{ event.eventDate|date('d/m/Y à H:i') }}</span>
+          {% if event.locationName %}
+          <span class="event-hero__meta-item"><i class="bi bi-geo-alt"></i> {{ event.locationName }}{% if event.locationAddress %} — {{ event.locationAddress }}{% endif %}</span>
+          {% endif %}
+          {% if event.isLive and event.liveUrl %}
+          <a href="{{ event.liveUrl }}" target="_blank" class="event-live-badge text-decoration-none"><i class="bi bi-play-circle"></i> Voir le live</a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="event-hero__portrait">
+        {% if page.mainPhotoUrl %}
+          <img src="{{ page.mainPhotoUrl starts with 'http' ? page.mainPhotoUrl : asset(page.mainPhotoUrl) }}" alt="{{ page.deceasedFullName }}" class="event-hero__portrait-img">
+        {% else %}
+          <div class="event-hero__portrait-placeholder"><i class="bi bi-person-fill"></i></div>
+        {% endif %}
+        <div class="event-hero__portrait-name">{{ page.deceasedFullName }}</div>
+        <div class="event-hero__portrait-dates">{{ page.deceasedBirthDate|date('Y') }} — {{ page.deceasedDeathDate|date('Y') }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container-xl">
+<div class="event-content">
+
+  {% if event.description %}
+  <div class="event-section">
+    <h2 class="event-section__title"><i class="bi bi-file-text me-2"></i>Description</h2>
+    <div class="event-description">{{ event.description|nl2br }}</div>
+  </div>
+  {% endif %}
+
+  {% if event.programText %}
+  <div class="event-section">
+    <h2 class="event-section__title"><i class="bi bi-list-ol me-2"></i>Programme</h2>
+    <div class="event-description">{{ event.programText|nl2br }}</div>
+  </div>
+  {% endif %}
+
+  {# GALERIE #}
+  <div class="event-section">
+    <h2 class="event-section__title">
+      <i class="bi bi-images me-2"></i>Galerie
+      {% if gallery|length %}<span class="badge bg-secondary ms-2" style="font-size:.7rem;">{{ gallery|length }}</span>{% endif %}
+    </h2>
+
+    {% if isModerator %}
+    <div class="event-upload-zone mb-3" onclick="document.getElementById('eventPhotoInput').click()">
+      <input type="file" id="eventPhotoInput" accept="image/*,video/*" multiple onchange="uploadEventMedia(this)">
+      <i class="bi bi-cloud-upload" style="font-size:1.5rem;color:#9CA3AF;"></i>
+      <p class="mb-0 mt-1 text-muted small">Cliquez pour ajouter des photos/vidéos à cet événement</p>
+    </div>
+    {% endif %}
+
+    {% set photos = gallery|filter(m => m.type != 'video') %}
+    {% set videos = gallery|filter(m => m.type == 'video') %}
+
+    {# Onglets photos / vidéos #}
+    <div class="gallery-tabs">
+      <button class="gallery-tab active" onclick="switchGalleryTab('photos', this)">
+        <i class="bi bi-images"></i> Photos
+        <span class="gallery-tab__count">{{ photos|length }}</span>
+      </button>
+      <button class="gallery-tab" onclick="switchGalleryTab('videos', this)">
+        <i class="bi bi-play-circle"></i> Vidéos
+        <span class="gallery-tab__count">{{ videos|length }}</span>
+      </button>
+    </div>
+
+    {# Galerie photos #}
+    <div id="gallery-photos" class="gallery-section">
+      {% if photos|length %}
+      <div class="event-gallery" id="eventGallery">
+        {% for media in photos %}
+        {% set mediaUrl = media.url starts with 'http' ? media.url : asset(media.url) %}
+        <a href="javascript:void(0)"
+           class="event-gallery__item"
+           data-lightbox="event-gallery"
+           data-url="{{ mediaUrl }}"
+           data-caption="{{ media.caption|default('')|e('html_attr') }}"
+           data-type="{{ media.type }}"
+           data-id="{{ media.id }}"
+           data-csrf-delete="{{ csrf_token('media_delete_' ~ media.id) }}"
+           data-csrf-caption="{{ csrf_token('media_caption_' ~ media.id) }}"
+           onclick="openLightbox(event, this)">
+          <img src="{{ mediaUrl }}" alt="{{ media.caption ?? 'Photo' }}" loading="lazy">
+          {% if isModerator %}
+          <div class="media-actions" style="position:absolute;top:4px;right:4px;display:flex;gap:3px;" onclick="event.stopPropagation()">
+            <button onclick="editCaption(event, {{ media.id }}, '{{ media.caption|default('')|e('js') }}', null, '{{ csrf_token('media_caption_' ~ media.id) }}')"
+                    style="background:rgba(255,255,255,.9);color:#1B2B4B;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:.75rem;" title="Légende">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button onclick="deleteMedia(event, {{ media.id }})"
+                    style="background:rgba(185,28,28,.9);color:white;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:.75rem;" title="Supprimer">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          {% if media.caption %}
+          <div class="media-caption" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:white;font-size:.72rem;padding:.25rem .5rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
+            {{ media.caption }}
+          </div>
+          {% endif %}
+          {% endif %}
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="event-gallery__empty">
+        <i class="bi bi-images" style="font-size:2.5rem;display:block;margin-bottom:.5rem;opacity:.3;"></i>
+        Aucune photo pour le moment.
+      </div>
+      {% endif %}
+    </div>
+
+    {# Galerie vidéos #}
+    <div id="gallery-videos" class="gallery-section" style="display:none;">
+      {% if videos|length %}
+      <div class="event-gallery">
+        {% for media in videos %}
+        {% set mediaUrl = media.url starts with 'http' ? media.url : asset(media.url) %}
+        <a href="javascript:void(0)"
+           class="event-gallery__item"
+           data-lightbox="event-gallery"
+           data-url="{{ mediaUrl }}"
+           data-caption="{{ media.caption|default('')|e('html_attr') }}"
+           data-type="video"
+           data-id="{{ media.id }}"
+           data-csrf-delete="{{ csrf_token('media_delete_' ~ media.id) }}"
+           data-csrf-caption="{{ csrf_token('media_caption_' ~ media.id) }}"
+           onclick="openLightbox(event, this)">
+          <video src="{{ mediaUrl }}" style="width:100%;height:100%;object-fit:cover;" muted></video>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-play-circle-fill" style="font-size:2rem;color:white;text-shadow:0 2px 8px rgba(0,0,0,.5);"></i>
+          </div>
+          {% if isModerator %}
+          <div class="media-actions" style="position:absolute;top:4px;right:4px;display:flex;gap:3px;" onclick="event.stopPropagation()">
+            <button onclick="deleteMedia(event, {{ media.id }})"
+                    style="background:rgba(185,28,28,.9);color:white;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:.75rem;" title="Supprimer">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          {% endif %}
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="event-gallery__empty">
+        <i class="bi bi-play-circle" style="font-size:2.5rem;display:block;margin-bottom:.5rem;opacity:.3;"></i>
+        Aucune vidéo pour le moment.
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  {# COMMENTAIRES #}
+  <div class="event-section">
+    <h2 class="event-section__title">
+      <i class="bi bi-chat-heart me-2"></i>Commentaires
+      {% if comments|length %}<span class="badge bg-secondary ms-2" style="font-size:.7rem;">{{ comments|length }}</span>{% endif %}
+    </h2>
+
+    {% if app.user %}
+    <div class="event-comment-form">
+      <textarea id="eventCommentText" placeholder="Laissez un message pour cet événement…" maxlength="1000"></textarea>
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <small class="text-muted">Max. 1000 caractères</small>
+        <button onclick="postEventComment()" class="em-btn em-btn--primary em-btn--sm">
+          <i class="bi bi-send me-1"></i>Publier
+        </button>
+      </div>
+      <div id="commentResult" class="mt-2"></div>
+    </div>
+    {% else %}
+    <div class="alert alert-light text-center mb-3">
+      <a href="{{ path('app_login') }}">Connectez-vous</a> pour laisser un commentaire.
+    </div>
+    {% endif %}
+
+    <div id="commentList">
+      {% if comments|length %}
+        {% for comment in comments %}
+        <div class="event-comment">
+          <div class="event-comment__avatar">{{ comment.user.firstName|first|upper }}{{ comment.user.lastName|first|upper }}</div>
+          <div class="event-comment__body">
+            <div class="event-comment__header">
+              <span class="event-comment__name">{{ comment.isAnonymous ? 'Anonyme' : comment.user.fullName }}</span>
+              <span class="event-comment__date">{{ comment.createdAt|date('d/m/Y à H:i') }}</span>
+            </div>
+            <div class="event-comment__text">{{ comment.message|nl2br }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="event-gallery__empty">
+          <i class="bi bi-chat" style="font-size:2rem;display:block;margin-bottom:.5rem;opacity:.3;"></i>
+          Aucun commentaire pour le moment. Soyez le premier !
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+</div>
+
+{# Lightbox complet #}
+<div id="lightbox" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);z-index:9999;align-items:center;justify-content:center;flex-direction:column;">
+  <button onclick="closeLightbox()" style="position:fixed;top:12px;right:16px;background:none;border:none;color:white;font-size:2.5rem;cursor:pointer;line-height:1;z-index:10000;">&times;</button>
+  <div onclick="lightboxNav(-1)" style="position:absolute;left:0;top:0;width:20%;height:100%;cursor:pointer;display:flex;align-items:center;justify-content:flex-start;padding-left:8px;z-index:2;">
+    <i class="bi bi-chevron-left" style="font-size:2.5rem;color:rgba(255,255,255,.8);"></i>
+  </div>
+  <div onclick="lightboxNav(1)" style="position:absolute;right:0;top:0;width:20%;height:100%;cursor:pointer;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;z-index:2;">
+    <i class="bi bi-chevron-right" style="font-size:2.5rem;color:rgba(255,255,255,.8);"></i>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;max-width:90vw;">
+    <img id="lightbox-img" src="" alt="" style="max-width:90vw;max-height:78vh;border-radius:8px;object-fit:contain;">
+    <video id="lightbox-video" controls style="max-width:90vw;max-height:78vh;border-radius:8px;display:none;"></video>
+    <p id="lightbox-caption" style="color:rgba(255,255,255,.85);font-size:.9rem;margin:10px 0 0;text-align:center;max-width:80vw;min-height:1.2em;"></p>
+    <p id="lightbox-counter" style="color:rgba(255,255,255,.4);font-size:.78rem;margin:4px 0 0;text-align:center;"></p>
+    {% if isModerator %}
+    <button id="lightbox-edit-btn" onclick="editCurrentCaption()" style="margin-top:8px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:white;border-radius:6px;padding:.3rem .75rem;font-size:.8rem;cursor:pointer;">
+      <i class="bi bi-pencil me-1"></i>Modifier la légende
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+var EVENT_ID     = {{ event.id }};
+var PAGE_SLUG    = {{ page.slug|json_encode|raw }};
+var IS_MOD       = {{ isModerator ? 'true' : 'false' }};
+var CSRF_COMMENT = {{ csrf_token('event_comment_' ~ event.id)|json_encode|raw }};
+var CSRF_MEDIA   = {{ csrf_token('event_media_' ~ event.id)|json_encode|raw }};
+
+// ── Onglets galerie photos/vidéos ────────────────────────
+function switchGalleryTab(tab, btn) {
+  document.getElementById('gallery-photos').style.display = tab === 'photos' ? 'block' : 'none';
+  document.getElementById('gallery-videos').style.display = tab === 'videos' ? 'block' : 'none';
+  document.querySelectorAll('.gallery-tab').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+// ── Lightbox ──────────────────────────────────────────────
+var _lbItems = [], _lbIdx = 0;
+
+function openLightbox(e, el) {
+  if (e && e.preventDefault) e.preventDefault();
+  _lbItems = Array.from(document.querySelectorAll('[data-lightbox="event-gallery"]')).map(function(a) {
+    return { url: a.dataset.url, caption: a.dataset.caption, type: a.dataset.type, id: a.dataset.id, csrfCaption: a.dataset.csrfCaption };
+  });
+  _lbIdx = Array.from(document.querySelectorAll('[data-lightbox="event-gallery"]')).indexOf(el);
+  if (_lbIdx < 0) _lbIdx = 0;
+  _showLb(_lbIdx);
+  document.getElementById('lightbox').style.display = 'flex';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').style.display = 'none';
+  var v = document.getElementById('lightbox-video'); v.pause(); v.src = '';
+}
+
+function lightboxNav(d) {
+  if (!_lbItems.length) return;
+  _lbIdx = (_lbIdx + d + _lbItems.length) % _lbItems.length;
+  _showLb(_lbIdx);
+}
+
+function _showLb(i) {
+  var item = _lbItems[i];
+  if (!item) return;
+  var img = document.getElementById('lightbox-img'), vid = document.getElementById('lightbox-video');
+  if (item.type === 'video') {
+    img.style.display = 'none'; vid.style.display = 'block'; vid.src = item.url;
+  } else {
+    vid.style.display = 'none'; vid.pause(); img.style.display = 'block'; img.src = item.url; img.alt = item.caption || '';
+  }
+  document.getElementById('lightbox-caption').textContent = item.caption || '';
+  document.getElementById('lightbox-counter').textContent = (i + 1) + ' / ' + _lbItems.length;
+}
+
+function editCurrentCaption() {
+  var item = _lbItems[_lbIdx];
+  if (!item) return;
+  var newCaption = prompt('Modifier la légende :', item.caption || '');
+  if (newCaption === null) return;
+  editCaption(null, item.id, item.caption || '', newCaption, item.csrfCaption);
+  _lbItems[_lbIdx].caption = newCaption;
+  document.getElementById('lightbox-caption').textContent = newCaption;
+}
+
+document.addEventListener('keydown', function(e) {
+  if (document.getElementById('lightbox').style.display === 'none') return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') lightboxNav(-1);
+  if (e.key === 'ArrowRight') lightboxNav(1);
+});
+document.getElementById('lightbox').addEventListener('click', function(e) { if (e.target === this) closeLightbox(); });
+
+// ── Commentaire ────────────────────────────────────────────
+async function postEventComment() {
+  var text = document.getElementById('eventCommentText').value.trim();
+  if (text.length < 3) { showResult('Message trop court.', 'danger'); return; }
+  var fd = new FormData();
+  fd.append('message', text);
+  fd.append('_token', CSRF_COMMENT);
+  var res = await fetch('/memorial/' + PAGE_SLUG + '/evenement/' + EVENT_ID + '/comment', {
+    method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'}
+  });
+  var data = await res.json();
+  if (data.success) {
+    document.getElementById('eventCommentText').value = '';
+    if (data.html) document.getElementById('commentList').insertAdjacentHTML('afterbegin', data.html);
+    showResult(data.message, 'success');
+  } else { showResult(data.error || 'Erreur', 'danger'); }
+}
+
+function showResult(msg, type) {
+  var el = document.getElementById('commentResult');
+  el.innerHTML = '<div class="alert alert-' + type + ' py-1 mb-0 small">' + msg + '</div>';
+  setTimeout(function() { el.innerHTML = ''; }, 4000);
+}
+
+// ── Créer un item galerie (réutilisable) ──────────────────
+function createGalleryItem(id, url, type, caption, csrfDelete, csrfCaption) {
+  var a = document.createElement('a');
+  a.href = 'javascript:void(0)';
+  a.className = 'event-gallery__item';
+  a.dataset.lightbox   = 'event-gallery';
+  a.dataset.url        = url;
+  a.dataset.caption    = caption || '';
+  a.dataset.type       = type || 'photo';
+  a.dataset.id         = id;
+  a.dataset.csrfDelete  = csrfDelete || '';
+  a.dataset.csrfCaption = csrfCaption || '';
+  a.setAttribute('onclick', 'openLightbox(event, this)');
+  a.setAttribute('draggable', 'true');
+
+  if (type === 'video') {
+    a.innerHTML = '<video src="' + url + '" style="width:100%;height:100%;object-fit:cover;" muted></video>'
+      + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">'
+      + '<i class="bi bi-play-circle-fill" style="font-size:2rem;color:white;text-shadow:0 2px 8px rgba(0,0,0,.5);"></i></div>';
+  } else {
+    a.innerHTML = '<img src="' + url + '" alt="' + (caption || 'Photo') + '" loading="lazy">';
+  }
+
+  if (IS_MOD) {
+    var actions = document.createElement('div');
+    actions.className = 'media-actions';
+    actions.style.cssText = 'position:absolute;top:4px;right:4px;display:flex;gap:3px;';
+    actions.setAttribute('onclick', 'event.stopPropagation()');
+    actions.innerHTML =
+      '<button onclick="editCaption(event,' + id + ',\'\',null,\'' + csrfCaption + '\')" '
+      + 'style="background:rgba(255,255,255,.9);color:#1B2B4B;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:.75rem;" title="Légende">'
+      + '<i class="bi bi-pencil"></i></button>'
+      + '<button onclick="deleteMedia(event,' + id + ')" '
+      + 'style="background:rgba(185,28,28,.9);color:white;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:.75rem;" title="Supprimer">'
+      + '<i class="bi bi-trash"></i></button>';
+    a.appendChild(actions);
+  }
+
+  // Drag & drop events
+  addDragEvents(a);
+
+  return a;
+}
+
+// ── Upload média ────────────────────────────────────────────
+async function uploadEventMedia(input) {
+  var files = input.files;
+  if (!files.length) return;
+  for (var i = 0; i < files.length; i++) {
+    var fd = new FormData();
+    fd.append('file', files[i]);
+    fd.append('_token', CSRF_MEDIA);
+    var res  = await fetch('/memorial/' + PAGE_SLUG + '/evenement/' + EVENT_ID + '/media', {
+      method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'}
+    });
+    var data = await res.json();
+    if (data.success && data.url) {
+      var imgUrl = data.url.startsWith('http') ? data.url : '/' + data.url.replace(/^\//, '');
+      var gallery = document.getElementById('eventGallery');
+      if (!gallery) {
+        gallery = document.createElement('div');
+        gallery.id = 'eventGallery';
+        gallery.className = 'event-gallery';
+        document.querySelector('.event-upload-zone').after(gallery);
+      }
+      var item = createGalleryItem(data.id, imgUrl, data.type || 'photo', '', '', '');
+      gallery.prepend(item);
+    }
+  }
+  input.value = '';
+}
+
+// ── Drag & Drop reorder avec SortableJS ──────────────────
+var _sortable = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+  var gallery = document.getElementById('eventGallery');
+  if (!gallery || typeof Sortable === 'undefined') return;
+
+  _sortable = Sortable.create(gallery, {
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    dragClass: 'sortable-drag',
+    handle: null, // toute la carte est draggable
+    filter: '.media-actions, button', // ignorer les boutons
+    preventOnFilter: true,
+    onEnd: function(evt) {
+      saveOrder(gallery);
+    }
+  });
+});
+
+async function saveOrder(gallery) {
+  var ids = Array.from(gallery.querySelectorAll('[data-id]')).map(function(el) { return el.dataset.id; });
+  var fd  = new FormData();
+  ids.forEach(function(id, i) { fd.append('order[' + i + ']', id); });
+  fd.append('_token', {{ csrf_token('media_reorder')|json_encode|raw }});
+  var res = await fetch('/memorial/' + PAGE_SLUG + '/media/reorder', {
+    method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'}
+  });
+  var data = await res.json();
+  if (data.success) {
+    // Toast discret
+    var t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:1rem;right:1rem;background:#1B2B4B;color:white;padding:.5rem 1rem;border-radius:8px;font-size:.8rem;z-index:9999;';
+    t.textContent = '✅ Ordre sauvegardé';
+    document.body.appendChild(t);
+    setTimeout(function() { t.remove(); }, 2000);
+  }
+}
+
+function addDragEvents(el) { /* géré par SortableJS */ }
+
+// ── Supprimer média ─────────────────────────────────────────
+async function deleteMedia(e, mediaId) {
+  e.stopPropagation();
+  if (!confirm('Supprimer cette photo ?')) return;
+  var el = document.querySelector('[data-lightbox="event-gallery"][data-id="' + mediaId + '"]');
+  var fd = new FormData();
+  fd.append('_token', el ? el.dataset.csrfDelete : '');
+  var res  = await fetch('/memorial/' + PAGE_SLUG + '/media/galerie/' + mediaId + '/delete', {
+    method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'}
+  });
+  var data = await res.json();
+  if (data.success && el) el.remove();
+}
+
+// ── Modifier légende ────────────────────────────────────────
+async function editCaption(e, mediaId, currentCaption, newCaptionProvided, csrfToken) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  var newCaption = (newCaptionProvided !== undefined && newCaptionProvided !== null)
+    ? newCaptionProvided : prompt('Modifier la légende :', currentCaption);
+  if (newCaption === null) return;
+  var el = document.querySelector('[data-lightbox="event-gallery"][data-id="' + mediaId + '"]');
+  var token = csrfToken || (el ? el.dataset.csrfCaption : '');
+  var fd = new FormData();
+  fd.append('caption', newCaption);
+  fd.append('_token', token);
+  var res  = await fetch('/memorial/' + PAGE_SLUG + '/media/galerie/' + mediaId + '/caption', {
+    method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'}
+  });
+  var data = await res.json();
+  if (data.success) {
+    if (el) {
+      el.dataset.caption = newCaption;
+      var capEl = el.querySelector('.media-caption');
+      if (newCaption) {
+        if (capEl) { capEl.textContent = newCaption; }
+        else { var cap = document.createElement('div'); cap.className = 'media-caption'; cap.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:white;font-size:.72rem;padding:.25rem .5rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;'; cap.textContent = newCaption; el.appendChild(cap); }
+      } else if (capEl) { capEl.remove(); }
+    }
+    document.getElementById('lightbox-caption').textContent = newCaption;
+  }
+}
+</script>
+{% endblock %}

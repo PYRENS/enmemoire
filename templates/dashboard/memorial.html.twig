@@ -337,45 +337,250 @@
 
 {# Modal Thème #}
 <div class="modal fade" id="themeModal" tabindex="-1" aria-labelledby="themeModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="themeModalLabel"><i class="bi bi-palette"></i> Choisir un thème</h5>
+        <h5 class="modal-title" id="themeModalLabel"><i class="bi bi-palette me-2"></i>Choisir un thème</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <form action="{{ path('app_dashboard_theme', {slug: page.slug}) }}" method="POST">
+      <form action="{{ path('app_dashboard_theme', {slug: page.slug}) }}" method="POST" id="themeForm">
         <div class="modal-body">
           <input type="hidden" name="_token" value="{{ csrf_token('theme_' ~ page.id) }}">
-          <div class="theme-picker-grid">
-            {% for theme in themes is defined ? themes : [] %}
-            <label class="theme-picker-item {% if theme.id == page.theme.id %}theme-picker-item--active{% endif %}
-                                             {% if theme.isPaid and not page.formula.hasPremiumThemes %}theme-picker-item--locked{% endif %}">
-              <input type="radio" name="theme_id" value="{{ theme.id }}"
-                     {% if theme.id == page.theme.id %}checked{% endif %}
-                     {% if theme.isPaid and not page.formula.hasPremiumThemes %}disabled{% endif %}>
-              <div class="theme-picker-preview theme-preview--{{ theme.slug }}"></div>
-              <span class="theme-picker-name">{{ theme.name }}</span>
-              {% if theme.isPaid %}
-                <span class="theme-picker-badge {% if page.formula.hasPremiumThemes %}theme-picker-badge--available{% else %}theme-picker-badge--locked{% endif %}">
-                  {% if page.formula.hasPremiumThemes %}✓ Inclus{% else %}🔒 Premium{% endif %}
-                </span>
-              {% elseif theme.isSpecial %}
-                <span class="theme-picker-badge theme-picker-badge--special">⭐ Spécial</span>
-              {% else %}
-                <span class="theme-picker-badge theme-picker-badge--free">Gratuit</span>
-              {% endif %}
-            </label>
+          <input type="hidden" name="theme_id" id="themeIdInput" value="{{ page.theme ? page.theme.id : '' }}">
+
+          <p class="text-muted small mb-3">
+            Thème actuel : <strong>{{ page.theme ? page.theme.name : 'Classique Blanc' }}</strong>
+            · Cliquez sur un thème pour le sélectionner, puis confirmez.
+          </p>
+
+          {# Palette couleurs par thème #}
+          {% set themePalettes = {
+            'classic-white':  ['#FFFFFF', '#1B2B4B', '#C9A84C', '#F5F5F0'],
+            'nature-green':   ['#F0FDF4', '#14532D', '#22C55E', '#DCFCE7'],
+            'ocean-blue':     ['#EFF6FF', '#1E3A5F', '#3B82F6', '#DBEAFE'],
+            'sunset-warm':    ['#FFF7ED', '#7C2D12', '#F97316', '#FED7AA'],
+            'night-stars':    ['#0F172A', '#E2E8F0', '#818CF8', '#1E293B'],
+            'african-gold':   ['#FEF3C7', '#3B1F00', '#D97706', '#92400E'],
+            'royal-purple':   ['#FAF5FF', '#1E1B4B', '#A855F7', '#DDD6FE'],
+            'cherry-blossom': ['#FFF1F2', '#500724', '#F472B6', '#FBCFE8'],
+            'golden-light':   ['#FFFBEB', '#451A03', '#F59E0B', '#FDE68A'],
+            'eternal-black':  ['#111111', '#1A1A1A', '#D4AF37', '#2A2A2A'],
+          } %}
+
+          <div class="theme-picker-grid" id="themePickerGrid">
+            {% for theme in themes %}
+              {% set palette = themePalettes[theme.slug] ?? ['#eee','#333','#999','#ccc'] %}
+              {% set isActive = page.theme and page.theme.id == theme.id %}
+              {% set isSpecial = theme.isSpecial() %}
+              {% set isLocked = isSpecial and not is_granted('ROLE_ADMIN') %}
+
+              <div class="theme-picker-item {% if isActive %}theme-picker-item--active{% endif %} {% if isLocked %}theme-picker-item--locked{% endif %}"
+                   data-theme-id="{{ theme.id }}"
+                   data-theme-name="{{ theme.name }}"
+                   data-locked="{{ isLocked ? 'true' : 'false' }}"
+                   onclick="pickTheme(this)">
+
+                {# Aperçu couleurs #}
+                <div class="theme-picker-preview">
+                  {% for color in palette %}
+                    <div style="flex:1; background:{{ color }};"></div>
+                  {% endfor %}
+                  {% if isActive %}
+                    <div class="theme-picker-check"><i class="bi bi-check-lg"></i></div>
+                  {% endif %}
+                  {% if isLocked %}
+                    <div class="theme-picker-lock"><i class="bi bi-lock-fill"></i></div>
+                  {% endif %}
+                </div>
+
+                {# Infos #}
+                <div class="theme-picker-info">
+                  <strong class="theme-picker-name">{{ theme.name }}</strong>
+                  <div class="d-flex align-items-center gap-1 mt-1">
+                    {% if isSpecial %}
+                      <span class="badge" style="background:#7C3AED;font-size:.65rem;">⭐ Spécial</span>
+                    {% elseif theme.isPaid() %}
+                      <span class="badge bg-warning text-dark" style="font-size:.65rem;">Premium</span>
+                    {% else %}
+                      <span class="badge bg-success" style="font-size:.65rem;">Gratuit</span>
+                    {% endif %}
+                    {% if isActive %}
+                      <span class="badge bg-primary" style="font-size:.65rem;">Actuel</span>
+                    {% endif %}
+                  </div>
+                  {% if theme.description %}
+                    <small class="text-muted d-block mt-1" style="font-size:.72rem;">{{ theme.description }}</small>
+                  {% endif %}
+                </div>
+
+              </div>
             {% endfor %}
           </div>
+
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer align-items-center">
+          <span class="text-muted small me-auto" id="themeSelectionInfo">
+            Aucun thème sélectionné
+          </span>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="submit" class="em-btn em-btn--primary">Appliquer le thème</button>
+          <button type="submit" class="em-btn em-btn--primary" id="themeApplyBtn" disabled>
+            <i class="bi bi-check me-1"></i>Appliquer le thème
+          </button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+<style>
+.theme-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: .875rem;
+}
+.theme-picker-item {
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all .18s ease;
+  background: #fff;
+  user-select: none;
+}
+.theme-picker-item:hover:not(.theme-picker-item--locked) {
+  border-color: #6B7280;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.1);
+}
+.theme-picker-item--active {
+  border-color: #1B2B4B;
+  box-shadow: 0 0 0 3px rgba(27,43,75,.15);
+}
+.theme-picker-item--selected {
+  border-color: #3B82F6 !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.2) !important;
+}
+.theme-picker-item--locked {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.theme-picker-preview {
+  display: flex;
+  height: 56px;
+  position: relative;
+}
+.theme-picker-check,
+.theme-picker-lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: white;
+  text-shadow: 0 1px 4px rgba(0,0,0,.6);
+  background: rgba(0,0,0,.15);
+}
+.theme-picker-info {
+  padding: .5rem .6rem .6rem;
+}
+.theme-picker-name {
+  font-size: .82rem;
+  display: block;
+}
+</style>
+
+<script>
+(function() {
+  var currentThemeId = {{ (page.theme ? page.theme.id : 0)|json_encode|raw }};
+  var selectedId = null;
+
+  window.pickTheme = function(el) {
+    if (el.dataset.locked === 'true') {
+      alert('Ce thème est réservé aux administrateurs.');
+      return;
+    }
+    var id   = parseInt(el.dataset.themeId);
+    var name = el.dataset.themeName;
+
+    selectedId = id;
+    document.getElementById('themeIdInput').value = id;
+
+    // Visuel
+    document.querySelectorAll('.theme-picker-item').forEach(function(c) {
+      c.classList.remove('theme-picker-item--selected');
+    });
+    el.classList.add('theme-picker-item--selected');
+
+    // Footer
+    document.getElementById('themeSelectionInfo').textContent =
+      id === currentThemeId
+        ? 'Thème actuel sélectionné'
+        : 'Sélectionné : ' + name;
+    document.getElementById('themeApplyBtn').disabled = (id === currentThemeId);
+  };
+
+  // Soumission Ajax
+  document.getElementById('themeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('themeApplyBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Application…';
+
+    var fd = new FormData(this);
+    fetch(this.action, {
+      method: 'POST',
+      body: fd,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        // Mettre à jour le badge "actuel"
+        document.querySelectorAll('.theme-picker-item').forEach(function(c) {
+          c.classList.remove('theme-picker-item--active', 'theme-picker-item--selected');
+          var chk = c.querySelector('.theme-picker-check');
+          if (chk) chk.remove();
+        });
+        var activeCard = document.querySelector('[data-theme-id="' + selectedId + '"]');
+        if (activeCard) {
+          activeCard.classList.add('theme-picker-item--active');
+          var chk = document.createElement('div');
+          chk.className = 'theme-picker-check';
+          chk.innerHTML = '<i class="bi bi-check-lg"></i>';
+          activeCard.querySelector('.theme-picker-preview').appendChild(chk);
+        }
+        currentThemeId = selectedId;
+
+        // Fermer modal + toast
+        bootstrap.Modal.getInstance(document.getElementById('themeModal')).hide();
+        showDashToast('✅ ' + data.message, 'success');
+
+        // Mettre à jour le nom dans le header
+        var themeLabel = document.querySelector('.dashboard-main__subtitle strong:last-child');
+        if (themeLabel) themeLabel.textContent = data.themeName;
+
+      } else {
+        showDashToast('❌ ' + (data.error || 'Erreur'), 'danger');
+      }
+    })
+    .catch(function() { showDashToast('❌ Erreur réseau', 'danger'); })
+    .finally(function() {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-check me-1"></i>Appliquer le thème';
+    });
+  });
+
+  function showDashToast(msg, type) {
+    var t = document.createElement('div');
+    t.className = 'alert alert-' + type + ' position-fixed bottom-0 end-0 m-3 shadow-lg';
+    t.style.cssText = 'z-index:9999;min-width:300px;';
+    t.innerHTML = msg;
+    document.body.appendChild(t);
+    setTimeout(function() { t.remove(); }, 4000);
+  }
+})();
+</script>
 
 {# Modal Rapprochement familial #}
 <div class="modal fade" id="connectionModal" tabindex="-1" aria-hidden="true">
