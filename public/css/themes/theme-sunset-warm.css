@@ -1,19 +1,23 @@
-/* ============================
-   Thème : Coucher de Soleil (FREE)
-   ============================ */
-[data-theme="sunset-warm"] {
-  --theme-bg:           #FDF6EE;
-  --theme-bg-alt:       #FAF0E4;
-  --theme-surface:      #FFFFFF;
-  --theme-text:         #3D2010;
-  --theme-text-muted:   #8C5A38;
-  --theme-heading:      #6B2F0A;
-  --theme-accent:       #D4622A;
-  --theme-accent-light: #E8905E;
-  --theme-border:       rgba(107, 47, 10, 0.12);
-  --theme-hero-overlay: linear-gradient(to bottom, rgba(180, 60, 10, 0.45), rgba(50, 20, 5, 0.70));
-  --theme-card-shadow:  0 4px 16px rgba(107, 47, 10, 0.10);
+/* Coucher de Soleil (FREE) */
+:root {
+  --em-gold:         #D4622A;
+  --em-navy:         #6B2F0A;
+  --em-bg:           #FDF6EE;
+  --em-bg-card:      #FFFFFF;
+  --em-bg-hero:      linear-gradient(160deg, #3D1A05 0%, #7C2D12 40%, #C2410C 70%, #EA580C 100%);
+  --em-cream:        #FAF0E4;
+  --em-stone:        rgba(107,47,10,.12);
+  --em-text:         #3D2010;
+  --em-text-light:   #D4622A;
+  --em-muted:        #8C5A38;
+  --em-charcoal:     #5C3018;
+  --em-hero-overlay: rgba(50,20,5,.60);
+  --em-border:       rgba(107,47,10,.12);
+  --em-shadow:       rgba(107,47,10,.10);
+  --em-primary:      #D4622A;
+  --em-primary-dark: #6B2F0A;
+  --em-primary-light:#E8905E;
 }
-[data-theme="sunset-warm"] .memorial-accent { color: #D4622A; }
+[data-theme="sunset-warm"] .memorial-hero { background: var(--em-bg-hero); }
 [data-theme="sunset-warm"] .em-btn--primary { background: #D4622A; border-color: #D4622A; }
-[data-theme="sunset-warm"] .em-btn--primary:hover { background: #E8905E; border-color: #E8905E; box-shadow: 0 4px 16px rgba(212, 98, 42, 0.35); }
+[data-theme="sunset-warm"] .em-btn--primary:hover { background: #E8905E; }

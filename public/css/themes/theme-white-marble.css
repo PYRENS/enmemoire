@@ -1,0 +1,56 @@
+/* ============================
+   Thème : Marbre Blanc (PAID)
+   Motif : Marbre luxueux
+   ============================ */
+[data-theme="white-marble"] {
+  --theme-bg: #FAFAF8;
+}
+
+/* Variables injectées via base.html.twig — ajouter dans le bloc Twig :
+  'white-marble':
+  :root { --em-gold:#8B7355; --em-navy:#2C2417; --em-bg:#FAFAF8; --em-cream:#F5F2EE; --em-stone:rgba(44,36,23,.10); --em-muted:#7A6E5F; --em-charcoal:#5C5248; }
+  .memorial-hero { background: linear-gradient(160deg,#1A1510 0%,#2C2417 50%,#4A3C28 100%) !important; }
+*/
+
+/* Texture marbre CSS */
+[data-theme="white-marble"] .memorial-content {
+  background-color: #FAFAF8;
+  background-image:
+    repeating-linear-gradient(105deg, transparent 0, transparent 3px, rgba(44,36,23,.015) 3px, rgba(44,36,23,.015) 4px),
+    repeating-linear-gradient(15deg, transparent 0, transparent 8px, rgba(44,36,23,.01) 8px, rgba(44,36,23,.01) 9px),
+    repeating-linear-gradient(75deg, transparent 0, transparent 12px, rgba(180,160,120,.03) 12px, rgba(180,160,120,.03) 13px);
+}
+
+/* Veines de marbre sur le hero */
+[data-theme="white-marble"] .memorial-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(78deg, transparent 0%, transparent 45%, rgba(255,255,255,.04) 45%, rgba(255,255,255,.04) 46%, transparent 46%),
+    repeating-linear-gradient(102deg, transparent 0%, transparent 30%, rgba(255,255,255,.03) 30%, rgba(255,255,255,.03) 31%, transparent 31%);
+  pointer-events: none;
+}
+
+/* Bordure luxueuse dorée sur les cards */
+[data-theme="white-marble"] .memorial-form-card,
+[data-theme="white-marble"] .memorial-condolence,
+[data-theme="white-marble"] .memorial-guestbook__entry {
+  border: 1px solid rgba(139,115,85,.15);
+  border-top: 2px solid rgba(139,115,85,.4);
+  box-shadow: 0 2px 20px rgba(44,36,23,.06), inset 0 1px 0 rgba(255,255,255,.8);
+}
+
+/* Séparateurs marbrés */
+[data-theme="white-marble"] .memorial-panel h2 {
+  color: #2C2417 !important;
+  border-left: 3px solid #8B7355;
+  padding-left: .75rem;
+}
+
+[data-theme="white-marble"] .memorial-stat strong { color: #8B7355 !important; }
+[data-theme="white-marble"] .memorial-tab.active { border-bottom-color: #8B7355 !important; color: #2C2417 !important; }
+[data-theme="white-marble"] .memorial-name { color: #F5F2EE !important; }
+[data-theme="white-marble"] .memorial-dates,
+[data-theme="white-marble"] .memorial-place { color: rgba(245,242,238,.7) !important; }
+[data-theme="white-marble"] .em-btn--primary { background: #8B7355 !important; border-color: #8B7355 !important; }

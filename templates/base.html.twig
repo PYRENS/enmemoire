@@ -22,6 +22,89 @@
         <link rel="stylesheet" href="{{ asset('css/themes/theme-' ~ memorial_theme ~ '.css') }}">
     {% endif %}
     {% block stylesheets %}{% endblock %}
+    {# Injection forcée des variables du thème — écrase app.css #}
+    {% if memorial_theme is defined and memorial_theme and memorial_theme != 'classic-white' %}
+    <style id="theme-vars">
+    {% if memorial_theme == 'nature-green' %}
+      :root { --em-gold:#4A8C5C; --em-navy:#1E4D2B; --em-bg:#F4F8F2; --em-cream:#EBF3E8; --em-stone:rgba(30,77,43,.15); --em-muted:#5A7A5C; --em-charcoal:#3E5E40; }
+      .memorial-hero { background: linear-gradient(160deg,#0D2E14 0%,#1E4D2B 50%,#2D7A45 100%) !important; }
+    {% elseif memorial_theme == 'ocean-blue' %}
+      :root { --em-gold:#1E6FA8; --em-navy:#0D3159; --em-bg:#F0F5FA; --em-cream:#E4EEF7; --em-stone:rgba(13,49,89,.12); --em-muted:#4A6785; --em-charcoal:#2A4060; }
+      .memorial-hero { background: linear-gradient(160deg,#081E3A 0%,#0D3159 50%,#1E5F8C 100%) !important; }
+    {% elseif memorial_theme == 'sunset-warm' %}
+      :root { --em-gold:#D4622A; --em-navy:#6B2F0A; --em-bg:#FDF6EE; --em-cream:#FAF0E4; --em-stone:rgba(107,47,10,.12); --em-muted:#8C5A38; --em-charcoal:#5C3018; }
+      .memorial-hero { background: linear-gradient(160deg,#3D1A05 0%,#7C2D12 40%,#C2410C 70%,#EA580C 100%) !important; }
+    {% elseif memorial_theme == 'african-gold' %}
+      :root { --em-gold:#D4A017; --em-navy:#1C1008; --em-bg:#1C1008; --em-cream:#241408; --em-stone:rgba(212,160,23,.20); --em-muted:#A8906C; --em-charcoal:#C8A878; }
+      body, .em-main { background:#1C1008 !important; color:#F0E0C8 !important; }
+      .memorial-hero { background: linear-gradient(160deg,#0A0600 0%,#1C1008 50%,#2C1A0A 100%) !important; }
+      .memorial-name { color:#F5D89A !important; }
+      .memorial-tabs-wrap, .memorial-content { background:#1C1008 !important; }
+      .memorial-form-card, .memorial-condolence, .memorial-guestbook__entry { background:#2C1A0A !important; color:#F0E0C8 !important; }
+      .memorial-footer { background:#241408 !important; }
+    {% elseif memorial_theme == 'night-stars' %}
+      :root { --em-gold:#C9A84C; --em-navy:#0E1628; --em-bg:#0E1628; --em-cream:#131D35; --em-stone:rgba(255,255,255,.08); --em-muted:#7A90B0; --em-charcoal:#A0B0C8; }
+      body, .em-main { background:#0E1628 !important; color:#D4DCE8 !important; }
+      .memorial-hero { background: linear-gradient(160deg,#060C1A 0%,#0E1628 60%,#131D35 100%) !important; }
+      .memorial-name { color:#E8EEF8 !important; }
+      .memorial-tabs-wrap, .memorial-content { background:#0E1628 !important; }
+      .memorial-form-card, .memorial-condolence, .memorial-guestbook__entry { background:#1A2540 !important; color:#D4DCE8 !important; }
+      .memorial-footer { background:#131D35 !important; }
+    {% elseif memorial_theme == 'cherry-blossom' %}
+      :root { --em-gold:#F9A8D4; --em-navy:#500724; --em-bg:#FFF1F2; --em-cream:#FFE4E6; --em-stone:rgba(190,24,93,.12); --em-muted:#BE185D; --em-charcoal:#9D174D; }
+      .memorial-hero { background: linear-gradient(160deg,#500724 0%,#9D174D 50%,#BE185D 100%) !important; }
+    {% elseif memorial_theme == 'golden-light' %}
+      :root { --em-gold:#F59E0B; --em-navy:#451A03; --em-bg:#FFFBEB; --em-cream:#FEF3C7; --em-stone:rgba(180,83,9,.14); --em-muted:#B45309; --em-charcoal:#92400E; }
+      .memorial-hero { background: linear-gradient(160deg,#451A03 0%,#92400E 40%,#B45309 70%,#D97706 100%) !important; }
+    {% elseif memorial_theme == 'royal-purple' %}
+      :root { --em-gold:#C4B5FD; --em-navy:#1E1B4B; --em-bg:#FAF5FF; --em-cream:#F3E8FF; --em-stone:rgba(107,33,168,.15); --em-muted:#6D28D9; --em-charcoal:#4C1D95; }
+      .memorial-hero { background: linear-gradient(160deg,#1E1B4B 0%,#4C1D95 50%,#6B21A8 100%) !important; }
+    {% elseif memorial_theme == 'eternal-black' %}
+      :root { --em-gold:#D4AF37; --em-navy:#0A0A0A; --em-bg:#111111; --em-cream:#1A1A1A; --em-stone:#2A2A2A; --em-muted:#888888; --em-charcoal:#AAAAAA; }
+      body, .em-main { background:#111111 !important; color:#E5E5E5 !important; }
+      .memorial-hero { background: linear-gradient(160deg,#000 0%,#0D0D0D 50%,#1A1A1A 100%) !important; }
+      .memorial-tabs-wrap, .memorial-content { background:#111111 !important; }
+      .memorial-form-card, .memorial-condolence, .memorial-guestbook__entry { background:#1A1A1A !important; color:#E5E5E5 !important; }
+      .memorial-footer { background:#0D0D0D !important; }
+    {% elseif memorial_theme == 'sahara-sand' %}
+      :root { --em-gold:#C8860A; --em-navy:#5C3D11; --em-bg:#FAF3E0; --em-cream:#F5E6C8; --em-stone:rgba(92,61,17,.12); --em-muted:#8B6914; --em-charcoal:#6B4F1A; }
+      .memorial-hero { background: linear-gradient(160deg,#3D2408 0%,#7A4A1A 40%,#C8860A 100%) !important; }
+    {% elseif memorial_theme == 'rose-eternal' %}
+      :root { --em-gold:#E11D48; --em-navy:#881337; --em-bg:#FFF5F7; --em-cream:#FFE4E6; --em-stone:rgba(225,29,72,.12); --em-muted:#BE123C; --em-charcoal:#9F1239; }
+      .memorial-hero { background: linear-gradient(160deg,#4C0519 0%,#881337 50%,#BE123C 100%) !important; }
+    {% elseif memorial_theme == 'aurora-sky' %}
+      :root { --em-gold:#34D399; --em-navy:#0F172A; --em-bg:#0F172A; --em-cream:#1E293B; --em-stone:rgba(52,211,153,.12); --em-muted:#64748B; --em-charcoal:#94A3B8; }
+      body, .em-main { background:#0F172A !important; color:#E2E8F0 !important; }
+      .memorial-hero { background: linear-gradient(160deg,#0F172A 0%,#1E3A5F 40%,#0F4C3A 100%) !important; }
+      .memorial-tabs-wrap, .memorial-content { background:#0F172A !important; }
+      .memorial-name { color:#F0FDF4 !important; }
+      .memorial-form-card, .memorial-condolence, .memorial-guestbook__entry { background:#1E293B !important; color:#E2E8F0 !important; }
+      .memorial-footer { background:#1E293B !important; }
+    {% elseif memorial_theme == 'white-marble' %}
+      :root { --em-gold:#8B7355; --em-navy:#2C2417; --em-bg:#FAFAF8; --em-cream:#F5F2EE; --em-stone:rgba(44,36,23,.10); --em-muted:#7A6E5F; --em-charcoal:#5C5248; }
+      .memorial-hero { background: linear-gradient(160deg,#1A1510 0%,#2C2417 50%,#4A3C28 100%) !important; }
+    {% elseif memorial_theme == 'congo-green' %}
+      :root { --em-gold:#F59E0B; --em-navy:#14532D; --em-bg:#F0F7EE; --em-cream:#DCFCE7; --em-stone:rgba(20,83,45,.12); --em-muted:#166534; --em-charcoal:#15803D; }
+      .memorial-hero { background: linear-gradient(160deg,#052E16 0%,#14532D 50%,#166534 100%) !important; }
+    {% elseif memorial_theme == 'kinshasa-night' %}
+      :root { --em-gold:#F97316; --em-navy:#0D0D1A; --em-bg:#0D0D1A; --em-cream:#161625; --em-stone:rgba(249,115,22,.15); --em-muted:#6B7280; --em-charcoal:#9CA3AF; }
+      body, .em-main { background:#0D0D1A !important; color:#E5E7EB !important; }
+      .memorial-hero { background: linear-gradient(180deg,#0D0D1A 0%,#1A0A00 60%,#2D1200 100%) !important; }
+      .memorial-tabs-wrap, .memorial-content { background:#0D0D1A !important; }
+      .memorial-name { color:#FFF7ED !important; }
+      .memorial-form-card, .memorial-condolence, .memorial-guestbook__entry { background:#161625 !important; color:#E5E7EB !important; }
+      .memorial-footer { background:#161625 !important; }
+    {% elseif memorial_theme == 'callas-noir' %}
+      :root { --em-gold:#D4A843; --em-navy:#0A0A0A; --em-bg:#111111; --em-cream:#1A1A1A; --em-stone:rgba(212,168,67,.15); --em-muted:#8A8A8A; --em-charcoal:#C0C0C0; }
+      body, .em-main { background:#111111 !important; color:#E8E8E8 !important; }
+      .memorial-hero { background: radial-gradient(ellipse at top,#1C1C1C 0%,#0A0A0A 70%) !important; }
+      .memorial-tabs-wrap, .memorial-content { background:#111111 !important; }
+      .memorial-name { color:#FFFFFF !important; font-style:italic !important; text-shadow:0 2px 20px rgba(212,168,67,.3) !important; }
+      .memorial-form-card, .memorial-condolence, .memorial-guestbook__entry { background:#1A1A1A !important; color:#E8E8E8 !important; }
+      .memorial-footer { background:#0A0A0A !important; }
+    {% endif %}
+    </style>
+    {% endif %}
 </head>
 <body class="{% block body_class %}{% endblock %} {{ app.user ? 'user-logged' : 'user-guest' }}">
 

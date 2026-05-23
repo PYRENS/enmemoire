@@ -1,7 +1,6 @@
 /* ==========================================================
    theme-base.css — Variables de base communes à tous les thèmes
    ========================================================== */
-
 [data-theme] {
   /* Ces variables sont surchargées par chaque thème */
   --theme-bg:           #FFFFFF;
@@ -18,46 +17,111 @@
   --theme-candle-color: #FFA040;
   --theme-flower-color: #E8C0C0;
   --theme-dove-color:   #FFFFFF;
-
-  /* Fonts spécifiques au thème (surchargeable) */
   --theme-font-display: var(--font-display);
   --theme-font-body:    var(--font-body);
 }
 
-/* Zones qui appliquent le thème */
-.memorial-page-wrapper {
+/* ── Application directe sur les éléments de la page mémorielle ── */
+
+/* Background général */
+[data-theme] .em-main,
+[data-theme] .memorial-content,
+[data-theme] body {
   background: var(--theme-bg);
   color: var(--theme-text);
-  font-family: var(--theme-font-body);
 }
 
-.memorial-page-wrapper h1,
-.memorial-page-wrapper h2,
-.memorial-page-wrapper h3,
-.memorial-page-wrapper h4 {
-  font-family: var(--theme-font-display);
+/* Headings */
+[data-theme] .memorial-name,
+[data-theme] .memorial-section h2,
+[data-theme] .memorial-panel h2,
+[data-theme] .memorial-section__title {
   color: var(--theme-heading);
+  font-family: var(--theme-font-display);
 }
 
-.memorial-hero {
-  background-size: cover;
-  background-position: center;
+/* Hero overlay */
+[data-theme] .memorial-hero {
   position: relative;
 }
-
-.memorial-hero__overlay {
+[data-theme] .memorial-cover::after,
+[data-theme] .memorial-hero::before {
   background: var(--theme-hero-overlay);
 }
 
-.memorial-section {
-  background: var(--theme-bg-alt);
-}
-
-.memorial-card {
+/* Cards / panels */
+[data-theme] .memorial-form-card,
+[data-theme] .memorial-condolence,
+[data-theme] .em-card,
+[data-theme] .memorial-guestbook__entry {
   background: var(--theme-surface);
-  border: 1px solid var(--theme-border);
+  border-color: var(--theme-border);
   box-shadow: var(--theme-card-shadow);
 }
 
-.memorial-accent { color: var(--theme-accent); }
-.memorial-accent-bg { background: var(--theme-accent); color: white; }
+/* Texte muted */
+[data-theme] .memorial-dates,
+[data-theme] .memorial-place,
+[data-theme] .memorial-profession,
+[data-theme] .text-muted {
+  color: var(--theme-text-muted) !important;
+}
+
+/* Accents / boutons */
+[data-theme] .em-btn--primary {
+  background: var(--theme-accent);
+  border-color: var(--theme-accent);
+}
+[data-theme] .em-btn--primary:hover {
+  background: var(--theme-accent-light);
+  border-color: var(--theme-accent-light);
+}
+[data-theme] .memorial-accent { color: var(--theme-accent); }
+[data-theme] .memorial-accent-bg { background: var(--theme-accent); }
+
+/* Tabs */
+[data-theme] .memorial-tab.active {
+  border-bottom-color: var(--theme-accent);
+  color: var(--theme-heading);
+}
+[data-theme] .gallery-tab.active {
+  border-bottom-color: var(--theme-accent);
+  color: var(--theme-heading);
+}
+[data-theme] .gallery-tab.active .gallery-tab__count {
+  background: var(--theme-accent);
+  color: white;
+}
+
+/* Events */
+[data-theme] .memorial-event-card {
+  background: var(--theme-surface);
+  border-color: var(--theme-border);
+}
+[data-theme] .memorial-event-card__date {
+  background: var(--theme-accent);
+}
+
+/* Timeline */
+[data-theme] .memorial-timeline__dot {
+  background: var(--theme-accent);
+  border-color: var(--theme-heading);
+}
+
+/* Footer mémoriel */
+[data-theme] .memorial-footer {
+  background: var(--theme-bg-alt);
+  border-top: 1px solid var(--theme-border);
+}
+
+/* Sections alternées */
+[data-theme] .memorial-tabs-wrap {
+  background: var(--theme-bg);
+  border-bottom: 1px solid var(--theme-border);
+}
+
+/* Ancien sélecteur conservé pour compatibilité */
+.memorial-page-wrapper {
+  background: var(--theme-bg);
+  color: var(--theme-text);
+}

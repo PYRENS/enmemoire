@@ -10,7 +10,32 @@
 .sortable-chosen  { box-shadow: 0 8px 24px rgba(0,0,0,.3) !important; transform: scale(1.04); z-index: 10; }
 .sortable-drag    { opacity: .9; }
 
-/* Onglets galerie */
+/* Dropdown événements */
+.event-switcher-btn {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: rgba(255,255,255,.15); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.3); color: white;
+  padding: .45rem 1rem; border-radius: 20px; cursor: pointer;
+  font-size: .85rem; transition: background .2s;
+}
+.event-switcher-btn:hover { background: rgba(255,255,255,.25); }
+.event-dropdown {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  background: white; border-radius: 12px; min-width: 240px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.2); z-index: 100;
+  overflow: hidden; border: 1px solid #e5e7eb;
+}
+.event-dropdown__item {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .75rem 1rem; text-decoration: none; color: #1B2B4B;
+  transition: background .15s; border-bottom: 1px solid #f3f4f6;
+}
+.event-dropdown__item:last-child { border-bottom: none; }
+.event-dropdown__item:hover { background: #f9fafb; }
+.event-dropdown__item span:last-child { display: flex; flex-direction: column; }
+.event-dropdown__item strong { font-size: .875rem; line-height: 1.3; }
+.event-dropdown__item small { color: #9CA3AF; font-size: .75rem; }
+.event-dropdown__icon { font-size: 1.1rem; flex-shrink: 0; }
 .gallery-tabs { display: flex; gap: .5rem; margin-bottom: 1.25rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
 .gallery-tab { display: flex; align-items: center; gap: .4rem; padding: .6rem 1.25rem; border: none; background: none; font-size: .9rem; color: #6B7280; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s; border-radius: 6px 6px 0 0; }
 .gallery-tab:hover { color: var(--em-navy, #1B2B4B); background: #f9fafb; }
@@ -93,6 +118,39 @@
           {% endif %}
         </div>
       </div>
+
+      {# Centre : dropdown autres événements #}
+      {% if page.events|length > 1 %}
+      <div style="display:flex;align-items:flex-end;justify-content:center;flex:1;">
+        <div class="event-hero__switcher" style="position:relative;">
+          <button onclick="toggleEventDropdown()" class="event-switcher-btn">
+            <i class="bi bi-calendar-event me-1"></i>
+            Autres événements
+            <i class="bi bi-chevron-down ms-1" id="switcher-chevron"></i>
+          </button>
+          <div id="event-dropdown" class="event-dropdown" style="display:none;left:50%;transform:translateX(-50%);">
+            {% for ev in page.events %}
+              {% if ev.id != event.id %}
+              <a href="{{ path('app_memorial_event_show', {slug: page.slug, eventId: ev.id}) }}" class="event-dropdown__item">
+                <span class="event-dropdown__icon">
+                  {% if ev.type == 'funeral' %}⚰️
+                  {% elseif ev.type == 'commemoration' %}🕊️
+                  {% elseif ev.type == 'anniversary_mass' %}⛪
+                  {% elseif ev.type == 'reception' %}🤝
+                  {% else %}📌{% endif %}
+                </span>
+                <span>
+                  <strong>{{ ev.title }}</strong>
+                  <small>{{ ev.eventDate|date('d/m/Y') }}</small>
+                </span>
+              </a>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="event-hero__portrait">
         {% if page.mainPhotoUrl %}
           <img src="{{ page.mainPhotoUrl starts with 'http' ? page.mainPhotoUrl : asset(page.mainPhotoUrl) }}" alt="{{ page.deceasedFullName }}" class="event-hero__portrait-img">
@@ -103,6 +161,7 @@
         <div class="event-hero__portrait-dates">{{ page.deceasedBirthDate|date('Y') }} — {{ page.deceasedDeathDate|date('Y') }}</div>
       </div>
     </div>
+
   </div>
 </section>
 
@@ -131,10 +190,22 @@
     </h2>
 
     {% if isModerator %}
-    <div class="event-upload-zone mb-3" onclick="document.getElementById('eventPhotoInput').click()">
+    <div class="event-upload-zone mb-3" id="uploadZone" onclick="document.getElementById('eventPhotoInput').click()">
       <input type="file" id="eventPhotoInput" accept="image/*,video/*" multiple onchange="uploadEventMedia(this)">
-      <i class="bi bi-cloud-upload" style="font-size:1.5rem;color:#9CA3AF;"></i>
-      <p class="mb-0 mt-1 text-muted small">Cliquez pour ajouter des photos/vidéos à cet événement</p>
+      <div id="uploadIdle">
+        <i class="bi bi-cloud-upload" style="font-size:1.5rem;color:#9CA3AF;"></i>
+        <p class="mb-0 mt-1 text-muted small">Cliquez pour ajouter des photos/vidéos à cet événement</p>
+      </div>
+      <div id="uploadProgress" style="display:none;">
+        <div class="d-flex align-items-center justify-content-center gap-3">
+          <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+          <span id="uploadProgressText" class="text-muted small">Upload en cours…</span>
+        </div>
+        <div class="progress mt-2" style="height:6px;border-radius:3px;">
+          <div id="uploadProgressBar" class="progress-bar bg-primary progress-bar-striped progress-bar-animated"
+               style="width:0%;transition:width .3s;"></div>
+        </div>
+      </div>
     </div>
     {% endif %}
 
@@ -321,6 +392,22 @@ var IS_MOD       = {{ isModerator ? 'true' : 'false' }};
 var CSRF_COMMENT = {{ csrf_token('event_comment_' ~ event.id)|json_encode|raw }};
 var CSRF_MEDIA   = {{ csrf_token('event_media_' ~ event.id)|json_encode|raw }};
 
+// ── Dropdown événements ───────────────────────────────────
+function toggleEventDropdown() {
+  var dd  = document.getElementById('event-dropdown');
+  var chv = document.getElementById('switcher-chevron');
+  var open = dd.style.display === 'block';
+  dd.style.display  = open ? 'none' : 'block';
+  chv.className = open ? 'bi bi-chevron-down ms-1' : 'bi bi-chevron-up ms-1';
+}
+document.addEventListener('click', function(e) {
+  var switcher = document.querySelector('.event-hero__switcher');
+  if (switcher && !switcher.contains(e.target)) {
+    var dd = document.getElementById('event-dropdown');
+    if (dd) { dd.style.display = 'none'; document.getElementById('switcher-chevron').className = 'bi bi-chevron-down ms-1'; }
+  }
+});
+
 // ── Onglets galerie photos/vidéos ────────────────────────
 function switchGalleryTab(tab, btn) {
   document.getElementById('gallery-photos').style.display = tab === 'photos' ? 'block' : 'none';
@@ -457,27 +544,63 @@ function createGalleryItem(id, url, type, caption, csrfDelete, csrfCaption) {
 async function uploadEventMedia(input) {
   var files = input.files;
   if (!files.length) return;
+
+  var zone     = document.getElementById('uploadZone');
+  var idle     = document.getElementById('uploadIdle');
+  var progress = document.getElementById('uploadProgress');
+  var bar      = document.getElementById('uploadProgressBar');
+  var text     = document.getElementById('uploadProgressText');
+
+  // Désactiver le clic pendant l'upload
+  zone.style.pointerEvents = 'none';
+  idle.style.display = 'none';
+  progress.style.display = 'block';
+
+  var total     = files.length;
+  var completed = 0;
+
   for (var i = 0; i < files.length; i++) {
+    text.textContent = 'Upload ' + (i + 1) + ' / ' + total + '…';
+    bar.style.width  = Math.round((i / total) * 100) + '%';
+
     var fd = new FormData();
     fd.append('file', files[i]);
     fd.append('_token', CSRF_MEDIA);
-    var res  = await fetch('/memorial/' + PAGE_SLUG + '/evenement/' + EVENT_ID + '/media', {
-      method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'}
-    });
-    var data = await res.json();
-    if (data.success && data.url) {
-      var imgUrl = data.url.startsWith('http') ? data.url : '/' + data.url.replace(/^\//, '');
-      var gallery = document.getElementById('eventGallery');
-      if (!gallery) {
-        gallery = document.createElement('div');
-        gallery.id = 'eventGallery';
-        gallery.className = 'event-gallery';
-        document.querySelector('.event-upload-zone').after(gallery);
+
+    try {
+      var res  = await fetch('/memorial/' + PAGE_SLUG + '/evenement/' + EVENT_ID + '/media', {
+        method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'}
+      });
+      var data = await res.json();
+
+      if (data.success && data.url) {
+        var imgUrl  = data.url.startsWith('http') ? data.url : '/' + data.url.replace(/^\//, '');
+        var gallery = document.getElementById('eventGallery');
+        if (!gallery) {
+          gallery = document.createElement('div');
+          gallery.id        = 'eventGallery';
+          gallery.className = 'event-gallery';
+          document.querySelector('.event-upload-zone').after(gallery);
+        }
+        var item = createGalleryItem(data.id, imgUrl, data.type || 'photo', '', '', '');
+        gallery.prepend(item);
+        completed++;
       }
-      var item = createGalleryItem(data.id, imgUrl, data.type || 'photo', '', '', '');
-      gallery.prepend(item);
+    } catch (err) {
+      console.error('Upload error:', err);
     }
   }
+
+  bar.style.width = '100%';
+  text.textContent = completed + ' / ' + total + ' fichier(s) uploadé(s) ✅';
+
+  setTimeout(function() {
+    idle.style.display     = 'block';
+    progress.style.display = 'none';
+    bar.style.width        = '0%';
+    zone.style.pointerEvents = 'auto';
+  }, 1500);
+
   input.value = '';
 }
 

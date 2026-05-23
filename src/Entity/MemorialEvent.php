@@ -7,8 +7,6 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Types\UuidType;
-use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: MemorialEventRepository::class)]
 #[ORM\Table(name: 'memorial_events')]
@@ -29,8 +27,8 @@ class MemorialEvent
     #[ORM\Id, ORM\GeneratedValue, ORM\Column(type: Types::BIGINT,  options: ['unsigned' => true])]
     private ?int $id = null;
 
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
-    private Uuid $uuid;
+    #[ORM\Column(type: Types::STRING, length: 36, unique: true, nullable: true)]
+    private ?string $uuid = null;
 
     #[ORM\ManyToOne(targetEntity: MemorialPage::class, inversedBy: 'events')]
     #[ORM\JoinColumn(name: 'memorial_id', nullable: false, onDelete: 'CASCADE')]
@@ -87,12 +85,30 @@ class MemorialEvent
 
     public function __construct()
     {
-        $this->uuid          = Uuid::v4();
-        $this->eventDate     = new \DateTime('+1 week');
-        $this->createdAt     = new \DateTime();
-        $this->updatedAt     = new \DateTime();
+        $this->uuid           = $this->generateUuid();
+        $this->eventDate      = new \DateTime('+1 week');
+        $this->createdAt      = new \DateTime();
+        $this->updatedAt      = new \DateTime();
         $this->mediaGalleries = new ArrayCollection();
-        $this->condolences   = new ArrayCollection();
+        $this->condolences    = new ArrayCollection();
+    }
+
+    private function generateUuid(): string
+    {
+        $data = random_bytes(16);
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    }
+
+    #[ORM\PrePersist]
+    public function onPrePersist(): void
+    {
+        if (empty($this->uuid)) {
+            $this->uuid = $this->generateUuid();
+        }
+        $this->createdAt = $this->createdAt ?? new \DateTime();
+        $this->updatedAt = new \DateTime();
     }
 
     #[ORM\PreUpdate]
@@ -102,7 +118,8 @@ class MemorialEvent
     public function isUpcoming(): bool { return $this->status === self::STATUS_UPCOMING; }
 
     public function getId(): ?int { return $this->id; }
-    public function getUuid(): Uuid { return $this->uuid; }
+    public function getUuid(): ?string { return $this->uuid; }
+    public function setUuid(string $uuid): static { $this->uuid = $uuid; return $this; }
     public function getMemorial(): ?MemorialPage { return $this->memorial; }
     public function setMemorial(?MemorialPage $m): static { $this->memorial = $m; return $this; }
     public function getType(): string { return $this->type; }

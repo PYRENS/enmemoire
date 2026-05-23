@@ -1,0 +1,53 @@
+/* ============================
+   Thème : Sable du Désert (FREE)
+   Motif : Géométrique berbère
+   ============================ */
+[data-theme="sahara-sand"] {
+  --theme-bg: #FAF3E0;
+}
+
+/* Variables injectées via base.html.twig — ajouter dans le bloc Twig :
+  'sahara-sand':
+  :root { --em-gold:#C8860A; --em-navy:#5C3D11; --em-bg:#FAF3E0; --em-cream:#F5E6C8; --em-stone:rgba(92,61,17,.12); --em-muted:#8B6914; --em-charcoal:#6B4F1A; }
+  .memorial-hero { background: linear-gradient(160deg,#3D2408 0%,#7A4A1A 40%,#C8860A 100%) !important; }
+*/
+
+/* Motif géométrique berbère sur le contenu */
+[data-theme="sahara-sand"] .memorial-content {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(200,134,10,.06) 0, rgba(200,134,10,.06) 1px, transparent 1px, transparent 12px),
+    repeating-linear-gradient(-45deg, rgba(200,134,10,.06) 0, rgba(200,134,10,.06) 1px, transparent 1px, transparent 12px);
+  background-size: 24px 24px;
+}
+
+/* Motif losanges sur les tabs */
+[data-theme="sahara-sand"] .memorial-tabs-wrap {
+  background-image:
+    repeating-linear-gradient(60deg, rgba(200,134,10,.04) 0, rgba(200,134,10,.04) 1px, transparent 1px, transparent 8px),
+    repeating-linear-gradient(-60deg, rgba(200,134,10,.04) 0, rgba(200,134,10,.04) 1px, transparent 1px, transparent 8px);
+}
+
+/* Bordure dorée sur les cards */
+[data-theme="sahara-sand"] .memorial-form-card,
+[data-theme="sahara-sand"] .memorial-condolence,
+[data-theme="sahara-sand"] .memorial-guestbook__entry {
+  border-left: 3px solid #C8860A;
+}
+
+/* Décoration hero : soleil stylisé */
+[data-theme="sahara-sand"] .memorial-hero::after {
+  content: '☀';
+  position: absolute;
+  font-size: 12rem;
+  opacity: 0.04;
+  right: 3%;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #FFF;
+}
+
+[data-theme="sahara-sand"] .memorial-name { color: #FEF3C7 !important; }
+[data-theme="sahara-sand"] .memorial-dates,
+[data-theme="sahara-sand"] .memorial-place,
+[data-theme="sahara-sand"] .memorial-profession { color: rgba(254,243,199,.75) !important; }

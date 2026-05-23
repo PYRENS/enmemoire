@@ -1,0 +1,54 @@
+/* ============================
+   Thème : Rose Éternelle (FREE)
+   Motif : Pétales de roses
+   ============================ */
+[data-theme="rose-eternal"] {
+  --theme-bg: #FFF5F7;
+}
+
+/* Variables injectées via base.html.twig — ajouter dans le bloc Twig :
+  'rose-eternal':
+  :root { --em-gold:#E11D48; --em-navy:#881337; --em-bg:#FFF5F7; --em-cream:#FFE4E6; --em-stone:rgba(225,29,72,.12); --em-muted:#BE123C; --em-charcoal:#9F1239; }
+  .memorial-hero { background: linear-gradient(160deg,#4C0519 0%,#881337 50%,#BE123C 100%) !important; }
+*/
+
+/* Motif de roses en SVG data URI */
+[data-theme="rose-eternal"] .memorial-content {
+  background-image: radial-gradient(circle at 25px 25px, rgba(225,29,72,.05) 2px, transparent 2px),
+    radial-gradient(circle at 75px 75px, rgba(225,29,72,.04) 2px, transparent 2px),
+    radial-gradient(circle at 50px 10px, rgba(225,29,72,.03) 1px, transparent 1px);
+  background-size: 100px 100px;
+}
+
+/* Décoration florale dans le hero */
+[data-theme="rose-eternal"] .memorial-hero::after {
+  content: '🌹';
+  position: absolute;
+  font-size: 10rem;
+  opacity: 0.06;
+  right: 4%;
+  bottom: 10%;
+  pointer-events: none;
+}
+
+/* Bordure rose sur les panels */
+[data-theme="rose-eternal"] .memorial-panel h2 {
+  border-left: 3px solid #E11D48;
+  padding-left: .75rem;
+  color: #881337 !important;
+}
+
+[data-theme="rose-eternal"] .memorial-form-card,
+[data-theme="rose-eternal"] .memorial-condolence,
+[data-theme="rose-eternal"] .memorial-guestbook__entry {
+  border-top: 2px solid rgba(225,29,72,.2);
+}
+
+[data-theme="rose-eternal"] .memorial-tab.active {
+  color: #881337 !important;
+  border-bottom-color: #E11D48 !important;
+}
+
+[data-theme="rose-eternal"] .memorial-name { color: #FFE4E6 !important; }
+[data-theme="rose-eternal"] .memorial-dates,
+[data-theme="rose-eternal"] .memorial-place { color: rgba(255,228,230,.8) !important; }

@@ -536,21 +536,51 @@
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.success) {
-        // Mettre à jour le badge "actuel"
+        // Mettre à jour visuellement tous les items
         document.querySelectorAll('.theme-picker-item').forEach(function(c) {
           c.classList.remove('theme-picker-item--active', 'theme-picker-item--selected');
+
+          // Supprimer l'ancien check
           var chk = c.querySelector('.theme-picker-check');
           if (chk) chk.remove();
+
+          // Supprimer le badge "Actuel"
+          var badge = c.querySelector('.badge.bg-primary');
+          if (badge) badge.remove();
         });
+
+        // Marquer le nouveau thème actif
         var activeCard = document.querySelector('[data-theme-id="' + selectedId + '"]');
         if (activeCard) {
           activeCard.classList.add('theme-picker-item--active');
+
+          // Ajouter le check dans l'aperçu
           var chk = document.createElement('div');
           chk.className = 'theme-picker-check';
           chk.innerHTML = '<i class="bi bi-check-lg"></i>';
           activeCard.querySelector('.theme-picker-preview').appendChild(chk);
+
+          // Ajouter badge "Actuel" dans les infos
+          var badgeRow = activeCard.querySelector('.d-flex.align-items-center.gap-1');
+          if (badgeRow) {
+            var badge = document.createElement('span');
+            badge.className = 'badge bg-primary';
+            badge.style.fontSize = '.65rem';
+            badge.textContent = 'Actuel';
+            badgeRow.appendChild(badge);
+          }
         }
+
         currentThemeId = selectedId;
+
+        // Mettre à jour le texte "Thème actuel"
+        var themeInfo = document.querySelector('#themeModal .text-muted.small.mb-3 strong');
+        if (themeInfo) themeInfo.textContent = data.themeName;
+
+        // Reset footer
+        document.getElementById('themeSelectionInfo').textContent = 'Aucun thème sélectionné';
+        document.getElementById('themeApplyBtn').disabled = true;
+        document.getElementById('themeIdInput').value = selectedId;
 
         // Fermer modal + toast
         bootstrap.Modal.getInstance(document.getElementById('themeModal')).hide();

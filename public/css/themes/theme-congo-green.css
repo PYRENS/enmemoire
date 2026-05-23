@@ -1,0 +1,68 @@
+/* ============================
+   Thème : Congo Vert (PAID)
+   Motif : Wax africain
+   ============================ */
+[data-theme="congo-green"] {
+  --theme-bg: #F0F7EE;
+}
+
+/* Variables injectées via base.html.twig — ajouter dans le bloc Twig :
+  'congo-green':
+  :root { --em-gold:#F59E0B; --em-navy:#14532D; --em-bg:#F0F7EE; --em-cream:#DCFCE7; --em-stone:rgba(20,83,45,.12); --em-muted:#166534; --em-charcoal:#15803D; }
+  .memorial-hero { background: linear-gradient(160deg,#052E16 0%,#14532D 50%,#166534 100%) !important; }
+*/
+
+/* Motif wax africain — cercles concentriques */
+[data-theme="congo-green"] .memorial-content {
+  background-image:
+    radial-gradient(circle at 0 0, rgba(20,83,45,.06) 20px, transparent 20px),
+    radial-gradient(circle at 0 0, rgba(20,83,45,.04) 35px, transparent 35px),
+    radial-gradient(circle at 0 0, rgba(245,158,11,.03) 50px, transparent 50px);
+  background-size: 70px 70px;
+}
+
+/* Motif triangles sur les tabs */
+[data-theme="congo-green"] .memorial-tabs-wrap {
+  background-image:
+    linear-gradient(60deg, rgba(20,83,45,.04) 25%, transparent 25%, transparent 75%, rgba(20,83,45,.04) 75%),
+    linear-gradient(60deg, rgba(20,83,45,.04) 25%, transparent 25%, transparent 75%, rgba(20,83,45,.04) 75%);
+  background-size: 20px 35px;
+  background-position: 0 0, 10px 17px;
+}
+
+/* Hero avec motif wax */
+[data-theme="congo-green"] .memorial-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(245,158,11,.08) 30px, transparent 30px),
+    radial-gradient(circle at 10% 20%, rgba(245,158,11,.05) 50px, transparent 50px),
+    radial-gradient(circle at 80% 70%, rgba(245,158,11,.08) 40px, transparent 40px),
+    radial-gradient(circle at 80% 70%, rgba(245,158,11,.05) 65px, transparent 65px),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.03) 60px, transparent 60px);
+  pointer-events: none;
+}
+
+/* Accent jaune/or sur les éléments */
+[data-theme="congo-green"] .memorial-panel h2 {
+  color: #14532D !important;
+  border-left: 4px solid #F59E0B;
+  padding-left: .75rem;
+}
+
+[data-theme="congo-green"] .memorial-stat strong { color: #F59E0B !important; }
+[data-theme="congo-green"] .memorial-tab.active { border-bottom-color: #F59E0B !important; color: #14532D !important; }
+[data-theme="congo-green"] .memorial-event-card__date { background: #F59E0B !important; color: #052E16 !important; }
+
+[data-theme="congo-green"] .memorial-form-card,
+[data-theme="congo-green"] .memorial-condolence,
+[data-theme="congo-green"] .memorial-guestbook__entry {
+  border-left: 3px solid #F59E0B;
+}
+
+[data-theme="congo-green"] .em-btn--primary { background: #14532D !important; border-color: #14532D !important; }
+[data-theme="congo-green"] .em-btn--primary:hover { background: #166534 !important; }
+[data-theme="congo-green"] .memorial-name { color: #DCFCE7 !important; }
+[data-theme="congo-green"] .memorial-dates,
+[data-theme="congo-green"] .memorial-place { color: rgba(245,158,11,.85) !important; }

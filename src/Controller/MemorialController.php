@@ -114,6 +114,7 @@ class MemorialController extends AbstractController
         return $this->render('memorial/show.html.twig', [
             'page'             => $page,
             'memorial_theme'   => $page->getTheme()?->getSlug() ?? 'classic-white',
+            'defaultTab' => $defaultTab,
             'isModerator'      => $isModerator,
             'moderators'       => $moderators,
             'condolences'      => $condolences,

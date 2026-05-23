@@ -238,7 +238,7 @@
 .memorial-check { display: flex; align-items: center; gap: .4rem; font-size: .875rem; color: var(--em-muted); cursor: pointer; }
 
 .memorial-login-prompt { text-align: center; padding: 1.5rem; margin-bottom: 1.5rem; }
-.memorial-signed { display: flex; align-items: center; gap: .5rem; color: var(--em-success); font-size: .9rem; padding: .75rem 0; }
+.memorial-signed { display: flex; align-items: center; gap: .5rem; color: var(--em-success); font-size: .9rem; padding: .75rem 1.25rem; margin-bottom: 1.25rem; border-radius: var(--em-radius-sm); }
 
 /* ----------------------------------------------------------
    MESSAGES / CONDOLÉANCES

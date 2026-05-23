@@ -1,20 +1,23 @@
-/* ============================
-   Thème : Nature & Sérénité (FREE)
-   ============================ */
-[data-theme="nature-green"] {
-  --theme-bg:           #F4F8F2;
-  --theme-bg-alt:       #EBF3E8;
-  --theme-surface:      #FFFFFF;
-  --theme-text:         #2C3E2D;
-  --theme-text-muted:   #5A7A5C;
-  --theme-heading:      #1E4D2B;
-  --theme-accent:       #4A8C5C;
-  --theme-accent-light: #7BBD8E;
-  --theme-border:       rgba(30, 77, 43, 0.15);
-  --theme-hero-overlay: rgba(20, 55, 30, 0.60);
-  --theme-card-shadow:  0 4px 16px rgba(30, 77, 43, 0.12);
-  --theme-font-display: 'Cormorant', Georgia, serif;
+/* Nature & Sérénité (FREE) */
+:root {
+  --em-gold:         #4A8C5C;
+  --em-navy:         #1E4D2B;
+  --em-bg:           #F4F8F2;
+  --em-bg-card:      #FFFFFF;
+  --em-bg-hero:      linear-gradient(160deg, #0D2E14 0%, #1E4D2B 50%, #2D7A45 100%);
+  --em-cream:        #EBF3E8;
+  --em-stone:        rgba(30,77,43,.15);
+  --em-text:         #2C3E2D;
+  --em-text-light:   #4A8C5C;
+  --em-muted:        #5A7A5C;
+  --em-charcoal:     #3E5E40;
+  --em-hero-overlay: rgba(20,55,30,.60);
+  --em-border:       rgba(30,77,43,.15);
+  --em-shadow:       rgba(30,77,43,.12);
+  --em-primary:      #2D7A45;
+  --em-primary-dark: #1E4D2B;
+  --em-primary-light:#7BBD8E;
 }
-[data-theme="nature-green"] .memorial-accent { color: #2D7A45; }
+[data-theme="nature-green"] .memorial-hero { background: var(--em-bg-hero); }
 [data-theme="nature-green"] .em-btn--primary { background: #2D7A45; border-color: #2D7A45; }
-[data-theme="nature-green"] .em-btn--primary:hover { background: #4A8C5C; border-color: #4A8C5C; }
+[data-theme="nature-green"] .em-btn--primary:hover { background: #4A8C5C; }

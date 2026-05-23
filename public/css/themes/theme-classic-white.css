@@ -1,16 +1,17 @@
-/* ============================
-   Thème : Classique Blanc (FREE)
-   ============================ */
-[data-theme="classic-white"] {
-  --theme-bg:           #FAFAFA;
-  --theme-bg-alt:       #F5F5F5;
-  --theme-surface:      #FFFFFF;
-  --theme-text:         #333333;
-  --theme-text-muted:   #777777;
-  --theme-heading:      #1B2B4B;
-  --theme-accent:       #C9A84C;
-  --theme-accent-light: #E8D49A;
-  --theme-border:       rgba(0, 0, 0, 0.08);
-  --theme-hero-overlay: rgba(27, 43, 75, 0.52);
-  --theme-card-shadow:  0 2px 12px rgba(0, 0, 0, 0.08);
+/* Classique Blanc (FREE) — thème par défaut */
+:root {
+  --em-gold:         #C9A84C;
+  --em-navy:         #1B2B4B;
+  --em-bg:           #FAFAFA;
+  --em-bg-card:      #FFFFFF;
+  --em-cream:        #F5F5F5;
+  --em-stone:        rgba(0,0,0,.08);
+  --em-text:         #333333;
+  --em-muted:        #777777;
+  --em-charcoal:     #555555;
+  --em-border:       rgba(0,0,0,.08);
+  --em-shadow:       rgba(0,0,0,.08);
+  --em-primary:      #C9A84C;
+  --em-primary-dark: #1B2B4B;
+  --em-primary-light:#E8D49A;
 }

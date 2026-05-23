@@ -1,0 +1,92 @@
+/* ============================
+   Thème : Nuit de Kinshasa (PAID)
+   Motif : Lumières de la ville
+   ============================ */
+[data-theme="kinshasa-night"] {
+  --theme-bg: #0D0D1A;
+}
+
+/* Variables injectées via base.html.twig — ajouter dans le bloc Twig :
+  'kinshasa-night':
+  :root { --em-gold:#F97316; --em-navy:#0D0D1A; --em-bg:#0D0D1A; --em-cream:#161625; --em-stone:rgba(249,115,22,.15); --em-muted:#6B7280; --em-charcoal:#9CA3AF; }
+  body, .em-main { background:#0D0D1A !important; color:#E5E7EB !important; }
+  .memorial-hero { background: linear-gradient(180deg,#0D0D1A 0%,#1A0A00 60%,#2D1200 100%) !important; }
+  .memorial-tabs-wrap, .memorial-content { background:#0D0D1A !important; }
+  .memorial-name { color:#FFF7ED !important; }
+  .memorial-form-card, .memorial-condolence, .memorial-guestbook__entry { background:#161625 !important; color:#E5E7EB !important; }
+  .memorial-footer { background:#161625 !important; }
+*/
+
+/* Lumières de la ville — points lumineux */
+[data-theme="kinshasa-night"] .memorial-hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 40%;
+  background-image:
+    radial-gradient(1px 2px at 5% 90%, rgba(249,115,22,.9) 0%, transparent 100%),
+    radial-gradient(1px 1px at 12% 85%, rgba(255,200,50,.7) 0%, transparent 100%),
+    radial-gradient(2px 2px at 20% 92%, rgba(249,115,22,.8) 0%, transparent 100%),
+    radial-gradient(1px 1px at 28% 88%, rgba(255,255,255,.5) 0%, transparent 100%),
+    radial-gradient(1px 2px at 35% 91%, rgba(249,115,22,.7) 0%, transparent 100%),
+    radial-gradient(2px 1px at 45% 86%, rgba(255,200,50,.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 93%, rgba(249,115,22,.8) 0%, transparent 100%),
+    radial-gradient(1px 2px at 65% 89%, rgba(255,255,255,.4) 0%, transparent 100%),
+    radial-gradient(2px 2px at 75% 91%, rgba(249,115,22,.9) 0%, transparent 100%),
+    radial-gradient(1px 1px at 82% 87%, rgba(255,200,50,.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 92%, rgba(249,115,22,.7) 0%, transparent 100%),
+    radial-gradient(2px 1px at 95% 88%, rgba(255,255,255,.5) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Reflets sur le contenu */
+[data-theme="kinshasa-night"] .memorial-content {
+  background-image:
+    radial-gradient(ellipse 20% 10% at 10% 50%, rgba(249,115,22,.04) 0%, transparent 100%),
+    radial-gradient(ellipse 15% 8% at 70% 30%, rgba(249,115,22,.03) 0%, transparent 100%),
+    radial-gradient(ellipse 25% 12% at 40% 70%, rgba(255,200,50,.02) 0%, transparent 100%);
+}
+
+/* Lignes néon sur les tabs */
+[data-theme="kinshasa-night"] .memorial-tabs-wrap {
+  border-bottom: 1px solid rgba(249,115,22,.2) !important;
+  box-shadow: 0 2px 20px rgba(249,115,22,.05);
+}
+
+[data-theme="kinshasa-night"] .memorial-tab { color: #6B7280 !important; }
+[data-theme="kinshasa-night"] .memorial-tab.active { color: #F97316 !important; border-bottom-color: #F97316 !important; }
+[data-theme="kinshasa-night"] .memorial-panel h2 { color: #FFF7ED !important; }
+[data-theme="kinshasa-night"] .memorial-stat strong { color: #F97316 !important; }
+
+[data-theme="kinshasa-night"] .memorial-form-card,
+[data-theme="kinshasa-night"] .memorial-condolence,
+[data-theme="kinshasa-night"] .memorial-guestbook__entry {
+  border: 1px solid rgba(249,115,22,.15) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4), 0 0 0 1px rgba(249,115,22,.05) !important;
+}
+
+[data-theme="kinshasa-night"] .em-btn--primary {
+  background: #F97316 !important;
+  border-color: #F97316 !important;
+  color: #0D0D1A !important;
+  box-shadow: 0 0 20px rgba(249,115,22,.3) !important;
+  font-weight: 700 !important;
+}
+[data-theme="kinshasa-night"] .em-btn--primary:hover {
+  background: #FB923C !important;
+  box-shadow: 0 0 30px rgba(249,115,22,.5) !important;
+}
+
+[data-theme="kinshasa-night"] .memorial-event-card { background: #161625 !important; border-color: rgba(249,115,22,.15) !important; }
+[data-theme="kinshasa-night"] .memorial-event-card__date { background: #F97316 !important; color: #0D0D1A !important; }
+[data-theme="kinshasa-night"] .memorial-event-card h4 { color: #FFF7ED !important; }
+[data-theme="kinshasa-night"] .memorial-dates,
+[data-theme="kinshasa-night"] .memorial-place { color: rgba(249,115,22,.8) !important; }
+[data-theme="kinshasa-night"] .memorial-footer { background: #161625 !important; border-top-color: rgba(249,115,22,.15) !important; }
+
+/* Texte avec reflet doré */
+[data-theme="kinshasa-night"] .memorial-name {
+  color: #FFF7ED !important;
+  text-shadow: 0 0 40px rgba(249,115,22,.4), 0 2px 8px rgba(0,0,0,.8) !important;
+}

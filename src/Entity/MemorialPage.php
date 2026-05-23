@@ -130,6 +130,7 @@ class MemorialPage
     private Collection $lifeTimelines;
 
     #[ORM\OneToMany(targetEntity: MediaGallery::class, mappedBy: 'memorial', cascade: ['remove'])]
+    #[ORM\OrderBy(['sortOrder' => 'ASC', 'createdAt' => 'ASC'])]
     private Collection $mediaGalleries;
 
     #[ORM\OneToMany(targetEntity: Condolence::class, mappedBy: 'memorial', cascade: ['remove'])]

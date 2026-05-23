@@ -1,34 +1,42 @@
-/* ============================
-   Thème : Étoiles de Nuit (FREE)
-   ============================ */
-[data-theme="night-stars"] {
-  --theme-bg:           #0E1628;
-  --theme-bg-alt:       #131D35;
-  --theme-surface:      #1A2540;
-  --theme-text:         #D4DCE8;
-  --theme-text-muted:   #7A90B0;
-  --theme-heading:      #E8EEF8;
-  --theme-accent:       #C9A84C;
-  --theme-accent-light: #E8C97A;
-  --theme-border:       rgba(255, 255, 255, 0.08);
-  --theme-hero-overlay: rgba(8, 14, 30, 0.70);
-  --theme-card-shadow:  0 4px 20px rgba(0, 0, 0, 0.35);
+/* Étoiles de Nuit (FREE) */
+:root {
+  --em-gold:         #C9A84C;
+  --em-navy:         #E8EEF8;
+  --em-bg:           #0E1628;
+  --em-bg-card:      #1A2540;
+  --em-bg-hero:      linear-gradient(160deg, #060C1A 0%, #0E1628 60%, #131D35 100%);
+  --em-cream:        #131D35;
+  --em-stone:        rgba(255,255,255,.08);
+  --em-text:         #D4DCE8;
+  --em-text-light:   #C9A84C;
+  --em-muted:        #7A90B0;
+  --em-charcoal:     #A0B0C8;
+  --em-hero-overlay: rgba(8,14,30,.70);
+  --em-border:       rgba(255,255,255,.08);
+  --em-shadow:       rgba(0,0,0,.35);
+  --em-primary:      #C9A84C;
+  --em-primary-dark: #A8872A;
+  --em-primary-light:#E8C97A;
 }
-[data-theme="night-stars"] .memorial-card { background: var(--theme-surface); border-color: var(--theme-border); }
-[data-theme="night-stars"] .em-card { background: #1A2540; border-color: rgba(255,255,255,0.08); color: #D4DCE8; }
-
-/* Étoiles générées par CSS */
+[data-theme="night-stars"] body,
+[data-theme="night-stars"] .em-main { background: #0E1628; }
+[data-theme="night-stars"] .memorial-hero { background: var(--em-bg-hero); }
+[data-theme="night-stars"] .em-btn--primary { background: #C9A84C; border-color: #C9A84C; color: #0E1628; }
+[data-theme="night-stars"] .memorial-panel h2,
+[data-theme="night-stars"] .memorial-tab { color: #D4DCE8; }
+[data-theme="night-stars"] .memorial-tabs-wrap { background: #0E1628; border-bottom-color: rgba(255,255,255,.08); }
+[data-theme="night-stars"] .memorial-content { background: #0E1628; }
+[data-theme="night-stars"] .memorial-form-card,
+[data-theme="night-stars"] .memorial-condolence,
+[data-theme="night-stars"] .memorial-guestbook__entry { background: #1A2540; border-color: rgba(255,255,255,.08); color: #D4DCE8; }
+[data-theme="night-stars"] .memorial-textarea,
+[data-theme="night-stars"] .memorial-input { background: #131D35; color: #D4DCE8; border-color: rgba(255,255,255,.12); }
+[data-theme="night-stars"] .memorial-footer { background: #131D35; }
 [data-theme="night-stars"] .memorial-hero::after {
-  content: '';
-  position: absolute; inset: 0;
-  background-image:
-    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.8) 0%, transparent 100%),
-    radial-gradient(1px 1px at 30% 25%, rgba(255,255,255,0.6) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,0.9) 0%, transparent 100%),
-    radial-gradient(1px 1px at 70% 30%, rgba(255,255,255,0.7) 0%, transparent 100%),
-    radial-gradient(1px 1px at 85% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 20% 60%, rgba(255,255,255,0.4) 0%, transparent 100%),
-    radial-gradient(1px 1px at 90% 70%, rgba(255,255,255,0.6) 0%, transparent 100%);
-  pointer-events: none;
-  z-index: 1;
+  content: '';position:absolute;inset:0;pointer-events:none;z-index:1;
+  background-image:radial-gradient(1px 1px at 10% 15%,rgba(255,255,255,.8) 0%,transparent 100%),
+    radial-gradient(1px 1px at 30% 25%,rgba(255,255,255,.6) 0%,transparent 100%),
+    radial-gradient(1.5px 1.5px at 50% 10%,rgba(255,255,255,.9) 0%,transparent 100%),
+    radial-gradient(1px 1px at 70% 30%,rgba(255,255,255,.7) 0%,transparent 100%),
+    radial-gradient(1px 1px at 90% 70%,rgba(255,255,255,.6) 0%,transparent 100%);
 }

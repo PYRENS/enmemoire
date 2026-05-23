@@ -1,0 +1,217 @@
+/* ============================
+   Thème : Callas & Bougies (PAID)
+   Inspiré du design nécrologie classique
+   Fond noir, fleurs blanches, bougies dorées
+   ============================ */
+
+/* Variables injectées via base.html.twig :
+  'callas-noir':
+  :root { --em-gold:#D4A843; --em-navy:#0A0A0A; --em-bg:#111111; --em-cream:#1A1A1A; --em-stone:rgba(212,168,67,.15); --em-muted:#8A8A8A; --em-charcoal:#C0C0C0; }
+  body, .em-main { background:#111111 !important; color:#E8E8E8 !important; }
+  .memorial-hero { background: radial-gradient(ellipse at top, #1C1C1C 0%, #0A0A0A 70%) !important; }
+  .memorial-tabs-wrap, .memorial-content { background:#111111 !important; }
+  .memorial-name { color:#FFFFFF !important; }
+  .memorial-form-card, .memorial-condolence, .memorial-guestbook__entry { background:#1A1A1A !important; color:#E8E8E8 !important; }
+  .memorial-footer { background:#0A0A0A !important; }
+*/
+
+/* ── Hero : fond sombre avec effet bokeh doré ── */
+[data-theme="callas-noir"] .memorial-hero {
+  background: radial-gradient(ellipse at top, #1C1C1C 0%, #0A0A0A 70%) !important;
+  overflow: hidden;
+}
+
+/* Effet bokeh doré en bas du hero (imite les bougies) */
+[data-theme="callas-noir"] .memorial-hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 55%;
+  background-image:
+    radial-gradient(circle 30px at 10% 85%, rgba(212,168,67,.35) 0%, transparent 100%),
+    radial-gradient(circle 20px at 18% 92%, rgba(212,168,67,.25) 0%, transparent 100%),
+    radial-gradient(circle 35px at 28% 80%, rgba(212,168,67,.30) 0%, transparent 100%),
+    radial-gradient(circle 15px at 38% 90%, rgba(212,168,67,.20) 0%, transparent 100%),
+    radial-gradient(circle 40px at 50% 88%, rgba(212,168,67,.35) 0%, transparent 100%),
+    radial-gradient(circle 25px at 60% 82%, rgba(212,168,67,.28) 0%, transparent 100%),
+    radial-gradient(circle 30px at 70% 91%, rgba(212,168,67,.32) 0%, transparent 100%),
+    radial-gradient(circle 18px at 80% 85%, rgba(212,168,67,.22) 0%, transparent 100%),
+    radial-gradient(circle 35px at 90% 88%, rgba(212,168,67,.30) 0%, transparent 100%),
+    radial-gradient(circle 22px at 95% 92%, rgba(212,168,67,.25) 0%, transparent 100%),
+    /* Petits points bokeh */
+    radial-gradient(circle 8px at 5% 75%, rgba(212,168,67,.40) 0%, transparent 100%),
+    radial-gradient(circle 6px at 15% 70%, rgba(212,168,67,.30) 0%, transparent 100%),
+    radial-gradient(circle 10px at 35% 72%, rgba(212,168,67,.35) 0%, transparent 100%),
+    radial-gradient(circle 7px at 55% 78%, rgba(212,168,67,.28) 0%, transparent 100%),
+    radial-gradient(circle 9px at 75% 74%, rgba(212,168,67,.33) 0%, transparent 100%),
+    radial-gradient(circle 6px at 88% 76%, rgba(212,168,67,.25) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Fleurs blanches décoratives (coins) */
+[data-theme="callas-noir"] .memorial-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    /* Arum gauche */
+    radial-gradient(ellipse 15% 25% at 5% 15%, rgba(255,255,255,.08) 0%, transparent 100%),
+    radial-gradient(ellipse 10% 18% at 8% 8%, rgba(255,255,255,.06) 0%, transparent 100%),
+    /* Arum droite */
+    radial-gradient(ellipse 15% 25% at 95% 15%, rgba(255,255,255,.08) 0%, transparent 100%),
+    radial-gradient(ellipse 10% 18% at 92% 8%, rgba(255,255,255,.06) 0%, transparent 100%),
+    /* Feuilles vertes subtiles */
+    radial-gradient(ellipse 8% 20% at 2% 20%, rgba(20,80,20,.15) 0%, transparent 100%),
+    radial-gradient(ellipse 8% 20% at 98% 20%, rgba(20,80,20,.15) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Nom du défunt — typographie script élégante ── */
+[data-theme="callas-noir"] .memorial-name {
+  color: #FFFFFF !important;
+  font-family: 'Cormorant', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: clamp(2rem, 5vw, 3.5rem) !important;
+  text-shadow: 0 2px 20px rgba(212,168,67,.3), 0 0 40px rgba(212,168,67,.1) !important;
+  letter-spacing: .02em !important;
+}
+
+/* ── Dates ── */
+[data-theme="callas-noir"] .memorial-dates {
+  color: rgba(255,255,255,.75) !important;
+  letter-spacing: .08em !important;
+  font-weight: 600 !important;
+}
+[data-theme="callas-noir"] .memorial-dates__sep { color: #D4A843 !important; }
+[data-theme="callas-noir"] .memorial-place,
+[data-theme="callas-noir"] .memorial-profession { color: rgba(255,255,255,.55) !important; }
+
+/* ── Portrait — bordure élégante ── */
+[data-theme="callas-noir"] .memorial-portrait__img {
+  border: 3px solid rgba(255,255,255,.5) !important;
+  box-shadow: 0 0 0 1px rgba(212,168,67,.3), 0 8px 32px rgba(0,0,0,.6) !important;
+}
+
+/* ── Statistiques ── */
+[data-theme="callas-noir"] .memorial-stat strong { color: #D4A843 !important; }
+[data-theme="callas-noir"] .memorial-stat span { color: rgba(255,255,255,.4) !important; }
+
+/* ── Navigation / tabs ── */
+[data-theme="callas-noir"] .memorial-tabs-wrap {
+  background: #111111 !important;
+  border-bottom: 1px solid rgba(212,168,67,.2) !important;
+}
+[data-theme="callas-noir"] .memorial-tab { color: #6B6B6B !important; }
+[data-theme="callas-noir"] .memorial-tab:hover { color: #C0C0C0 !important; background: rgba(255,255,255,.03) !important; }
+[data-theme="callas-noir"] .memorial-tab.active {
+  color: #D4A843 !important;
+  border-bottom-color: #D4A843 !important;
+}
+[data-theme="callas-noir"] .tab-count { background: rgba(212,168,67,.15) !important; color: #D4A843 !important; }
+
+/* ── Contenu ── */
+[data-theme="callas-noir"] .memorial-content { background: #111111 !important; }
+[data-theme="callas-noir"] .memorial-panel h2 {
+  color: #E8E8E8 !important;
+  font-family: 'Cormorant', Georgia, serif !important;
+  font-style: italic !important;
+  border-left-color: #D4A843 !important;
+}
+
+/* ── Cards / messages ── */
+[data-theme="callas-noir"] .memorial-form-card,
+[data-theme="callas-noir"] .memorial-condolence,
+[data-theme="callas-noir"] .memorial-guestbook__entry,
+[data-theme="callas-noir"] .memorial-announcement {
+  background: #1A1A1A !important;
+  border-color: rgba(212,168,67,.15) !important;
+  color: #E8E8E8 !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,.4) !important;
+}
+[data-theme="callas-noir"] .memorial-condolence__name,
+[data-theme="callas-noir"] .memorial-announcement strong { color: #E8E8E8 !important; }
+[data-theme="callas-noir"] .memorial-msg-date { color: #6B6B6B !important; }
+
+/* ── Formulaires ── */
+[data-theme="callas-noir"] .memorial-textarea,
+[data-theme="callas-noir"] .memorial-input {
+  background: #0A0A0A !important;
+  border-color: rgba(212,168,67,.2) !important;
+  color: #E8E8E8 !important;
+}
+[data-theme="callas-noir"] .memorial-textarea::placeholder,
+[data-theme="callas-noir"] .memorial-input::placeholder { color: #555 !important; }
+[data-theme="callas-noir"] .memorial-textarea:focus,
+[data-theme="callas-noir"] .memorial-input:focus {
+  border-color: #D4A843 !important;
+  box-shadow: 0 0 0 2px rgba(212,168,67,.15) !important;
+}
+
+/* ── Boutons ── */
+[data-theme="callas-noir"] .em-btn--primary {
+  background: #D4A843 !important;
+  border-color: #D4A843 !important;
+  color: #0A0A0A !important;
+  font-weight: 700 !important;
+}
+[data-theme="callas-noir"] .em-btn--primary:hover {
+  background: #E8C060 !important;
+  box-shadow: 0 4px 20px rgba(212,168,67,.35) !important;
+}
+[data-theme="callas-noir"] .em-btn--light {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.25) !important;
+  color: white !important;
+}
+[data-theme="callas-noir"] .em-btn--ghost {
+  border-color: rgba(212,168,67,.3) !important;
+  color: #D4A843 !important;
+}
+
+/* ── Événements ── */
+[data-theme="callas-noir"] .memorial-event-card {
+  background: #1A1A1A !important;
+  border-color: rgba(212,168,67,.15) !important;
+  color: #E8E8E8 !important;
+}
+[data-theme="callas-noir"] .memorial-event-card__date { background: #D4A843 !important; color: #0A0A0A !important; }
+[data-theme="callas-noir"] .memorial-event-card h4 { color: #E8E8E8 !important; }
+
+/* ── Timeline ── */
+[data-theme="callas-noir"] .memorial-timeline__dot,
+[data-theme="callas-noir"] .timeline-item::before {
+  background: #D4A843 !important;
+  box-shadow: 0 0 12px rgba(212,168,67,.4) !important;
+}
+
+/* ── Famille ── */
+[data-theme="callas-noir"] .memorial-family-item {
+  background: #1A1A1A !important;
+  border-color: rgba(212,168,67,.15) !important;
+  color: #E8E8E8 !important;
+}
+[data-theme="callas-noir"] .memorial-family-item:hover { background: #222 !important; border-color: #D4A843 !important; }
+
+/* ── Footer ── */
+[data-theme="callas-noir"] .memorial-footer {
+  background: #0A0A0A !important;
+  border-top: 1px solid rgba(212,168,67,.15) !important;
+  color: #6B6B6B !important;
+}
+
+/* ── Livre d'or signé ── */
+[data-theme="callas-noir"] .memorial-signed {
+  background: rgba(212,168,67,.1) !important;
+  border-color: rgba(212,168,67,.3) !important;
+  color: #D4A843 !important;
+}
+
+/* ── Gadgets ── */
+[data-theme="callas-noir"] .gadget-btn { filter: drop-shadow(0 0 6px rgba(212,168,67,.3)); }
+
+/* ── Quote ── */
+[data-theme="callas-noir"] .memorial-quote-section { background: #0A0A0A !important; }
+[data-theme="callas-noir"] .memorial-quote { color: #C0C0C0 !important; }
+[data-theme="callas-noir"] .memorial-quote__mark { color: #D4A843 !important; }

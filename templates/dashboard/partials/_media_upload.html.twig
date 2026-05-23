@@ -329,7 +329,8 @@ async function uploadGallery(files) {
   setTimeout(function() {
     document.getElementById('gallery-progress').style.display = 'none';
     document.getElementById('gallery-caption').value = '';
-  }, 1000);
+    if (uploadedItems.length > 0) window.location.reload();
+  }, 1200);
 }
 
 function showGalleryPreview(src, name, caption, type) {
@@ -361,17 +362,16 @@ function addToGalleryGrid(media) {
   div.className = 'media-gallery-item';
   div.id        = 'media-item-' + media.id;
 
+  // Miniature
   if (media.type === 'video') {
-    div.innerHTML = `
-      <div class="media-gallery-item__video">
-        <i class="bi bi-play-circle-fill"></i>
-        ${media.thumb ? `<img src="${media.thumb}" alt="">` : ''}
-      </div>
-    `;
+    div.innerHTML = '<div class="media-gallery-item__video"><i class="bi bi-play-circle-fill"></i>'
+      + (media.thumb ? '<img src="' + media.thumb + '" alt="">' : '') + '</div>';
   } else {
-    div.innerHTML = `<img src="${media.url}" alt="${media.caption || ''}" loading="lazy">`;
+    var imgUrl = media.url.startsWith('http') ? media.url : '/' + media.url.replace(/^\//, '');
+    div.innerHTML = '<img src="' + imgUrl + '" alt="' + (media.caption || '') + '" loading="lazy">';
   }
 
+  // Légende
   if (media.caption) {
     var cap = document.createElement('div');
     cap.className   = 'media-gallery-item__caption';
@@ -379,20 +379,31 @@ function addToGalleryGrid(media) {
     div.appendChild(cap);
   }
 
-  // Token CSRF pour suppression
-  var csrf = document.createElement('span');
-  csrf.className = 'csrf-media-delete';
-  csrf.dataset.id = media.id;
-  csrf.style.display = 'none';
-  // On récupérera le token via une requête si nécessaire — pour l'instant reload
-  div.appendChild(csrf);
+  // Icônes actions (même style que les items existants)
+  var icons = document.createElement('div');
+  icons.className = 'mgal-icons';
+  icons.innerHTML =
+    '<button onclick="openCaptionModal(' + media.id + ', \'' + (media.caption || '').replace(/'/g, "\\'") + '\')" '
+    + 'class="mgal-icon mgal-icon--edit" title="Modifier la légende"><i class="bi bi-pencil"></i></button>'
+    + '<button onclick="deleteGalleryMedia(' + media.id + ')" '
+    + 'class="mgal-icon mgal-icon--delete" title="Supprimer"><i class="bi bi-trash"></i></button>';
+  div.appendChild(icons);
 
-  var btn = document.createElement('button');
-  btn.className = 'media-gallery-item__delete';
-  btn.title     = 'Supprimer';
-  btn.innerHTML = '<i class="bi bi-x-lg"></i>';
-  btn.onclick   = function() { deleteGalleryMedia(media.id); };
-  div.appendChild(btn);
+  // Tokens CSRF (récupérés via fetch)
+  var csrfDelete = document.createElement('span');
+  csrfDelete.className = 'csrf-media-delete';
+  csrfDelete.dataset.id = media.id;
+  csrfDelete.style.display = 'none';
+  div.appendChild(csrfDelete);
+
+  var csrfCaption = document.createElement('span');
+  csrfCaption.className = 'csrf-media-caption';
+  csrfCaption.dataset.id = media.id;
+  csrfCaption.style.display = 'none';
+  div.appendChild(csrfCaption);
+
+  csrfDelete.textContent  = '';
+  csrfCaption.textContent = '';
 
   grid.insertBefore(div, grid.firstChild);
 }
@@ -506,27 +517,34 @@ function showMsg(id, msg, type) {
 // Init SortableJS sur la grille galerie
 document.addEventListener('DOMContentLoaded', function() {
   var grid = document.getElementById('gallery-grid');
-  if (!grid) return;
+  if (!grid || typeof Sortable === 'undefined') return;
   Sortable.create(grid, {
     animation: 150,
     ghostClass: 'media-gallery-item--dragging',
-    handle: '.media-gallery-item',
+    filter: '.mgal-icons, .mgal-icon, button',
+    preventOnFilter: true,
     onEnd: async function(evt) {
-      // Récupérer l'ordre des IDs
       var items = Array.from(grid.querySelectorAll('.media-gallery-item[id]'));
       var order = items.map(function(el) {
         return el.id.replace('media-item-', '');
       });
-      // Envoyer au serveur
       try {
         var form = new FormData();
         order.forEach(function(id, idx) { form.append('order['+idx+']', id); });
         form.append('_token', '{{ csrf_token("media_reorder") }}');
-        await fetch('/memorial/'+SLUG+'/media/reorder', {
+        var res = await fetch('/memorial/'+SLUG+'/media/reorder', {
           method: 'POST',
           body: form,
           headers: {'X-Requested-With': 'XMLHttpRequest'}
         });
+        var data = await res.json();
+        if (data.success) {
+          var t = document.createElement('div');
+          t.style.cssText = 'position:fixed;bottom:1rem;right:1rem;background:#1B2B4B;color:white;padding:.5rem 1rem;border-radius:8px;font-size:.8rem;z-index:9999;';
+          t.textContent = '✅ Ordre sauvegardé';
+          document.body.appendChild(t);
+          setTimeout(function() { t.remove(); }, 2000);
+        }
       } catch(e) { console.error('Reorder failed', e); }
     }
   });
