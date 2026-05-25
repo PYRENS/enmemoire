@@ -1,0 +1,94 @@
+{% extends 'admin/layout.html.twig' %}
+{% block title %}Utilisateurs — Admin{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+  <h1><i class="bi bi-people me-2"></i>Utilisateurs <span class="text-muted fw-normal fs-5">({{ total }})</span></h1>
+</div>
+
+{# Filtres #}
+<form method="GET" class="admin-search">
+  <input type="text" name="q" value="{{ search }}" placeholder="Nom, email…" style="min-width:220px;">
+  <select name="status">
+    <option value="">Tous statuts</option>
+    <option value="active"    {{ status == 'active'    ? 'selected' : '' }}>Actif</option>
+    <option value="pending"   {{ status == 'pending'   ? 'selected' : '' }}>En attente</option>
+    <option value="suspended" {{ status == 'suspended' ? 'selected' : '' }}>Suspendu</option>
+    <option value="disabled"  {{ status == 'disabled'  ? 'selected' : '' }}>Désactivé</option>
+  </select>
+  <select name="role">
+    <option value="">Tous rôles</option>
+    <option value="ROLE_USER"        {{ role == 'ROLE_USER'        ? 'selected' : '' }}>User</option>
+    <option value="ROLE_MAKER"       {{ role == 'ROLE_MAKER'       ? 'selected' : '' }}>Maker</option>
+    <option value="ROLE_MANAGER"     {{ role == 'ROLE_MANAGER'     ? 'selected' : '' }}>Manager</option>
+    <option value="ROLE_ADMIN"       {{ role == 'ROLE_ADMIN'       ? 'selected' : '' }}>Admin</option>
+    <option value="ROLE_SUPER_ADMIN" {{ role == 'ROLE_SUPER_ADMIN' ? 'selected' : '' }}>Super Admin</option>
+  </select>
+  <button type="submit" class="em-btn em-btn--primary em-btn--sm">Filtrer</button>
+  <a href="{{ path('app_admin_users') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+</form>
+
+<div class="admin-form-card p-0">
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Email</th>
+          <th>Rôle</th>
+          <th>Statut</th>
+          <th>Mémoriaux</th>
+          <th>Inscrit le</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              {% if u.avatarUrl %}
+                <img src="{{ u.avatarUrl }}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+              {% else %}
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--em-navy);color:white;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;">
+                  {{ u.firstName|first|upper }}{{ u.lastName|first|upper }}
+                </div>
+              {% endif %}
+              <a href="{{ path('app_admin_user_show', {id: u.id}) }}" class="fw-600 text-decoration-none">
+                {{ u.fullName }}
+              </a>
+            </div>
+          </td>
+          <td class="text-muted">{{ u.email }}</td>
+          <td>
+            <span class="badge bg-{{ u.role == 'ROLE_SUPER_ADMIN' ? 'danger' : (u.role == 'ROLE_ADMIN' ? 'warning' : (u.role == 'ROLE_MANAGER' ? 'info' : 'secondary')) }} text-white" style="font-size:.7rem;">
+              {{ u.role|replace({'ROLE_': ''}) }}
+            </span>
+          </td>
+          <td><span class="badge-{{ u.status }}">{{ u.status }}</span></td>
+          <td>{{ u.memorialPages|length }}</td>
+          <td class="text-muted">{{ u.createdAt|date('d/m/Y') }}</td>
+          <td>
+            <a href="{{ path('app_admin_user_show', {id: u.id}) }}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-4">Aucun utilisateur trouvé</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# Pagination #}
+{% if pages > 1 %}
+<div class="admin-pagination">
+  {% for i in 1..pages %}
+    <a href="?page={{ i }}&q={{ search }}&status={{ status }}&role={{ role }}"
+       class="{{ i == page ? 'active' : '' }}">{{ i }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

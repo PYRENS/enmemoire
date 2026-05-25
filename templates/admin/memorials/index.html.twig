@@ -1,0 +1,117 @@
+{% extends 'admin/layout.html.twig' %}
+{% block title %}Mémoriaux — Admin{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+  <h1><i class="bi bi-book me-2"></i>Mémoriaux <span class="text-muted fw-normal fs-5">({{ total }})</span></h1>
+</div>
+
+<form method="GET" class="admin-search">
+  <input type="text" name="q" value="{{ search }}" placeholder="Nom du défunt, slug…" style="min-width:220px;">
+  <select name="status">
+    <option value="">Tous statuts</option>
+    <option value="active"    {{ status == 'active'    ? 'selected' : '' }}>Actif</option>
+    <option value="suspended" {{ status == 'suspended' ? 'selected' : '' }}>Suspendu</option>
+    <option value="expired"   {{ status == 'expired'   ? 'selected' : '' }}>Expiré</option>
+    <option value="archived"  {{ status == 'archived'  ? 'selected' : '' }}>Archivé</option>
+  </select>
+  <button type="submit" class="em-btn em-btn--primary em-btn--sm">Filtrer</button>
+  <a href="{{ path('app_admin_memorials') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+</form>
+
+<div class="admin-form-card p-0">
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Défunt</th>
+          <th>Propriétaire</th>
+          <th>Formule</th>
+          <th>Visites</th>
+          <th>Expire le</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in memorials %}
+        <tr>
+          <td>
+            <a href="{{ path('app_memorial_show', {slug: m.slug}) }}" target="_blank" class="fw-600 text-decoration-none">
+              {{ m.deceasedFullName }}
+            </a>
+            <div class="text-muted small">{{ m.slug }}</div>
+          </td>
+          <td>
+            <a href="{{ path('app_admin_user_show', {id: m.createdBy.id}) }}" class="text-decoration-none">
+              {{ m.createdBy.fullName }}
+            </a>
+          </td>
+          <td>{{ m.formula ? m.formula.name : '—' }}</td>
+          <td>{{ m.visitCount }}</td>
+          <td class="{{ m.isExpired() ? 'text-danger fw-600' : 'text-muted' }}">
+            {{ m.expiresAt ? m.expiresAt|date('d/m/Y') : '∞ Perpétuel' }}
+          </td>
+          <td>
+            <span class="badge-{{ m.status }}" id="badge-memorial-{{ m.id }}">{{ m.status }}</span>
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ path('app_memorial_show', {slug: m.slug}) }}" target="_blank"
+                 class="btn btn-sm btn-outline-primary" title="Voir">
+                <i class="bi bi-eye"></i>
+              </a>
+              <select onchange="changeMemorialStatus({{ m.id }}, this.value)"
+                      class="form-select form-select-sm" style="width:auto;">
+                {% for s in ['active', 'suspended', 'archived'] %}
+                <option value="{{ s }}" {{ m.status == s ? 'selected' : '' }}>{{ s }}</option>
+                {% endfor %}
+              </select>
+              <input type="hidden" id="csrf-memorial-{{ m.id }}" value="{{ csrf_token('memorial_status_' ~ m.id) }}">
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-4">Aucun mémorial</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if pages > 1 %}
+<div class="admin-pagination">
+  {% for i in 1..pages %}
+    <a href="?page={{ i }}&q={{ search }}&status={{ status }}"
+       class="{{ i == page ? 'active' : '' }}">{{ i }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+var badgeClasses = { active: 'badge-active', suspended: 'badge-suspended', archived: 'badge-disabled', expired: 'badge-disabled' };
+
+async function changeMemorialStatus(id, status) {
+  var csrf = document.getElementById('csrf-memorial-' + id).value;
+  var fd   = new FormData();
+  fd.append('status', status);
+  fd.append('_token', csrf);
+  var res  = await fetch('/admin/memoriaux/' + id + '/status', {
+    method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'}
+  });
+  var data = await res.json();
+  if (data.success) {
+    var badge = document.getElementById('badge-memorial-' + id);
+    if (badge) { badge.className = badgeClasses[status] || 'badge-pending'; badge.textContent = status; }
+    var t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:1rem;right:1rem;background:#1B2B4B;color:white;padding:.5rem 1rem;border-radius:8px;font-size:.8rem;z-index:9999;';
+    t.textContent = '✅ Statut mis à jour : ' + status;
+    document.body.appendChild(t);
+    setTimeout(function() { t.remove(); }, 2500);
+  } else { alert(data.error || 'Erreur'); }
+}
+</script>
+{% endblock %}

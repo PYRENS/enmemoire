@@ -43,9 +43,14 @@ class MemorialController extends AbstractController
     #[Route('/{slug}', name: 'app_memorial_show', methods: ['GET'], requirements: ['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*'])]
     public function show(string $slug, Request $request): Response
     {
-        $page = $this->memorialRepo->findBySlugActive($slug);
-
+        $page = $this->memorialRepo->findBySlug($slug); // cherche sans filtre statut
         if (!$page) {
+            throw $this->createNotFoundException('Page mémorielle introuvable.');
+        }
+        if ($page->getStatus() === 'suspended') {
+            return $this->render('memorial/suspended.html.twig', ['page' => $page]);
+        }
+        if ($page->getStatus() !== 'active') {
             throw $this->createNotFoundException('Page mémorielle introuvable.');
         }
 

@@ -1,0 +1,88 @@
+{% extends 'admin/layout.html.twig' %}
+{% block title %}{{ isNew ? 'Nouveau thème' : 'Modifier ' ~ theme.name }} — Admin{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+  <h1><i class="bi bi-palette me-2"></i>{{ isNew ? 'Nouveau thème' : 'Modifier : ' ~ theme.name }}</h1>
+  <a href="{{ path('app_admin_themes') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Retour
+  </a>
+</div>
+
+<div class="admin-form-card">
+  <form method="POST">
+    <div class="admin-form-section">
+      <h3>Informations</h3>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-600">Nom <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control" value="{{ theme.name }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-600">Slug <span class="text-danger">*</span></label>
+          <input type="text" name="slug" class="form-control" value="{{ theme.slug }}" required
+                 placeholder="ex: classic-white">
+          <div class="form-text">Doit correspondre au fichier CSS : theme-{slug}.css</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-600">Classe CSS</label>
+          <input type="text" name="css_class" class="form-control" value="{{ theme.cssClass }}"
+                 placeholder="ex: theme-classic-white">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-600">URL aperçu</label>
+          <input type="text" name="preview_url" class="form-control" value="{{ theme.previewUrl }}"
+                 placeholder="https://...">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-600">Description</label>
+          <textarea name="description" class="form-control" rows="2">{{ theme.description }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-form-section">
+      <h3>Tarification</h3>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-600">Type</label>
+          <select name="type" class="form-control">
+            <option value="free"    {{ theme.type == 'free'    ? 'selected' : '' }}>Gratuit</option>
+            <option value="paid"    {{ theme.type == 'paid'    ? 'selected' : '' }}>Payant</option>
+            <option value="special" {{ theme.type == 'special' ? 'selected' : '' }}>Spécial (admin)</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-600">Prix</label>
+          <input type="number" name="price" class="form-control" value="{{ theme.price }}" step="0.01" min="0">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-600">Devise</label>
+          <select name="currency" class="form-control">
+            <option value="EUR" {{ theme.currency == 'EUR' ? 'selected' : '' }}>EUR</option>
+            <option value="USD" {{ theme.currency == 'USD' ? 'selected' : '' }}>USD</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-600">Ordre d'affichage</label>
+          <input type="number" name="sort_order" class="form-control" value="{{ theme.sortOrder }}">
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="is_active" value="1"
+                   id="is_active" {{ theme.isActive() ? 'checked' : '' }}>
+            <label class="form-check-label" for="is_active">Thème actif</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end">
+      <a href="{{ path('app_admin_themes') }}" class="btn btn-outline-secondary">Annuler</a>
+      <button type="submit" class="em-btn em-btn--primary">
+        <i class="bi bi-check-lg me-1"></i>{{ isNew ? 'Créer' : 'Enregistrer' }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

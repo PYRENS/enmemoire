@@ -208,9 +208,63 @@ class DashboardController extends AbstractController
         $this->em->persist($event);
         $this->em->flush();
 
+        // Upload image de couverture
+        $coverFile = $request->files->get('cover_image');
+        if ($coverFile) {
+            try {
+                $url = $this->mediaService->uploadEventCover($coverFile, $event);
+                $event->setCoverImageUrl($url);
+                $this->em->flush();
+            } catch (\Exception $e) {
+                $this->addFlash('warning', 'Image de couverture non uploadée : ' . $e->getMessage());
+            }
+        }
+
         $this->addFlash('success', 'Événement créé avec succès.');
         return $this->redirectToRoute('app_dashboard_events', ['slug' => $slug]);
     }
+
+
+    #[Route('/memorial/{slug}/events/{eventId}/edit', name: 'app_dashboard_event_edit', methods: ['POST'])]
+    public function eventEdit(string $slug, int $eventId, Request $request): Response
+    {
+        $page = $this->getPageOrDeny($slug);
+ 
+        if (!$this->isCsrfTokenValid('event_edit', $request->request->get('_token'))) {
+            $this->addFlash('danger', 'Token invalide.');
+            return $this->redirectToRoute('app_dashboard_events', ['slug' => $slug]);
+        }
+ 
+        $event = $this->em->getRepository(\App\Entity\MemorialEvent::class)->find($eventId);
+        if (!$event || $event->getMemorial() !== $page) {
+            throw $this->createNotFoundException();
+        }
+ 
+        $event->setType($request->request->get('type', \App\Entity\MemorialEvent::TYPE_FUNERAL))
+              ->setTitle($request->request->get('title', ''))
+              ->setDescription($request->request->get('description') ?: null)
+              ->setEventDate(new \DateTime($request->request->get('event_date', 'now')))
+              ->setLocationName($request->request->get('location_name') ?: null)
+              ->setLocationAddress($request->request->get('location_address') ?: null)
+              ->setLiveUrl($request->request->get('live_url') ?: null);
+ 
+        // Upload image de couverture
+        $coverFile = $request->files->get('cover_image');
+        if ($coverFile) {
+            try {
+                $url = $this->mediaService->uploadEventCover($coverFile, $event);
+                $event->setCoverImageUrl($url);
+            } catch (\Exception $e) {
+                $this->addFlash('warning', 'Image non uploadée : ' . $e->getMessage());
+            }
+        }
+ 
+        $this->em->flush();
+        $this->addFlash('success', 'Événement mis à jour.');
+        return $this->redirectToRoute('app_dashboard_events', ['slug' => $slug]);
+    }
+
+
 
     #[Route('/memorial/{slug}/events/{eventId}/delete', name: 'app_dashboard_event_delete', methods: ['POST'])]
     public function eventDelete(string $slug, int $eventId, Request $request): Response

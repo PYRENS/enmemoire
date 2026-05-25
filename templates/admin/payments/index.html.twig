@@ -1,0 +1,115 @@
+{% extends 'admin/layout.html.twig' %}
+{% block title %}Paiements — Admin{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+  <h1><i class="bi bi-credit-card me-2"></i>Paiements <span class="text-muted fw-normal fs-5">({{ total }})</span></h1>
+  <div class="text-success fw-700 fs-5">{{ totalRevenue|number_format(2, ',', ' ') }} € encaissés</div>
+</div>
+
+{# Filtres #}
+<form method="GET" class="admin-search">
+  <select name="status">
+    <option value="">Tous statuts</option>
+    <option value="pending"   {{ status == 'pending'   ? 'selected' : '' }}>En attente</option>
+    <option value="completed" {{ status == 'completed' ? 'selected' : '' }}>Complété</option>
+    <option value="failed"    {{ status == 'failed'    ? 'selected' : '' }}>Échoué</option>
+    <option value="refunded"  {{ status == 'refunded'  ? 'selected' : '' }}>Remboursé</option>
+  </select>
+  <select name="provider">
+    <option value="">Tous providers</option>
+    <option value="stripe"  {{ provider == 'stripe'  ? 'selected' : '' }}>Stripe</option>
+    <option value="paypal"  {{ provider == 'paypal'  ? 'selected' : '' }}>PayPal</option>
+    <option value="mpesa"   {{ provider == 'mpesa'   ? 'selected' : '' }}>M-Pesa</option>
+    <option value="airtel_money" {{ provider == 'airtel_money' ? 'selected' : '' }}>Airtel Money</option>
+    <option value="orange_money" {{ provider == 'orange_money' ? 'selected' : '' }}>Orange Money</option>
+    <option value="manual"  {{ provider == 'manual'  ? 'selected' : '' }}>Virement manuel</option>
+  </select>
+  <button type="submit" class="em-btn em-btn--primary em-btn--sm">Filtrer</button>
+  <a href="{{ path('app_admin_payments') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+</form>
+
+<div class="admin-form-card p-0">
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Utilisateur</th>
+          <th>Montant</th>
+          <th>Provider</th>
+          <th>TX ID</th>
+          <th>Statut</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td class="text-muted small">{{ p.id }}</td>
+          <td>
+            <a href="{{ path('app_admin_user_show', {id: p.user.id}) }}" class="text-decoration-none">
+              {{ p.user.fullName }}
+            </a>
+            <div class="text-muted" style="font-size:.72rem;">{{ p.user.email }}</div>
+          </td>
+          <td><strong>{{ p.amount }} {{ p.currency }}</strong></td>
+          <td><span class="badge bg-light text-dark">{{ p.provider }}</span></td>
+          <td class="text-muted small">{{ p.providerTxId ? p.providerTxId|slice(0, 20) ~ '…' : '—' }}</td>
+          <td><span class="badge-{{ p.status }}">{{ p.status }}</span></td>
+          <td class="text-muted">{{ p.createdAt|date('d/m/Y H:i') }}</td>
+          <td>
+            {% if p.status == 'pending' %}
+            <button onclick="validatePayment({{ p.id }}, this)" class="btn btn-sm btn-success me-1" title="Valider">
+              <i class="bi bi-check-lg"></i>
+            </button>
+            {% endif %}
+            {% if p.status == 'completed' and is_granted('ROLE_SUPER_ADMIN') %}
+            <button onclick="refundPayment({{ p.id }}, this)" class="btn btn-sm btn-outline-danger" title="Rembourser">
+              <i class="bi bi-arrow-return-left"></i>
+            </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">Aucun paiement</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if pages > 1 %}
+<div class="admin-pagination">
+  {% for i in 1..pages %}
+    <a href="?page={{ i }}&status={{ status }}&provider={{ provider }}"
+       class="{{ i == page ? 'active' : '' }}">{{ i }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+async function validatePayment(id, btn) {
+  if (!confirm('Valider ce paiement manuel ?')) return;
+  const res  = await fetch(`/admin/paiements/${id}/validate`, {
+    method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}
+  });
+  const data = await res.json();
+  if (data.success) location.reload();
+  else alert(data.error || 'Erreur');
+}
+async function refundPayment(id, btn) {
+  if (!confirm('Marquer ce paiement comme remboursé ?')) return;
+  const res  = await fetch(`/admin/paiements/${id}/refund`, {
+    method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}
+  });
+  const data = await res.json();
+  if (data.success) location.reload();
+  else alert(data.error || 'Erreur');
+}
+</script>
+{% endblock %}

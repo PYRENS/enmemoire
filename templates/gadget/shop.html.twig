@@ -1,0 +1,219 @@
+{% extends 'base.html.twig' %}
+{% block title %}Boutique des gadgets — EnMémoire.com{% endblock %}
+
+{% block stylesheets %}
+<style>
+.gadget-shop { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1rem 4rem; }
+.gadget-shop__header { text-align: center; margin-bottom: 3rem; }
+.gadget-shop__header h1 { font-family: var(--font-display); font-size: 2.2rem; color: var(--em-navy); margin-bottom: .5rem; }
+.gadget-shop__header p { color: var(--em-muted); font-size: 1rem; }
+
+.gadget-section { margin-bottom: 3rem; }
+.gadget-section__title {
+  font-size: 1.1rem; font-weight: 700; color: var(--em-navy);
+  border-left: 4px solid var(--em-gold); padding-left: .75rem;
+  margin-bottom: 1.5rem; display: flex; align-items: center; gap: .5rem;
+}
+
+.gadget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; }
+
+.gadget-card {
+  background: white; border-radius: 16px; padding: 1.5rem 1.25rem;
+  box-shadow: var(--em-shadow-sm); text-align: center;
+  border: 2px solid transparent; transition: all .25s;
+  display: flex; flex-direction: column; align-items: center; gap: .75rem;
+}
+.gadget-card:hover { border-color: var(--em-gold); box-shadow: var(--em-shadow); transform: translateY(-2px); }
+
+.gadget-card__icon { font-size: 3.5rem; line-height: 1; margin-bottom: .25rem; }
+.gadget-card__name { font-weight: 700; color: var(--em-navy); font-size: .95rem; }
+.gadget-card__desc { font-size: .8rem; color: var(--em-muted); line-height: 1.5; }
+.gadget-card__price {
+  font-size: 1.1rem; font-weight: 700; color: var(--em-gold);
+  font-family: var(--font-display);
+}
+.gadget-card__price span { font-size: .75rem; font-weight: 400; color: var(--em-muted); }
+
+.gadget-card__qty-select {
+  display: flex; align-items: center; gap: .5rem;
+  border: 1.5px solid var(--em-stone); border-radius: 8px; padding: .25rem .5rem;
+}
+.gadget-card__qty-select button {
+  background: none; border: none; font-size: 1.1rem; cursor: pointer;
+  color: var(--em-navy); width: 24px; line-height: 1;
+}
+.gadget-card__qty-select span { min-width: 24px; text-align: center; font-weight: 600; font-size: .9rem; }
+
+.gadget-card__btn {
+  width: 100%; padding: .6rem; border-radius: 10px;
+  font-weight: 600; font-size: .85rem; cursor: pointer;
+  border: none; transition: all .2s;
+}
+.gadget-card__btn--buy { background: var(--em-gold); color: white; }
+.gadget-card__btn--buy:hover { background: var(--em-navy); }
+.gadget-card__btn--login { background: var(--em-cream); color: var(--em-navy); border: 1.5px solid var(--em-stone); }
+
+.gadget-card__wallet {
+  font-size: .78rem; color: var(--em-success);
+  display: flex; align-items: center; gap: .3rem;
+}
+
+.gadget-wallet-bar {
+  background: var(--em-cream); border-radius: 12px; padding: 1rem 1.5rem;
+  display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;
+  border: 1px solid var(--em-stone);
+}
+.gadget-wallet-bar a { color: var(--em-gold); font-weight: 600; text-decoration: none; }
+.gadget-wallet-bar a:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="gadget-shop">
+  <div class="gadget-shop__header">
+    <h1>🛍️ Boutique des gadgets</h1>
+    <p>Offrez des fleurs, bougies ou colombes numériques en mémoire d'un proche.</p>
+  </div>
+
+  {% if app.user %}
+  <div class="gadget-wallet-bar">
+    <i class="bi bi-wallet2" style="font-size:1.4rem;color:var(--em-gold);"></i>
+    <div>
+      <strong>Mon portefeuille</strong> — retrouvez vos gadgets achetés et déposez-les sur les pages mémorielles.
+    </div>
+    <a href="{{ path('app_gadget_wallet') }}" class="ms-auto">
+      <i class="bi bi-arrow-right-circle me-1"></i>Voir mon portefeuille
+    </a>
+  </div>
+  {% endif %}
+
+  {% set typeLabels = {
+    'flower': '🌸 Fleurs numériques',
+    'candle': '🕯️ Bougies numériques',
+    'dove':   '🕊️ Colombes numériques',
+    'other':  '✨ Autres gadgets',
+  } %}
+
+  {% for type, gadgets in byType %}
+  <div class="gadget-section">
+    <div class="gadget-section__title">
+      {{ typeLabels[type] ?? type }}
+    </div>
+    <div class="gadget-grid">
+      {% for gadget in gadgets %}
+      <div class="gadget-card" id="gadget-card-{{ gadget.id }}">
+        <div class="gadget-card__icon">
+          {% if gadget.imageUrl %}
+            <img src="{{ gadget.imageUrl starts with 'http' ? gadget.imageUrl : asset(gadget.imageUrl) }}"
+                 style="width:64px;height:64px;object-fit:contain;" alt="{{ gadget.name }}">
+          {% elseif gadget.type == 'flower' %}🌸
+          {% elseif gadget.type == 'candle' %}🕯️
+          {% elseif gadget.type == 'dove' %}🕊️
+          {% else %}✨{% endif %}
+        </div>
+
+        <div class="gadget-card__name">{{ gadget.name }}</div>
+
+        {% if gadget.description %}
+        <div class="gadget-card__desc">{{ gadget.description }}</div>
+        {% endif %}
+
+        <div class="gadget-card__price">
+          {{ gadget.price|number_format(2, ',', ' ') }}
+          <span>{{ gadget.currency }}</span>
+        </div>
+
+        {% if app.user %}
+          {% if wallet[gadget.id] is defined and wallet[gadget.id] > 0 %}
+          <div class="gadget-card__wallet">
+            <i class="bi bi-check-circle-fill"></i>
+            {{ wallet[gadget.id] }} dans mon portefeuille
+          </div>
+          {% endif %}
+
+          <div class="gadget-card__qty-select">
+            <button onclick="changeQty({{ gadget.id }}, -1)">−</button>
+            <span id="qty-{{ gadget.id }}">1</span>
+            <button onclick="changeQty({{ gadget.id }}, +1)">+</button>
+          </div>
+
+          <input type="hidden" id="csrf-{{ gadget.id }}" value="{{ csrf_token('gadget_buy_' ~ gadget.id) }}">
+
+          <button class="gadget-card__btn gadget-card__btn--buy"
+                  onclick="buyGadget({{ gadget.id }})">
+            <i class="bi bi-cart-plus me-1"></i>Ajouter au portefeuille
+          </button>
+        {% else %}
+          <a href="{{ path('app_login') }}" class="gadget-card__btn gadget-card__btn--login">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Se connecter pour acheter
+          </a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:4rem;color:var(--em-muted);">
+    <div style="font-size:3rem;margin-bottom:1rem;">🛒</div>
+    <p>Aucun gadget disponible pour le moment.</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+var qtys = {};
+
+function changeQty(id, delta) {
+  if (!qtys[id]) qtys[id] = 1;
+  qtys[id] = Math.max(1, Math.min(99, qtys[id] + delta));
+  document.getElementById('qty-' + id).textContent = qtys[id];
+}
+
+async function buyGadget(id) {
+  var qty  = qtys[id] || 1;
+  var csrf = document.getElementById('csrf-' + id).value;
+  var fd   = new FormData();
+  fd.append('quantity', qty);
+  fd.append('_token', csrf);
+
+  var btn = document.querySelector('#gadget-card-' + id + ' .gadget-card__btn--buy');
+  btn.disabled = true;
+  btn.textContent = 'En cours...';
+
+  var res = await fetch('/boutique/acheter/' + id, { method: 'POST', body: fd });
+  var data = await res.json();
+
+  if (data.success) {
+    // Toast succès
+    showToast('✅ ' + data.gadgetName + ' ajouté à votre portefeuille !', 'success');
+    // Mettre à jour le compteur portefeuille
+    var walletDiv = document.querySelector('#gadget-card-' + id + ' .gadget-card__wallet');
+    if (walletDiv) {
+      walletDiv.innerHTML = '<i class="bi bi-check-circle-fill"></i> ' + data.newQuantity + ' dans mon portefeuille';
+    } else {
+      var newDiv = document.createElement('div');
+      newDiv.className = 'gadget-card__wallet';
+      newDiv.innerHTML = '<i class="bi bi-check-circle-fill"></i> ' + data.newQuantity + ' dans mon portefeuille';
+      btn.parentNode.insertBefore(newDiv, btn.previousElementSibling);
+    }
+  } else {
+    showToast('❌ ' + (data.error || 'Erreur'), 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-cart-plus me-1"></i>Ajouter au portefeuille';
+}
+
+function showToast(msg, type) {
+  var t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;background:' +
+    (type === 'success' ? '#1B2B4B' : '#B91C1C') +
+    ';color:white;padding:.75rem 1.25rem;border-radius:10px;font-size:.875rem;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function() { t.remove(); }, 3000);
+}
+</script>
+{% endblock %}

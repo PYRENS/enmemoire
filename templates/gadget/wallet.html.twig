@@ -1,0 +1,132 @@
+{% extends 'base.html.twig' %}
+{% block title %}Mon portefeuille — EnMémoire.com{% endblock %}
+
+{% block stylesheets %}
+<style>
+.wallet-page { max-width: 960px; margin: 0 auto; padding: 2.5rem 1rem 4rem; }
+.wallet-page__header { margin-bottom: 2rem; }
+.wallet-page__header h1 { font-family: var(--font-display); font-size: 2rem; color: var(--em-navy); }
+.wallet-page__header p { color: var(--em-muted); }
+
+.wallet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 3rem; }
+
+.wallet-item {
+  background: white; border-radius: 14px; padding: 1.25rem 1rem;
+  text-align: center; box-shadow: var(--em-shadow-sm);
+  border: 2px solid var(--em-stone); position: relative;
+}
+.wallet-item__badge {
+  position: absolute; top: -.6rem; right: -.6rem;
+  background: var(--em-gold); color: white;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; font-weight: 700; box-shadow: 0 2px 8px rgba(201,168,76,.4);
+}
+.wallet-item__icon { font-size: 3rem; margin-bottom: .5rem; display: block; }
+.wallet-item__name { font-weight: 700; font-size: .875rem; color: var(--em-navy); }
+.wallet-item__type { font-size: .72rem; color: var(--em-muted); text-transform: uppercase; letter-spacing: .05em; }
+
+.wallet-empty {
+  text-align: center; padding: 4rem 2rem;
+  color: var(--em-muted); background: var(--em-cream);
+  border-radius: 16px;
+}
+.wallet-empty h3 { font-size: 1.2rem; color: var(--em-navy); margin: 1rem 0 .5rem; }
+
+.purchase-history { }
+.purchase-history h2 { font-size: 1.1rem; font-weight: 700; color: var(--em-navy); margin-bottom: 1.25rem; border-left: 4px solid var(--em-gold); padding-left: .75rem; }
+
+.purchase-item {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .875rem 1rem; border-bottom: 1px solid var(--em-stone);
+  font-size: .875rem;
+}
+.purchase-item:last-child { border-bottom: none; }
+.purchase-item__icon { font-size: 1.75rem; flex-shrink: 0; }
+.purchase-item__info { flex: 1; }
+.purchase-item__name { font-weight: 600; color: var(--em-navy); }
+.purchase-item__meta { color: var(--em-muted); font-size: .78rem; }
+.purchase-item__price { font-weight: 700; color: var(--em-gold); white-space: nowrap; }
+.purchase-item__qty { background: var(--em-cream); padding: .2rem .5rem; border-radius: 6px; font-size: .78rem; font-weight: 600; color: var(--em-navy); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="wallet-page">
+  <div class="wallet-page__header">
+    <div class="d-flex align-items-center gap-3 mb-1">
+      <a href="{{ path('app_gadget_shop') }}" class="text-muted text-decoration-none" style="font-size:.875rem;">
+        <i class="bi bi-arrow-left me-1"></i>Boutique
+      </a>
+    </div>
+    <h1><i class="bi bi-wallet2 me-2"></i>Mon portefeuille</h1>
+    <p>Vos gadgets numériques prêts à être déposés sur les pages mémorielles.</p>
+  </div>
+
+  {# Gadgets disponibles #}
+  {% set hasItems = false %}
+  {% for item in walletItems %}{% if item.quantity > 0 %}{% set hasItems = true %}{% endif %}{% endfor %}
+
+  {% if hasItems %}
+  <div class="wallet-grid">
+    {% for item in walletItems %}
+    {% if item.quantity > 0 %}
+    <div class="wallet-item">
+      <div class="wallet-item__badge">{{ item.quantity }}</div>
+      <span class="wallet-item__icon">
+        {% if item.gadget.imageUrl %}
+          <img src="{{ item.gadget.imageUrl starts with 'http' ? item.gadget.imageUrl : asset(item.gadget.imageUrl) }}"
+               style="width:56px;height:56px;object-fit:contain;" alt="{{ item.gadget.name }}">
+        {% elseif item.gadget.type == 'flower' %}🌸
+        {% elseif item.gadget.type == 'candle' %}🕯️
+        {% elseif item.gadget.type == 'dove' %}🕊️
+        {% else %}✨{% endif %}
+      </span>
+      <div class="wallet-item__name">{{ item.gadget.name }}</div>
+      <div class="wallet-item__type">{{ item.gadget.type }}</div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  <div style="background:var(--em-cream);border-radius:12px;padding:1rem 1.25rem;margin-bottom:2rem;font-size:.875rem;color:var(--em-muted);">
+    <i class="bi bi-info-circle me-2 text-gold"></i>
+    Pour déposer un gadget, visitez une page mémorielle et cliquez sur le bouton gadget de votre choix.
+  </div>
+  {% else %}
+  <div class="wallet-empty">
+    <div style="font-size:3.5rem;">🛒</div>
+    <h3>Votre portefeuille est vide</h3>
+    <p>Achetez des gadgets en boutique pour les déposer sur les pages mémorielles.</p>
+    <a href="{{ path('app_gadget_shop') }}" class="em-btn em-btn--primary mt-3">
+      <i class="bi bi-shop me-1"></i>Aller à la boutique
+    </a>
+  </div>
+  {% endif %}
+
+  {# Historique des achats #}
+  {% if purchases|length %}
+  <div class="purchase-history">
+    <h2><i class="bi bi-clock-history me-2"></i>Historique des achats</h2>
+    <div style="background:white;border-radius:14px;box-shadow:var(--em-shadow-sm);overflow:hidden;">
+      {% for p in purchases %}
+      <div class="purchase-item">
+        <div class="purchase-item__icon">
+          {% if p.gadget.type == 'flower' %}🌸
+          {% elseif p.gadget.type == 'candle' %}🕯️
+          {% elseif p.gadget.type == 'dove' %}🕊️
+          {% else %}✨{% endif %}
+        </div>
+        <div class="purchase-item__info">
+          <div class="purchase-item__name">{{ p.gadget.name }}</div>
+          <div class="purchase-item__meta">{{ p.createdAt|date('d/m/Y à H:i') }}</div>
+        </div>
+        <span class="purchase-item__qty">×{{ p.quantity }}</span>
+        <div class="purchase-item__price">{{ p.totalPrice }} {{ p.currency }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

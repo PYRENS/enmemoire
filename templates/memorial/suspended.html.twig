@@ -1,0 +1,31 @@
+{% extends 'base.html.twig' %}
+{% block title %}Page suspendue — EnMémoire.com{% endblock %}
+
+{% block body %}
+<div style="min-height:60vh;display:flex;align-items:center;justify-content:center;padding:3rem 1rem;">
+  <div style="text-align:center;max-width:480px;">
+
+    <div style="font-size:4rem;margin-bottom:1.5rem;">⚠️</div>
+
+    <h1 style="font-family:var(--font-display);font-size:2rem;color:var(--em-navy);margin-bottom:.75rem;">
+      Page temporairement suspendue
+    </h1>
+
+    <p style="color:var(--em-muted);font-size:1rem;line-height:1.7;margin-bottom:2rem;">
+      La page mémorielle de <strong>{{ page.deceasedFullName }}</strong>
+      est temporairement suspendue par l'administration.<br>
+      Pour plus d'informations, contactez notre support.
+    </p>
+
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+      <a href="{{ path('app_home') }}" class="em-btn em-btn--ghost">
+        <i class="bi bi-house me-1"></i>Retour à l'accueil
+      </a>
+      <a href="{{ path('app_contact') }}" class="em-btn em-btn--primary">
+        <i class="bi bi-envelope me-1"></i>Contacter le support
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

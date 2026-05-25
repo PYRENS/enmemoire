@@ -58,6 +58,29 @@ class MediaService
     }
 
     // --------------------------------------------------
+    // Upload image de couverture d'un événement
+    // --------------------------------------------------
+    public function uploadEventCover(UploadedFile $file, \App\Entity\MemorialEvent $event): string
+    {
+        $this->validateFile($file, self::ALLOWED_IMAGES, self::MAX_IMAGE_SIZE);
+
+        $pageId   = $event->getMemorial()?->getId() ?? 'unknown';
+        $eventId  = $event->getId() ?? 'new';
+
+        if ($this->isCloudinary()) {
+            return $this->uploadToCloudinary(
+                $file,
+                "enmemoire/memorials/{$pageId}/events/{$eventId}/cover"
+            );
+        }
+
+        return $this->uploadLocal(
+            $file,
+            "uploads/memorials/{$pageId}/events/{$eventId}/cover"
+        );
+    }
+
+    // --------------------------------------------------
     // Upload média galerie (photo ou vidéo)
     // --------------------------------------------------
     public function uploadGalleryMedia(

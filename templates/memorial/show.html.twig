@@ -254,24 +254,58 @@
     {# Gadgets / Hommages virtuels #}
     <div class="memorial-gadgets">
       <h3>Déposer un hommage</h3>
+
+      {# Compteurs des gadgets déposés #}
+      <div class="memorial-gadgets__counts" id="gadget-counts">
+        <span class="gadget-count" id="count-flower" title="Fleurs déposées">🌸 <span>0</span></span>
+        <span class="gadget-count" id="count-candle" title="Bougies allumées">🕯️ <span>0</span></span>
+        <span class="gadget-count" id="count-dove"   title="Colombes lâchées">🕊️ <span>0</span></span>
+      </div>
+
       {% if app.user %}
-      <div class="memorial-gadgets__row">
-        <button class="gadget-btn" data-action="deposit_flower" title="Déposer une fleur">🌹</button>
-        <button class="gadget-btn" data-action="light_candle"   title="Allumer une bougie">🕯️</button>
-        <button class="gadget-btn" data-action="release_dove"   title="Lâcher une colombe">🕊️</button>
+      <div class="memorial-gadgets__row" id="gadget-buttons">
+        <span style="font-size:.8rem;color:var(--em-muted);">Chargement...</span>
       </div>
       <p class="memorial-gadgets__hint">
-        {% if app.request.attributes.get('_route') is not null %}
-          <a href="/boutique/portefeuille">Mon portefeuille</a>
-        {% endif %}
+        <a href="{{ path('app_gadget_wallet') }}">Mon portefeuille</a>
+        &nbsp;·&nbsp;
+        <a href="{{ path('app_gadget_shop') }}">Boutique</a>
       </p>
       {% else %}
+      <div class="memorial-gadgets__row">
+        <button class="gadget-btn" disabled title="Fleur">🌸</button>
+        <button class="gadget-btn" disabled title="Bougie">🕯️</button>
+        <button class="gadget-btn" disabled title="Colombe">🕊️</button>
+      </div>
       <p class="memorial-gadgets__hint">
         <a href="{{ path('app_login') }}">Connectez-vous</a> pour déposer un hommage.
       </p>
       {% endif %}
     </div>
   </div>
+
+{# ── Modal dépôt gadget ── #}
+<div id="gadgetModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:white;border-radius:16px;padding:2rem;width:420px;max-width:100%;box-shadow:0 8px 40px rgba(0,0,0,.3);text-align:center;">
+    <div id="gadgetModal__icon" style="font-size:3.5rem;margin-bottom:.75rem;"></div>
+    <h4 id="gadgetModal__name" style="margin:0 0 .5rem;color:var(--em-navy);font-size:1.1rem;"></h4>
+    <p style="font-size:.85rem;color:var(--em-muted);margin-bottom:1.25rem;">Déposer cet hommage sur la page mémorielle</p>
+    <div id="gadgetModal__textWrap" style="display:none;margin-bottom:1rem;">
+      <input type="text" id="gadgetModal__text"
+             style="width:100%;padding:.6rem .875rem;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.875rem;font-family:inherit;"
+             placeholder="Message personnel (optionnel)">
+      <div id="gadgetModal__textCount" style="font-size:.72rem;color:#9CA3AF;text-align:right;margin-top:.25rem;"></div>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:center;">
+      <button onclick="closeGadgetModal()" style="padding:.6rem 1.25rem;border:1.5px solid #e5e7eb;border-radius:8px;background:none;cursor:pointer;font-size:.875rem;">Annuler</button>
+      <button id="gadgetModal__confirm" style="padding:.6rem 1.5rem;background:var(--em-gold);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.875rem;">Déposer ✨</button>
+    </div>
+    <div id="gadgetModal__remaining" style="font-size:.72rem;color:#9CA3AF;margin-top:.75rem;"></div>
+  </div>
+</div>
+
+{# ── Zone animation ── #}
+<div id="gadget-animation-zone" style="position:fixed;pointer-events:none;z-index:9998;inset:0;overflow:hidden;"></div>
 
   {# BIOGRAPHIE / LIGNE DE VIE #}
   <div class="memorial-panel {{ defaultTab == 'timeline' ? 'active' : '' }}" id="panel-timeline">
@@ -850,28 +884,118 @@ document.getElementById('guestbook-form')?.addEventListener('submit', async func
   this.closest('.memorial-form-card').innerHTML = '<div class="memorial-signed"><i class="bi bi-check-circle-fill"></i> ' + data.message + '</div>';
 });
 
-// Gadgets
-document.querySelectorAll('.gadget-btn').forEach(btn => {
-  btn.addEventListener('click', async function() {
-    const action = this.dataset.action;
-    const form   = new FormData();
-    form.append('_token', '{{ csrf_token("gadget_deposit") }}');
-    form.append('gadget_id', '1'); // TODO: sélecteur gadget dynamique
-    form.append('action', action);
+// Gadgets Phase 2
+var GADGET_CSRF = '{{ csrf_token("gadget_deposit") }}';
+var currentGadget = null;
 
-    const resp = await fetch(`/boutique/deposer/${MEMORIAL_SLUG}`, {
-      method: 'POST', body: form,
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-    const data = await resp.json();
-    if (data.success) {
-      this.style.transform = 'scale(1.4)';
-      setTimeout(() => { this.style.transform = ''; }, 400);
-    } else {
-      alert(data.error || 'Gadget indisponible.');
+async function loadWalletGadgets() {
+  var container = document.getElementById('gadget-buttons');
+  if (!container) return;
+  try {
+    var res  = await fetch('/api/gadgets/wallet', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+    var data = await res.json();
+    container.innerHTML = '';
+    if (!data.length) {
+      container.innerHTML = '<p style="font-size:.8rem;color:var(--em-muted);">Portefeuille vide. <a href="/boutique">Acheter des gadgets</a>.</p>';
+      return;
     }
+    data.forEach(function(g) {
+      var emoji = g.type==='flower'?'🌸':g.type==='candle'?'🕯️':g.type==='dove'?'🕊️':'✨';
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative;display:inline-block;';
+      var btn = document.createElement('button');
+      btn.className = 'gadget-btn';
+      btn.title = g.name+' ('+g.quantity+' restant'+(g.quantity>1?'s':'')+')';
+      btn.innerHTML = g.imageUrl?'<img src="'+g.imageUrl+'" style="width:28px;height:28px;object-fit:contain;">':emoji;
+      var badge = document.createElement('span');
+      badge.id = 'wqty-'+g.id;
+      badge.textContent = g.quantity;
+      badge.style.cssText = 'position:absolute;top:-5px;right:-5px;background:var(--em-gold);color:white;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;pointer-events:none;';
+      wrap.appendChild(btn); wrap.appendChild(badge); container.appendChild(wrap);
+      btn.addEventListener('click', function() { openGadgetModal(g, emoji); });
+    });
+  } catch(e) { container.innerHTML = '<p style="font-size:.8rem;color:var(--em-muted);">Erreur.</p>'; }
+}
+
+async function loadInteractionCounts() {
+  try {
+    var res  = await fetch('/api/gadgets/interactions/'+MEMORIAL_SLUG);
+    var data = await res.json();
+    if (data.counts) updateCounts(data.counts);
+  } catch(e) {}
+}
+
+function updateCounts(c) {
+  ['flower','candle','dove'].forEach(function(t) {
+    var el = document.getElementById('count-'+t);
+    if (!el) return;
+    el.querySelector('span').textContent = c[t]||0;
+    el.setAttribute('data-active',(c[t]||0)>0?'true':'false');
   });
-});
+}
+
+function openGadgetModal(g, emoji) {
+  currentGadget = g;
+  document.getElementById('gadgetModal__icon').textContent = emoji;
+  document.getElementById('gadgetModal__name').textContent = g.name;
+  document.getElementById('gadgetModal__remaining').textContent = g.quantity+' dans votre portefeuille';
+  var tw = document.getElementById('gadgetModal__textWrap');
+  var ti = document.getElementById('gadgetModal__text');
+  if (g.allowsText) {
+    tw.style.display='block'; ti.value=''; ti.maxLength=g.maxTextLen||80;
+    document.getElementById('gadgetModal__textCount').textContent='0/'+(g.maxTextLen||80);
+    ti.oninput=function(){document.getElementById('gadgetModal__textCount').textContent=this.value.length+'/'+(g.maxTextLen||80);};
+  } else { tw.style.display='none'; }
+  document.getElementById('gadgetModal__confirm').onclick = depositGadget;
+  document.getElementById('gadgetModal').style.display='flex';
+}
+
+function closeGadgetModal() { document.getElementById('gadgetModal').style.display='none'; currentGadget=null; }
+
+async function depositGadget() {
+  if (!currentGadget) return;
+  var btn = document.getElementById('gadgetModal__confirm');
+  btn.disabled=true; btn.textContent='⏳...';
+  var fd = new FormData();
+  fd.append('_token', GADGET_CSRF);
+  fd.append('gadget_id', currentGadget.id);
+  var textEl = document.getElementById('gadgetModal__text');
+  fd.append('custom_text', textEl ? textEl.value : '');
+  var depositedGadget = currentGadget; // Sauvegarder avant closeGadgetModal
+  try {
+    var res  = await fetch('/boutique/deposer/'+MEMORIAL_SLUG,{method:'POST',body:fd,headers:{'X-Requested-With':'XMLHttpRequest'}});
+    var data = await res.json();
+    if (data.success) {
+      closeGadgetModal();
+      var b = document.getElementById('wqty-'+depositedGadget.id);
+      if (b) { b.textContent=data.remainingInWallet; if(data.remainingInWallet===0) b.style.display='none'; }
+      if (data.counts) updateCounts(data.counts);
+      launchAnimation(data.gadgetEmoji, data.customText);
+    } else { alert(data.error||'Impossible de déposer.'); }
+  } catch(e) { alert('Erreur réseau.'); }
+  btn.disabled=false; btn.textContent='Déposer ✨';
+}
+
+function launchAnimation(emoji, text) {
+  var zone = document.getElementById('gadget-animation-zone');
+  if (!zone) return;
+  var el = document.createElement('div');
+  el.style.cssText='position:absolute;bottom:15%;left:'+(10+Math.random()*80)+'%;font-size:2.5rem;opacity:1;transition:transform 2.5s ease-out,opacity 2s ease-out 0.5s;pointer-events:none;text-align:center;';
+  el.innerHTML = emoji+(text?'<div style="font-size:.65rem;background:rgba(0,0,0,.65);color:white;border-radius:8px;padding:.2rem .4rem;margin-top:.2rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+text+'</div>':'');
+  zone.appendChild(el);
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    el.style.transform='translateY(-'+(250+Math.random()*150)+'px) rotate('+(Math.random()*20-10)+'deg)';
+    el.style.opacity='0';
+  });});
+  setTimeout(function(){el.remove();},3000);
+}
+
+document.getElementById('gadgetModal').addEventListener('click',function(e){if(e.target===this)closeGadgetModal();});
+var _gStyle=document.createElement('style');
+_gStyle.textContent='.memorial-gadgets__counts{display:flex;gap:1rem;margin-bottom:.75rem;flex-wrap:wrap}.gadget-count{display:flex;align-items:center;gap:.3rem;font-size:.85rem;color:var(--em-muted)}.gadget-count span{font-weight:700;color:var(--em-navy)}.gadget-count[data-active="true"] span{color:var(--em-gold)}';
+document.head.appendChild(_gStyle);
+loadWalletGadgets();
+loadInteractionCounts();
 </script>
 <script>
 var _lbItems=[],_lbIdx=0;

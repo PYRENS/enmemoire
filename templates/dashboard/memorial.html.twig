@@ -219,6 +219,22 @@
                   {% endif %}
                 </span>
               </div>
+              <div class="dashboard-info-row">
+                <span class="dashboard-info-label">Statut</span>
+                <span class="dashboard-info-value">
+                  {% if page.status == 'active' %}
+                    <span class="em-badge em-badge--active"><i class="bi bi-check-circle"></i> Active</span>
+                  {% elseif page.status == 'suspended' %}
+                    <span style="background:rgba(185,28,28,.1);color:#B91C1C;padding:.2rem .6rem;border-radius:20px;font-size:.75rem;font-weight:600;">
+                      <i class="bi bi-pause-circle"></i> Suspendue
+                    </span>
+                  {% elseif page.status == 'expired' %}
+                    <span class="em-badge em-badge--pending"><i class="bi bi-clock"></i> Expirée</span>
+                  {% else %}
+                    <span class="em-badge"><i class="bi bi-archive"></i> {{ page.status }}</span>
+                  {% endif %}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -284,14 +300,28 @@
             {% if upcoming|length %}
               {% for event in upcoming|slice(0, 3) %}
               <div class="dashboard-event-item {% if event.isLive %}dashboard-event-item--live{% endif %}">
-                <div>
-                  <strong>{{ event.title }}</strong>
-                  {% if event.isLive %}<span class="em-badge em-badge--active">EN DIRECT</span>{% endif %}
+                {% if event.coverImageUrl %}
+                <div style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;margin-right:.75rem;">
+                  <img src="{{ event.coverImageUrl starts with 'http' ? event.coverImageUrl : asset(event.coverImageUrl) }}"
+                       style="width:100%;height:100%;object-fit:cover;" alt="">
+                </div>
+                {% endif %}
+                <div style="flex:1;min-width:0;">
+                  <a href="{{ path('app_memorial_event_show', {slug: page.slug, eventId: event.id}) }}"
+                     class="fw-600 text-decoration-none" style="color:var(--em-navy);">
+                    {{ event.title }}
+                  </a>
+                  {% if event.isLive %}<span class="em-badge em-badge--active ms-1">EN DIRECT</span>{% endif %}
                   <small class="d-block text-muted">{{ event.eventDate|date('d/m/Y à H:i') }}</small>
+                  {% if event.locationName %}
+                  <small class="text-muted"><i class="bi bi-geo-alt"></i> {{ event.locationName }}</small>
+                  {% endif %}
                 </div>
                 <span class="dashboard-event-type">
                   {% if event.type == 'funeral' %}⚰️
                   {% elseif event.type == 'commemoration' %}🕊️
+                  {% elseif event.type == 'anniversary_mass' %}⛪
+                  {% elseif event.type == 'reception' %}🤝
                   {% else %}📌{% endif %}
                 </span>
               </div>

@@ -92,7 +92,7 @@
 {% endblock %}
 
 {% block body %}
-<section class="event-hero">
+<section class="event-hero" {% if event.coverImageUrl %}style="background-image: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.65)), url('{{ event.coverImageUrl starts with 'http' ? event.coverImageUrl : asset(event.coverImageUrl) }}'); background-size: cover; background-position: center;"{% endif %}>
   <div class="container-xl">
     <a href="{{ path('app_memorial_show', {slug: page.slug}) }}" class="event-hero__back">
       <i class="bi bi-arrow-left"></i> Retour à la page de {{ page.deceasedFirstName }}

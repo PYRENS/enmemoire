@@ -102,12 +102,6 @@ class HomeController extends AbstractController
 
     // --- Pages stub ---
 
-    #[Route('/boutique', name: 'app_gadget_shop')]
-    public function gadgetShop(): Response
-    {
-        return $this->render('home/coming_soon.html.twig', ['feature' => 'Boutique des gadgets']);
-    }
-
     #[Route('/dashboard/invitation/{id}/accept', name: 'app_invitation_accept', methods: ['GET', 'POST'])]
     public function acceptInvitation(int $id): Response
     {
@@ -126,11 +120,6 @@ class HomeController extends AbstractController
         return $this->render('home/coming_soon.html.twig', ['feature' => 'Mon profil']);
     }
 
-    #[Route('/admin', name: 'app_admin_dashboard')]
-    public function adminDashboard(): Response
-    {
-        return $this->render('home/coming_soon.html.twig', ['feature' => 'Administration']);
-    }
 
     #[Route('/memorial/create', name: 'app_memorial_create')]
     public function createMemorial(): Response

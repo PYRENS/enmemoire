@@ -1,0 +1,81 @@
+{% extends 'admin/layout.html.twig' %}
+{% block title %}Formules — Admin{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+  <h1><i class="bi bi-box-seam me-2"></i>Formules</h1>
+  <a href="{{ path('app_admin_formula_new') }}" class="em-btn em-btn--primary em-btn--sm">
+    <i class="bi bi-plus-lg me-1"></i>Nouvelle formule
+  </a>
+</div>
+
+<div class="admin-form-card p-0">
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nom</th>
+          <th>Prix</th>
+          <th>Durée</th>
+          <th>Événements</th>
+          <th>Médias</th>
+          <th>Options</th>
+          <th>Pages</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in formulas %}
+        <tr>
+          <td class="text-muted">{{ f.sortOrder }}</td>
+          <td>
+            <strong>{{ f.name }}</strong>
+            <div style="font-size:.72rem;color:var(--em-muted);">{{ f.slug }}</div>
+          </td>
+          <td><strong>{{ f.price }} {{ f.currency }}</strong></td>
+          <td>
+            {% if f.isPerpetual() %}
+              <span class="badge bg-success text-white">Perpétuel</span>
+            {% else %}
+              {{ f.durationYears }} an{{ f.durationYears > 1 ? 's' : '' }}
+            {% endif %}
+          </td>
+          <td>{{ f.maxEvents }}</td>
+          <td>{{ f.maxMediaGb }} Go</td>
+          <td style="font-size:.75rem;">
+            {% if f.isHasLive() %}<span class="badge bg-primary me-1">Live</span>{% endif %}
+            {% if f.isHasVideo() %}<span class="badge bg-info me-1">Vidéo</span>{% endif %}
+            {% if f.isHasQrCode() %}<span class="badge bg-secondary me-1">QR</span>{% endif %}
+            {% if f.isHasPremiumThemes() %}<span class="badge bg-warning me-1">Thèmes+</span>{% endif %}
+          </td>
+          <td>{{ f.memorialPages|length }}</td>
+          <td>
+            <button onclick="adminToggle('{{ path('app_admin_formula_toggle', {id: f.id}) }}', this)"
+                    class="btn btn-sm {{ f.isActive() ? 'btn-success' : 'btn-secondary' }}"
+                    title="{{ f.isActive() ? 'Désactiver' : 'Activer' }}">
+              <i class="bi bi-{{ f.isActive() ? 'check-circle' : 'pause-circle' }}"></i>
+            </button>
+          </td>
+          <td>
+            <a href="{{ path('app_admin_formula_edit', {id: f.id}) }}" class="btn btn-sm btn-outline-primary me-1">
+              <i class="bi bi-pencil"></i>
+            </a>
+            {% if f.memorialPages|length == 0 %}
+            <form method="POST" action="{{ path('app_admin_formula_delete', {id: f.id}) }}" class="d-inline"
+                  onsubmit="return confirm('Supprimer cette formule ?')">
+              <input type="hidden" name="_token" value="{{ csrf_token('formula_delete_' ~ f.id) }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10" class="text-center text-muted py-4">Aucune formule</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

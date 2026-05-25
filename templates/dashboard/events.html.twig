@@ -11,7 +11,8 @@
 
     <div class="event-form-panel mb-4">
       <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Créer un événement</h3>
-      <form action="{{ path('app_dashboard_event_add', {slug: page.slug}) }}" method="POST" data-disable-on-submit>
+      <form action="{{ path('app_dashboard_event_add', {slug: page.slug}) }}" method="POST"
+            enctype="multipart/form-data" data-disable-on-submit>
         <input type="hidden" name="_token" value="{{ csrf_token('event_add_' ~ page.id) }}">
         <div class="row g-3">
           <div class="col-md-4">
@@ -40,9 +41,23 @@
             <label class="em-form-label">Adresse</label>
             <input type="text" class="em-form-control" name="location_address" placeholder="Adresse complète" maxlength="500">
           </div>
-          <div class="col-md-12">
+          <div class="col-md-8">
             <label class="em-form-label">Lien de diffusion live (YouTube, Facebook, Zoom...)</label>
             <input type="url" class="em-form-control" name="live_url" placeholder="https://youtube.com/live/..." maxlength="500">
+          </div>
+          <div class="col-md-4">
+            <label class="em-form-label">Image de couverture <span class="text-muted">(optionnel)</span></label>
+            <input type="file" class="em-form-control" name="cover_image"
+                   accept="image/jpeg,image/png,image/webp"
+                   onchange="previewCover(this, 'create_cover_preview')">
+            <div class="form-text">JPG, PNG ou WebP · Max 5 Mo</div>
+            <div id="create_cover_preview" style="display:none;margin-top:.5rem;">
+              <img src="" style="width:100%;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--em-stone);">
+              <button type="button" onclick="clearCover('create_cover_preview', this.closest('.col-md-4').querySelector('input'))"
+                      style="margin-top:.25rem;background:none;border:none;color:var(--em-danger);font-size:.78rem;cursor:pointer;">
+                <i class="bi bi-x-circle"></i> Supprimer
+              </button>
+            </div>
           </div>
           <div class="col-12">
             <label class="em-form-label">Description</label>
@@ -58,6 +73,12 @@
     <div class="events-admin-list">
       {% for event in events %}
       <div class="event-admin-card event-admin-card--{{ event.status }}">
+        {% if event.coverImageUrl %}
+        <div style="width:64px;height:64px;border-radius:8px;overflow:hidden;flex-shrink:0;margin-right:1rem;">
+          <img src="{{ event.coverImageUrl starts with 'http' ? event.coverImageUrl : asset(event.coverImageUrl) }}"
+               style="width:100%;height:100%;object-fit:cover;" alt="{{ event.title }}">
+        </div>
+        {% endif %}
         <div class="flex-grow-1">
           <div class="d-flex align-items-center gap-2 mb-1">
             <span class="em-badge em-badge--{{ event.isLive ? 'active' : (event.isUpcoming ? 'info' : 'pending') }}">
@@ -70,7 +91,7 @@
             {% if event.locationName %} · <i class="bi bi-geo-alt"></i> {{ event.locationName }}{% endif %}
           </small>
         </div>
-        <div class="d-flex gap-2 align-items-center ms-3">
+        <div class="d-flex gap-2 align-items-center ms-3 flex-wrap">
           {% if event.liveUrl %}
             <a href="{{ event.liveUrl }}" target="_blank" class="em-btn em-btn--outline em-btn--sm">
               <i class="bi bi-play-circle"></i> Live
@@ -80,6 +101,19 @@
              target="_blank" class="em-btn em-btn--outline em-btn--sm">
             <i class="bi bi-eye"></i> Voir
           </a>
+          <button onclick="openEditModal({{ event.id }}, {{ {
+            type: event.type,
+            title: event.title,
+            eventDate: event.eventDate|date('Y-m-d\\TH:i'),
+            locationName: event.locationName,
+            locationAddress: event.locationAddress,
+            liveUrl: event.liveUrl,
+            description: event.description,
+            coverImageUrl: event.coverImageUrl
+          }|json_encode|e('html_attr') }})"
+                  class="em-btn em-btn--outline em-btn--sm">
+            <i class="bi bi-pencil"></i> Modifier
+          </button>
           <form action="{{ path('app_dashboard_event_delete', {slug: page.slug, eventId: event.id}) }}" method="POST"
                 onsubmit="return confirm('Supprimer cet événement ?')">
             <input type="hidden" name="_token" value="{{ csrf_token('event_delete_' ~ event.id) }}">
@@ -90,10 +124,130 @@
         </div>
       </div>
       {% else %}
-        <div class="dashboard-empty"><p>Aucun événement créé. Planifiez des obsèques, commémorations ou cérémonies.</p></div>
+        <div class="dashboard-empty"><p>Aucun événement créé.</p></div>
       {% endfor %}
     </div>
   </main>
 </div>
+
+{# Modal Modifier #}
+<div id="editEventModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:white;border-radius:16px;padding:2rem;width:640px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.3);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <h4 style="margin:0;color:var(--em-navy);font-size:1.1rem;"><i class="bi bi-pencil me-2"></i>Modifier l'événement</h4>
+      <button onclick="closeEditModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;">×</button>
+    </div>
+    <form id="editEventForm" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="_token" id="edit_token" value="">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="em-form-label">Type *</label>
+          <select class="em-form-control" name="type" id="edit_type">
+            <option value="funeral">⚰️ Obsèques</option>
+            <option value="commemoration">🕊️ Commémoration</option>
+            <option value="anniversary_mass">⛪ Messe anniversaire</option>
+            <option value="reception">🏛️ Réception</option>
+            <option value="other">📌 Autre</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="em-form-label">Titre *</label>
+          <input type="text" class="em-form-control" name="title" id="edit_title" required maxlength="255">
+        </div>
+        <div class="col-md-6">
+          <label class="em-form-label">Date et heure *</label>
+          <input type="datetime-local" class="em-form-control" name="event_date" id="edit_event_date" required>
+        </div>
+        <div class="col-md-6">
+          <label class="em-form-label">Lieu</label>
+          <input type="text" class="em-form-control" name="location_name" id="edit_location_name" maxlength="255">
+        </div>
+        <div class="col-12">
+          <label class="em-form-label">Adresse</label>
+          <input type="text" class="em-form-control" name="location_address" id="edit_location_address" maxlength="500">
+        </div>
+        <div class="col-12">
+          <label class="em-form-label">Lien live</label>
+          <input type="url" class="em-form-control" name="live_url" id="edit_live_url" maxlength="500">
+        </div>
+        <div class="col-md-8">
+          <label class="em-form-label">Image de couverture <span class="text-muted">(optionnel)</span></label>
+          <input type="file" class="em-form-control" name="cover_image"
+                 accept="image/jpeg,image/png,image/webp"
+                 onchange="previewCover(this, 'edit_new_cover_preview')">
+          <div id="edit_new_cover_preview" style="display:none;margin-top:.5rem;">
+            <img src="" style="width:100%;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--em-stone);">
+            <button type="button" onclick="clearCover('edit_new_cover_preview', this.closest('.col-md-8').querySelector('input'))"
+                    style="margin-top:.25rem;background:none;border:none;color:var(--em-danger);font-size:.78rem;cursor:pointer;">
+              <i class="bi bi-x-circle"></i> Supprimer
+            </button>
+          </div>
+        </div>
+        <div class="col-md-4" id="edit_cover_preview_wrap" style="display:none;">
+          <label class="em-form-label">Actuelle</label>
+          <img id="edit_cover_preview" src="" style="width:100%;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--em-stone);">
+        </div>
+        <div class="col-12">
+          <label class="em-form-label">Description</label>
+          <textarea class="em-form-control" name="description" id="edit_description" rows="3" maxlength="1000"></textarea>
+        </div>
+        <div class="col-12 d-flex gap-2 justify-content-end">
+          <button type="button" onclick="closeEditModal()" class="btn btn-outline-secondary">Annuler</button>
+          <button type="submit" class="em-btn em-btn--primary"><i class="bi bi-check-lg me-1"></i>Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
-{% block javascripts %}<script src="{{ asset('js/dashboard.js') }}"></script>{% endblock %}
+
+{% block javascripts %}
+<script src="{{ asset('js/dashboard.js') }}"></script>
+<script>
+var PAGE_SLUG = {{ page.slug|json_encode|raw }};
+
+function previewCover(input, previewId) {
+  var wrap = document.getElementById(previewId);
+  if (!input.files || !input.files[0]) { wrap.style.display = 'none'; return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    wrap.querySelector('img').src = e.target.result;
+    wrap.style.display = 'block';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function clearCover(previewId, input) {
+  document.getElementById(previewId).style.display = 'none';
+  if (input) input.value = '';
+}
+
+function openEditModal(id, event) {
+  document.getElementById('editEventForm').action = '/dashboard/memorial/' + PAGE_SLUG + '/events/' + id + '/edit';
+  document.getElementById('edit_token').value          = '{{ csrf_token("event_edit") }}';
+  document.getElementById('edit_type').value           = event.type || 'funeral';
+  document.getElementById('edit_title').value          = event.title || '';
+  document.getElementById('edit_event_date').value     = event.eventDate || '';
+  document.getElementById('edit_location_name').value  = event.locationName || '';
+  document.getElementById('edit_location_address').value = event.locationAddress || '';
+  document.getElementById('edit_live_url').value       = event.liveUrl || '';
+  document.getElementById('edit_description').value    = event.description || '';
+  if (event.coverImageUrl) {
+    var url = event.coverImageUrl.startsWith('http') ? event.coverImageUrl : '/' + event.coverImageUrl;
+    document.getElementById('edit_cover_preview').src = url;
+    document.getElementById('edit_cover_preview_wrap').style.display = 'block';
+  } else {
+    document.getElementById('edit_cover_preview_wrap').style.display = 'none';
+  }
+  document.getElementById('editEventModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('editEventModal').style.display = 'none';
+}
+
+document.getElementById('editEventModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
+</script>
+{% endblock %}

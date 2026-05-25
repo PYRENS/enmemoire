@@ -1,0 +1,196 @@
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+<style>
+/* ── Admin Layout ── */
+.admin-wrapper { display: flex; min-height: calc(100vh - var(--header-height)); }
+
+.admin-sidebar {
+  width: 240px; flex-shrink: 0;
+  background: var(--em-navy); color: white;
+  padding: 1.5rem 0; position: sticky;
+  top: var(--header-height); height: calc(100vh - var(--header-height));
+  overflow-y: auto;
+}
+.admin-sidebar__title {
+  font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: rgba(255,255,255,.4);
+  padding: 1rem 1.25rem .5rem;
+}
+.admin-nav-item {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .65rem 1.25rem; color: rgba(255,255,255,.7);
+  text-decoration: none; font-size: .875rem;
+  transition: all .2s; border-left: 3px solid transparent;
+}
+.admin-nav-item:hover { color: white; background: rgba(255,255,255,.05); }
+.admin-nav-item.active { color: var(--em-gold); border-left-color: var(--em-gold); background: rgba(201,168,76,.08); }
+.admin-nav-item i { width: 18px; text-align: center; }
+
+.admin-content { flex: 1; padding: 2rem; max-width: 100%; overflow-x: hidden; }
+
+/* ── Admin Cards ── */
+.admin-stat-card {
+  background: white; border-radius: var(--em-radius);
+  padding: 1.25rem 1.5rem; box-shadow: var(--em-shadow-sm);
+  border-left: 4px solid var(--em-gold);
+}
+.admin-stat-card__value { font-size: 2rem; font-weight: 700; color: var(--em-navy); font-family: var(--font-display); }
+.admin-stat-card__label { font-size: .78rem; color: var(--em-muted); text-transform: uppercase; letter-spacing: .05em; }
+.admin-stat-card--blue  { border-left-color: #3B82F6; }
+.admin-stat-card--green { border-left-color: #10B981; }
+.admin-stat-card--red   { border-left-color: #EF4444; }
+.admin-stat-card--purple{ border-left-color: #8B5CF6; }
+
+/* ── Admin Table ── */
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th { background: var(--em-cream); font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: .75rem 1rem; color: var(--em-muted); border-bottom: 2px solid var(--em-stone); text-align: left; }
+.admin-table td { padding: .75rem 1rem; border-bottom: 1px solid var(--em-stone); font-size: .875rem; vertical-align: middle; }
+.admin-table tr:hover td { background: var(--em-cream); }
+
+/* ── Status badges ── */
+.badge-active    { background: #D1FAE5; color: #065F46; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.badge-suspended { background: #FEF3C7; color: #92400E; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.badge-disabled  { background: #FEE2E2; color: #991B1B; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.badge-pending   { background: #E0E7FF; color: #3730A3; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.badge-completed { background: #D1FAE5; color: #065F46; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.badge-failed    { background: #FEE2E2; color: #991B1B; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.badge-refunded  { background: #F3F4F6; color: #374151; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.badge-free     { background: #D1FAE5; color: #065F46; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.badge-paid     { background: #FEF3C7; color: #92400E; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.badge-special  { background: #EDE9FE; color: #4C1D95; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+
+/* ── Page header ── */
+.admin-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+.admin-page-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--em-navy); margin: 0; font-family: var(--font-display); }
+
+/* ── Form card ── */
+.admin-form-card { background: white; border-radius: var(--em-radius); padding: 2rem; box-shadow: var(--em-shadow-sm); }
+.admin-form-section { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--em-stone); }
+.admin-form-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.admin-form-section h3 { font-size: .875rem; font-weight: 700; color: var(--em-navy); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 1rem; }
+
+/* ── Toggle switch ── */
+.admin-toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+.admin-toggle input { opacity: 0; width: 0; height: 0; }
+.admin-toggle__slider { position: absolute; cursor: pointer; inset: 0; background: #ccc; border-radius: 24px; transition: .3s; }
+.admin-toggle__slider::before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
+.admin-toggle input:checked + .admin-toggle__slider { background: var(--em-gold); }
+.admin-toggle input:checked + .admin-toggle__slider::before { transform: translateX(20px); }
+
+/* ── Search bar ── */
+.admin-search { display: flex; gap: .5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.admin-search input, .admin-search select { padding: .5rem .875rem; border: 1.5px solid var(--em-stone); border-radius: var(--em-radius-sm); font-size: .875rem; }
+.admin-search input:focus, .admin-search select:focus { outline: none; border-color: var(--em-gold); }
+
+/* ── Pagination ── */
+.admin-pagination { display: flex; gap: .375rem; margin-top: 1.25rem; }
+.admin-pagination a, .admin-pagination span { padding: .375rem .75rem; border-radius: var(--em-radius-sm); font-size: .8rem; text-decoration: none; border: 1px solid var(--em-stone); color: var(--em-navy); }
+.admin-pagination a:hover { background: var(--em-cream); }
+.admin-pagination .active { background: var(--em-navy); color: white; border-color: var(--em-navy); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="admin-wrapper">
+
+  {# Sidebar #}
+  <aside class="admin-sidebar">
+    <div style="padding: 1rem 1.25rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,.1);">
+      <div style="font-weight:700;color:var(--em-gold);font-size:1rem;">⚙️ Administration</div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-top:.2rem;">EnMémoire.com</div>
+    </div>
+
+    {% set r = app.request.attributes.get('_route') %}
+
+    <div class="admin-sidebar__title">Vue d'ensemble</div>
+    <a href="{{ path('app_admin_dashboard') }}" class="admin-nav-item {% if r == 'app_admin_dashboard' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+
+    <div class="admin-sidebar__title">Catalogue</div>
+    <a href="{{ path('app_admin_formulas') }}" class="admin-nav-item {% if r starts with 'app_admin_formula' %}active{% endif %}">
+      <i class="bi bi-box-seam"></i> Formules
+    </a>
+    <a href="{{ path('app_admin_themes') }}" class="admin-nav-item {% if r starts with 'app_admin_theme' %}active{% endif %}">
+      <i class="bi bi-palette"></i> Thèmes
+    </a>
+
+    <div class="admin-sidebar__title">Utilisateurs</div>
+    <a href="{{ path('app_admin_users') }}" class="admin-nav-item {% if r starts with 'app_admin_user' %}active{% endif %}">
+      <i class="bi bi-people"></i> Utilisateurs
+    </a>
+
+    <div class="admin-sidebar__title">Financier</div>
+    <a href="{{ path('app_admin_payments') }}" class="admin-nav-item {% if r starts with 'app_admin_payment' %}active{% endif %}">
+      <i class="bi bi-credit-card"></i> Paiements
+    </a>
+
+    <div class="admin-sidebar__title">Contenu</div>
+    <a href="{{ path('app_admin_memorials') }}" class="admin-nav-item {% if r starts with 'app_admin_memorial' %}active{% endif %}">
+      <i class="bi bi-book"></i> Mémoriaux
+    </a>
+
+    <div style="padding: 1.5rem 1.25rem 1rem; margin-top:auto;">
+      <a href="{{ path('app_home') }}" class="admin-nav-item" style="padding:0;">
+        <i class="bi bi-arrow-left-circle"></i> Retour au site
+      </a>
+    </div>
+  </aside>
+
+  {# Contenu principal #}
+  <main class="admin-content">
+    {% for type, messages in app.flashes %}
+      {% for message in messages %}
+      <div class="alert alert-{{ type == 'error' ? 'danger' : type }} alert-dismissible fade show mb-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endfor %}
+    {% endfor %}
+
+    {% block admin_content %}{% endblock %}
+  </main>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+// Toggle actif/inactif Ajax
+async function adminToggle(url, btn) {
+  const res  = await fetch(url, { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} });
+  const data = await res.json();
+  if (data.success !== undefined || data.active !== undefined) {
+    const active = data.active ?? (data.success);
+    btn.classList.toggle('btn-success', active);
+    btn.classList.toggle('btn-secondary', !active);
+    btn.title = active ? 'Désactiver' : 'Activer';
+    btn.querySelector('i').className = active ? 'bi bi-check-circle' : 'bi bi-pause-circle';
+  }
+}
+
+// Changement statut Ajax
+async function adminSetStatus(url, value, token) {
+  const fd = new FormData();
+  fd.append('status', value);
+  fd.append('_token', token);
+  const res  = await fetch(url, { method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'} });
+  const data = await res.json();
+  if (data.success) location.reload();
+  else alert(data.error || 'Erreur');
+}
+
+// Changement rôle Ajax
+async function adminSetRole(url, value, token) {
+  const fd = new FormData();
+  fd.append('role', value);
+  fd.append('_token', token);
+  const res  = await fetch(url, { method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'} });
+  const data = await res.json();
+  if (data.success) location.reload();
+  else alert(data.error || 'Erreur');
+}
+</script>
+{% endblock %}
