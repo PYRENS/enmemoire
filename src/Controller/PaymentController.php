@@ -6,6 +6,7 @@ use App\Entity\MemorialPage;
 use App\Entity\Payment;
 use App\Repository\MemorialFormulaRepository;
 use App\Service\MemorialPageService;
+use App\Service\Payment\GadgetPaymentService;
 use App\Service\Payment\PaymentService;
 use App\Service\Payment\StripeService;
 use App\Service\Payment\PayPalService;
@@ -37,6 +38,7 @@ class PaymentController extends AbstractController
         private readonly LoggerInterface         $logger,
         private readonly PawaPayService          $pawaPayService,
         private readonly MobileMoneyService      $mobileMoneyService,
+        private readonly GadgetPaymentService    $gadgetPaymentService,  // ← AJOUT
     ) {}
 
     // =========================================================
@@ -233,7 +235,7 @@ class PaymentController extends AbstractController
         $payment = $this->em->getRepository(Payment::class)->find($paymentId);
 
         if ($payment && $payment->getUser() === $this->getUser()) {
-            $this->paymentService->failPayment($payment, 'Annulé par l\'utilisateur');
+            $this->paymentService->failPayment($payment, "Annulé par l'utilisateur");
         }
 
         $this->addFlash('warning', 'Paiement annulé. Vous pouvez réessayer à tout moment.');
@@ -275,6 +277,7 @@ class PaymentController extends AbstractController
 
     // =========================================================
     // WEBHOOK STRIPE (production)
+    // ── Patché pour gérer TYPE_GADGET vs TYPE_FORMULA ────────
     // =========================================================
     #[Route('/webhook/stripe', name: 'app_payment_webhook_stripe', methods: ['POST'])]
     public function webhookStripe(
@@ -315,39 +318,49 @@ class PaymentController extends AbstractController
 
             if (!$payment->isCompleted()) {
                 $payment->setProviderTxId($sessionId);
-                $this->paymentService->confirmPayment($payment);
-                $this->logger->info('[STRIPE] Paiement ' . $paymentId . ' confirmé');
-            }
 
-            $meta = $payment->getMetadata() ?? [];
-            if (!empty($meta['renewal']) && !empty($meta['memorial_slug']) && empty($meta['email_sent'])) {
-                $page = $this->em->getRepository(MemorialPage::class)
-                    ->findOneBy(['slug' => $meta['memorial_slug']]);
+                // ── Aiguillage selon le type de paiement ────────────────────
+                if ($payment->getType() === Payment::TYPE_GADGET) {
+                    // Gadget : créditer le portefeuille
+                    $this->gadgetPaymentService->confirmAndCreditWallet($payment);
+                    $this->logger->info('[STRIPE] Gadget paiement ' . $paymentId . ' confirmé — portefeuille crédité');
+                } else {
+                    // Formule mémorielle : logique existante
+                    $this->paymentService->confirmPayment($payment);
+                    $this->logger->info('[STRIPE] Paiement formule ' . $paymentId . ' confirmé');
 
-                if ($page) {
-                    $formula   = $this->em->getRepository(MemorialFormula::class)->find($meta['formula_id'] ?? 0);
-                    $years     = $formula ? ($formula->getDurationYears() ?? 1) : 1;
-                    $months    = $years * 12;
-                    $base      = ($page->getExpiresAt() && $page->getExpiresAt() > new \DateTime())
-                        ? $page->getExpiresAt() : new \DateTime();
-                    $newExpiry = (clone $base)->modify("+{$months} months");
+                    // Renouvellement si applicable
+                    $meta = $payment->getMetadata() ?? [];
+                    if (!empty($meta['renewal']) && !empty($meta['memorial_slug']) && empty($meta['email_sent'])) {
+                        $page = $this->em->getRepository(MemorialPage::class)
+                            ->findOneBy(['slug' => $meta['memorial_slug']]);
 
-                    $page->setExpiresAt($newExpiry)->setStatus(MemorialPage::STATUS_ACTIVE);
-                    if ($formula) $page->setFormula($formula);
+                        if ($page) {
+                            $formula   = $this->em->getRepository(MemorialFormula::class)->find($meta['formula_id'] ?? 0);
+                            $years     = $formula ? ($formula->getDurationYears() ?? 1) : 1;
+                            $months    = $years * 12;
+                            $base      = ($page->getExpiresAt() && $page->getExpiresAt() > new \DateTime())
+                                ? $page->getExpiresAt() : new \DateTime();
+                            $newExpiry = (clone $base)->modify("+{$months} months");
 
-                    $meta['email_sent'] = true;
-                    $payment->setMetadata($meta);
-                    $this->em->flush();
+                            $page->setExpiresAt($newExpiry)->setStatus(MemorialPage::STATUS_ACTIVE);
+                            if ($formula) $page->setFormula($formula);
 
-                    $this->logger->info('[STRIPE] Page renouvelée jusqu au ' . $newExpiry->format('Y-m-d'));
+                            $meta['email_sent'] = true;
+                            $payment->setMetadata($meta);
+                            $this->em->flush();
 
-                    $owner = $payment->getUser();
-                    if ($owner) {
-                        try {
-                            $this->memorialEmailService->sendRenewalConfirmation($page, $payment, $owner);
-                            $this->logger->info('[STRIPE] Email envoyé à ' . $owner->getEmail());
-                        } catch (\Exception $e) {
-                            $this->logger->error('[STRIPE] Email FAILED: ' . $e->getMessage());
+                            $this->logger->info('[STRIPE] Page renouvelée jusqu au ' . $newExpiry->format('Y-m-d'));
+
+                            $owner = $payment->getUser();
+                            if ($owner) {
+                                try {
+                                    $this->memorialEmailService->sendRenewalConfirmation($page, $payment, $owner);
+                                    $this->logger->info('[STRIPE] Email envoyé à ' . $owner->getEmail());
+                                } catch (\Exception $e) {
+                                    $this->logger->error('[STRIPE] Email FAILED: ' . $e->getMessage());
+                                }
+                            }
                         }
                     }
                 }
@@ -359,22 +372,43 @@ class PaymentController extends AbstractController
 
     // =========================================================
     // PAWAPAY — Retour utilisateur après paiement
+    // ── Point d'entrée unique pour formules ET gadgets ────────
+    // Refs possibles :
+    //   EM-000042  → formule mémorielle (Payment::TYPE_FORMULA)
+    //   EMG-000042 → gadget (Payment::TYPE_GADGET)
     // =========================================================
     #[Route('/pawapay/retour', name: 'app_payment_pawapay_return', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function pawaPayReturn(Request $request): Response
     {
-        $ref       = $request->query->get('ref', '');
-        $depositId = $request->query->get('depositId', '');
-        $paymentId = (int) str_replace(['EM-', '-'], ['', ''], $ref);
-        $payment   = $this->em->getRepository(Payment::class)->find($paymentId);
+        $ref       = $request->query->get('ref', '');       // ex: "EMG-000042" ou "EM-000042"
+        $depositId = $request->query->get('depositId', ''); // UUID PawaPay
         $cancelled = $request->query->get('cancel', false);
 
+        // ── Extraire le paymentId depuis la ref ──────────────────────────────
+        // EM-000042  → garder uniquement les chiffres → 42
+        // EMG-000042 → garder uniquement les chiffres → 42
+        $paymentId = (int) preg_replace('/[^0-9]/', '', $ref);
+
+        $payment = $this->em->getRepository(Payment::class)->find($paymentId);
+
         if (!$payment || $payment->getUser() !== $this->getUser()) {
+            $this->logger->warning('[PAWAPAY] Retour : payment introuvable', [
+                'ref'       => $ref,
+                'paymentId' => $paymentId,
+            ]);
             throw $this->createNotFoundException();
         }
 
+        $isGadget = $payment->getType() === Payment::TYPE_GADGET;
+
+        // ── Annulation ───────────────────────────────────────────────────────
         if ($cancelled) {
+            if ($isGadget) {
+                $this->gadgetPaymentService->failPayment($payment, "PawaPay: annulé par l'utilisateur");
+                $this->addFlash('warning', 'Paiement annulé.');
+                return $this->redirectToRoute('app_gadget_shop');
+            }
             $this->paymentService->failPayment($payment, "PawaPay: annulé par l'utilisateur");
             $this->addFlash('warning', 'Paiement annulé. Vous pouvez réessayer.');
             return $this->redirectToRoute('app_renewal', [
@@ -382,27 +416,33 @@ class PaymentController extends AbstractController
             ]);
         }
 
-        // ✅ Sauvegarder le depositId depuis l'URL si absent en base
+        // ── Sauvegarder le depositId PawaPay depuis l'URL si absent en base ─
         $meta = $payment->getMetadata() ?? [];
         if ($depositId && empty($meta['pawapay_deposit_id'])) {
             $meta['pawapay_deposit_id'] = $depositId;
             $payment->setMetadata($meta);
             $this->em->flush();
             $this->logger->info('[PAWAPAY] depositId sauvegardé depuis URL retour', [
+                'ref'       => $ref,
                 'paymentId' => $paymentId,
                 'depositId' => $depositId,
+                'type'      => $isGadget ? 'gadget' : 'formula',
             ]);
         }
 
-        // Déjà confirmé
+        // ── Déjà complété (webhook arrivé avant le retour navigateur) ────────
         if ($payment->isCompleted()) {
+            if ($isGadget) {
+                $this->addFlash('success', '✅ Paiement Mobile Money confirmé ! Gadgets crédités.');
+                return $this->redirectToRoute('app_gadget_wallet');
+            }
             $this->addFlash('success', '✅ Renouvellement confirmé ! Un email vous a été envoyé.');
             return $this->redirectToRoute('app_dashboard_memorial', [
-                'slug' => $payment->getMetadata()['memorial_slug'] ?? '',
+                'slug' => $meta['memorial_slug'] ?? '',
             ]);
         }
 
-        // Vérifier le statut PawaPay
+        // ── Vérifier le statut PawaPay ────────────────────────────────────────
         $meta      = $payment->getMetadata() ?? [];
         $depositId = $meta['pawapay_deposit_id'] ?? '';
 
@@ -412,6 +452,15 @@ class PaymentController extends AbstractController
 
             if ($status === 'COMPLETED') {
                 $payment->setProviderTxId($depositId);
+
+                if ($isGadget) {
+                    // Gadget → créditer le portefeuille
+                    $this->gadgetPaymentService->confirmAndCreditWallet($payment);
+                    $this->addFlash('success', '✅ Paiement Mobile Money confirmé ! Gadgets crédités.');
+                    return $this->redirectToRoute('app_gadget_wallet');
+                }
+
+                // Formule → logique existante
                 $this->paymentService->confirmPayment($payment);
                 $this->processRenewal($payment);
                 $this->addFlash('success', '✅ Paiement Mobile Money confirmé !');
@@ -421,6 +470,11 @@ class PaymentController extends AbstractController
             }
 
             if (in_array($status, ['FAILED', 'CANCELLED', 'REJECTED', 'TIMED_OUT'], true)) {
+                if ($isGadget) {
+                    $this->gadgetPaymentService->failPayment($payment, 'PawaPay: ' . $status);
+                    $this->addFlash('error', 'Le paiement Mobile Money a échoué. Réessayez.');
+                    return $this->redirectToRoute('app_gadget_shop');
+                }
                 $this->paymentService->failPayment($payment, 'PawaPay: ' . $status);
                 $this->addFlash('error', 'Le paiement Mobile Money a échoué. Réessayez.');
                 return $this->redirectToRoute('app_renewal', [
@@ -429,13 +483,16 @@ class PaymentController extends AbstractController
             }
         }
 
-        // En attente — afficher page de polling
+        // ── En attente → page de polling ─────────────────────────────────────
+        // checkUrl adapté selon le type (gadget ou formule)
+        $checkUrl = $isGadget
+            ? $this->generateUrl('app_gadget_payment_pawapay_check', ['paymentId' => $paymentId])
+            : $this->generateUrl('app_payment_pawapay_check', ['paymentId' => $paymentId]);
+
         return $this->render('payment/pawapay_pending.html.twig', [
             'payment'   => $payment,
             'depositId' => $depositId,
-            'checkUrl'  => $this->generateUrl('app_payment_pawapay_check', [
-                'paymentId' => $paymentId,
-            ]),
+            'checkUrl'  => $checkUrl,
         ]);
     }
 
@@ -512,8 +569,14 @@ class PaymentController extends AbstractController
 
         if ($status === 'COMPLETED' && !$payment->isCompleted()) {
             $payment->setProviderTxId($depositId);
-            $this->paymentService->confirmPayment($payment);
-            $this->processRenewal($payment);
+
+            // Aiguillage gadget vs formule
+            if ($payment->getType() === Payment::TYPE_GADGET) {
+                $this->gadgetPaymentService->confirmAndCreditWallet($payment);
+            } else {
+                $this->paymentService->confirmPayment($payment);
+                $this->processRenewal($payment);
+            }
         } elseif ($status === 'FAILED') {
             $this->paymentService->failPayment($payment, 'PawaPay webhook: FAILED');
         }
@@ -574,8 +637,14 @@ class PaymentController extends AbstractController
                 $payment = $this->em->getRepository(Payment::class)->find($customId);
                 if ($payment && !$payment->isCompleted()) {
                     $payment->setProviderTxId($resource['id'] ?? '');
-                    $this->paymentService->confirmPayment($payment);
-                    $this->processRenewal($payment);
+
+                    // Aiguillage gadget vs formule
+                    if ($payment->getType() === Payment::TYPE_GADGET) {
+                        $this->gadgetPaymentService->confirmAndCreditWallet($payment);
+                    } else {
+                        $this->paymentService->confirmPayment($payment);
+                        $this->processRenewal($payment);
+                    }
                 }
             }
         }

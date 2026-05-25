@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+{% block title %}Confirmer le paiement mobile — EnMémoire.com{% endblock %}
+
+{% block body %}
+<div class="em-section" style="min-height:70vh;display:flex;align-items:center;">
+  <div class="container-xl" style="max-width:520px;">
+    <div style="background:var(--em-white);border-radius:16px;padding:2rem;box-shadow:0 4px 20px rgba(0,0,0,.08);">
+
+      <div class="text-center mb-4">
+        <span style="font-size:2.5rem;">📱</span>
+        <h2 class="mt-2">Confirmer votre paiement Mobile Money</h2>
+        {% if gadget %}
+        <p class="text-muted">
+          {{ payment.metadata.quantity ?? 1 }} × {{ gadget.name }}
+          — {{ payment.amount }} {{ payment.currency }}
+        </p>
+        {% endif %}
+      </div>
+
+      <form method="POST">
+        <div class="mb-3">
+          <label class="fw-semibold d-block mb-1">Numéro de téléphone utilisé</label>
+          <input type="tel" name="phone" class="form-control"
+                 placeholder="+243 XXX XXX XXX" required>
+        </div>
+        <div class="mb-4">
+          <label class="fw-semibold d-block mb-1">
+            ID / Référence de transaction
+            <span class="text-muted fw-normal">(optionnel)</span>
+          </label>
+          <input type="text" name="tx_id" class="form-control"
+                 placeholder="Visible dans votre SMS de confirmation">
+        </div>
+
+        <button type="submit" class="em-btn em-btn--gold w-100">
+          <i class="bi bi-check-circle me-2"></i>J'ai effectué le paiement
+        </button>
+      </form>
+
+      <p class="text-muted text-center mt-3" style="font-size:.8rem;">
+        <i class="bi bi-info-circle me-1"></i>
+        Votre paiement sera vérifié par notre équipe sous 24h.
+        Les gadgets seront crédités dès validation.
+      </p>
+
+      <a href="{{ path('app_gadget_shop') }}"
+         class="d-block text-center text-muted text-decoration-none mt-2" style="font-size:.85rem;">
+        <i class="bi bi-arrow-left me-1"></i>Retour à la boutique
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{# templates/gadget/payment_sandbox.html.twig #}
+{% extends 'base.html.twig' %}
+{% block title %}Sandbox Paiement Gadget — EnMémoire.com{% endblock %}
+
+{% block body %}
+<div class="em-section" style="min-height:70vh;display:flex;align-items:center;">
+  <div class="container-xl" style="max-width:520px;">
+    <div style="background:var(--em-white);border-radius:16px;padding:2rem;box-shadow:0 4px 20px rgba(0,0,0,.08);">
+
+      <div class="text-center mb-3">
+        <span style="font-size:2.5rem;">
+          {% if provider == 'stripe' %}💳
+          {% elseif provider == 'paypal' %}🅿️
+          {% else %}📱{% endif %}
+        </span>
+        <h2 class="mt-2" style="font-size:1.2rem;">Simulation — {{ provider|capitalize }}</h2>
+        <span style="font-size:.75rem;background:#fff3cd;color:#856404;padding:.2rem .6rem;border-radius:20px;">MODE DÉVELOPPEMENT</span>
+      </div>
+
+      {% if gadget %}
+      <div style="background:var(--em-cream);border-radius:10px;padding:1rem;margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:center;gap:1rem;">
+          <span style="font-size:2rem;">
+            {% if gadget.type == 'flower' %}🌸
+            {% elseif gadget.type == 'candle' %}🕯️
+            {% elseif gadget.type == 'dove' %}🕊️
+            {% else %}✨{% endif %}
+          </span>
+          <div>
+            <strong>{{ gadget.name }}</strong>
+            <br>
+            <span style="font-size:.875rem;color:var(--em-muted);">
+              {{ payment.metadata.quantity ?? 1 }} × {{ gadget.price }} {{ payment.currency }}
+            </span>
+          </div>
+          <div class="ms-auto fw-bold" style="color:var(--em-gold);font-size:1.15rem;">
+            {{ payment.amount }} {{ payment.currency }}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <form method="POST" id="sandbox-form">
+        <button type="submit" name="action" value="success" id="pay-btn"
+                class="em-btn em-btn--primary w-100 mb-2">
+          {% if provider == 'stripe' %}
+            <i class="bi bi-lock-fill"></i> Simuler paiement carte réussi
+          {% elseif provider == 'paypal' %}
+            Simuler PayPal approuvé →
+          {% else %}
+            <i class="bi bi-check-circle"></i> Simuler paiement mobile réussi
+          {% endif %}
+        </button>
+        <button type="submit" name="action" value="cancel"
+                class="em-btn em-btn--ghost w-100" style="color:var(--em-danger);">
+          <i class="bi bi-x-circle"></i> Simuler annulation
+        </button>
+      </form>
+
+      <p class="text-muted text-center mt-3" style="font-size:.78rem;">
+        <i class="bi bi-info-circle"></i>
+        En production, remplacez par les vraies clés API dans <code>.env.local</code>.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.getElementById('sandbox-form').addEventListener('submit', function(e) {
+    var btn    = document.getElementById('pay-btn');
+    var action = e.submitter?.value;
+    if (action === 'success') {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Traitement…';
+        setTimeout(function() { btn.innerHTML = '✅ Confirmé !'; }, 900);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,301 @@
+{# templates/gadget/checkout.html.twig #}
+{% extends 'base.html.twig' %}
+{% block title %}Acheter {{ gadget.name }} — EnMémoire.com{% endblock %}
+{% block stylesheets %}
+<style>
+.gadget-checkout { max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+.gadget-checkout__hero {
+    display: flex; align-items: center; gap: 1.5rem;
+    background: var(--em-white); border-radius: 16px;
+    padding: 1.5rem; margin-bottom: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+.gadget-checkout__img {
+    width: 80px; height: 80px; object-fit: contain;
+    font-size: 3.5rem; line-height: 1; flex-shrink: 0; text-align: center;
+}
+.gadget-checkout__info h2 { margin: 0 0 .25rem; font-size: 1.35rem; }
+.gadget-checkout__info p  { margin: 0; color: var(--em-muted); font-size: .9rem; }
+.gadget-checkout__price   { margin-top: .5rem; font-size: 1.5rem; font-weight: 700; color: var(--em-gold); }
+
+/* Quantité */
+.qty-control { display: flex; align-items: center; gap: .75rem; margin: 1.5rem 0; }
+.qty-control__btn {
+    width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--em-gold);
+    background: transparent; color: var(--em-gold); font-size: 1.25rem; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .15s, color .15s;
+}
+.qty-control__btn:hover { background: var(--em-gold); color: #fff; }
+.qty-control__val { font-size: 1.25rem; font-weight: 700; min-width: 2rem; text-align: center; }
+.qty-total { font-size: .875rem; color: var(--em-muted); }
+
+/* Providers */
+.provider-tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.provider-tab {
+    padding: .5rem 1rem; border-radius: 8px; border: 2px solid var(--em-border);
+    background: var(--em-white); cursor: pointer; font-size: .875rem; font-weight: 600;
+    color: var(--em-navy); transition: border-color .15s, background .15s;
+    display: flex; align-items: center; gap: .4rem;
+}
+.provider-tab.active, .provider-tab:hover {
+    border-color: var(--em-gold); background: rgba(201,168,76,.08);
+}
+.provider-panel { display: none; }
+.provider-panel.active { display: block; }
+
+/* Zone badges */
+.zone-label {
+    font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+    padding: .15rem .5rem; border-radius: 20px; margin-bottom: .75rem;
+    display: inline-block;
+}
+.zone-label--intl { background: rgba(30,80,160,.1); color: #1e50a0; }
+.zone-label--rdc  { background: rgba(201,168,76,.15); color: #8a6f00; }
+
+.checkout-card {
+    background: var(--em-white); border-radius: 16px; padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 1.5rem;
+}
+.checkout-summary {
+    background: var(--em-cream); border-radius: 10px; padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem; font-size: .9rem;
+}
+.checkout-summary__row { display: flex; justify-content: space-between; padding: .2rem 0; }
+.checkout-summary__row.total { font-weight: 700; font-size: 1.05rem; border-top: 1px solid var(--em-border); margin-top: .5rem; padding-top: .75rem; }
+
+.currency-select {
+    padding: .4rem .75rem; border-radius: 8px; border: 1.5px solid var(--em-border);
+    background: var(--em-white); font-size: .875rem; cursor: pointer;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="gadget-checkout">
+
+    {# Breadcrumb #}
+    <nav style="font-size:.85rem; margin-bottom:1.5rem; color:var(--em-muted);">
+        <a href="{{ path('app_gadget_shop') }}" class="text-muted text-decoration-none">
+            <i class="bi bi-shop me-1"></i>Boutique
+        </a>
+        <i class="bi bi-chevron-right mx-2" style="font-size:.7rem;"></i>
+        <span>Achat — {{ gadget.name }}</span>
+    </nav>
+
+    {# Hero gadget #}
+    <div class="gadget-checkout__hero">
+        <div class="gadget-checkout__img">
+            {% if gadget.imageUrl %}
+                <img src="{{ gadget.imageUrl }}" alt="{{ gadget.name }}"
+                     style="width:80px;height:80px;object-fit:contain;">
+            {% elseif gadget.type == 'flower' %}🌸
+            {% elseif gadget.type == 'candle' %}🕯️
+            {% elseif gadget.type == 'dove' %}🕊️
+            {% else %}✨{% endif %}
+        </div>
+        <div class="gadget-checkout__info">
+            <h2>{{ gadget.name }}</h2>
+            {% if gadget.description %}
+                <p>{{ gadget.description }}</p>
+            {% endif %}
+            <div class="gadget-checkout__price">
+                {{ gadget.price }} USD / unité
+            </div>
+        </div>
+    </div>
+
+    {# Formulaire de paiement #}
+    <div class="checkout-card">
+        <h3 class="mb-4" style="font-size:1.15rem;">
+            <i class="bi bi-bag-check me-2 text-gold"></i>Finaliser l'achat
+        </h3>
+
+        {# ── Quantité ─────────────────────────────────── #}
+        <label class="fw-semibold mb-2 d-block">Quantité</label>
+        <div class="qty-control" id="qty-control">
+            <button type="button" class="qty-control__btn" id="qty-minus">−</button>
+            <span class="qty-control__val" id="qty-display">1</span>
+            <button type="button" class="qty-control__btn" id="qty-plus">+</button>
+            <span class="qty-total" id="qty-total-label">= {{ gadget.price }} USD</span>
+        </div>
+
+        {# ── Devise ───────────────────────────────────── #}
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <label class="fw-semibold">Devise :</label>
+            <select class="currency-select" id="currency-select">
+                <option value="USD" selected>🇺🇸 USD</option>
+                <option value="EUR">🇪🇺 EUR</option>
+                <option value="CDF">🇨🇩 CDF</option>
+            </select>
+        </div>
+
+        {# ── Récapitulatif ────────────────────────────── #}
+        <div class="checkout-summary">
+            <div class="checkout-summary__row">
+                <span>{{ gadget.name }} × <span id="sum-qty">1</span></span>
+                <span id="sum-subtotal">{{ gadget.price }} <span class="sum-currency">USD</span></span>
+            </div>
+            <div class="checkout-summary__row total">
+                <span>Total</span>
+                <span id="sum-total">{{ gadget.price }} <span class="sum-currency">USD</span></span>
+            </div>
+        </div>
+
+        {# ── Providers de paiement ────────────────────── #}
+        <label class="fw-semibold mb-3 d-block">Moyen de paiement</label>
+
+        {# Tabs #}
+        <div class="provider-tabs">
+            <button type="button" class="provider-tab active" data-panel="stripe">
+                <i class="bi bi-credit-card"></i> Carte bancaire
+            </button>
+            <button type="button" class="provider-tab" data-panel="paypal">
+                <i class="bi bi-paypal"></i> PayPal
+            </button>
+            <button type="button" class="provider-tab" data-panel="mobile">
+                <i class="bi bi-phone"></i> Mobile Money (RDC)
+            </button>
+        </div>
+
+        {# Panel Stripe #}
+        <div class="provider-panel active" id="panel-stripe">
+            <span class="zone-label zone-label--intl">International</span>
+            <form method="POST" action="{{ path('app_gadget_checkout', {id: gadget.id}) }}" class="checkout-form">
+                <input type="hidden" name="_token"    value="{{ csrf_token('gadget_checkout_' ~ gadget.id) }}">
+                <input type="hidden" name="provider"  value="stripe">
+                <input type="hidden" name="quantity"  class="input-quantity" value="1">
+                <input type="hidden" name="currency"  class="input-currency" value="USD">
+                <button type="submit" class="em-btn em-btn--primary w-100 mt-2">
+                    <i class="bi bi-lock-fill me-2"></i>
+                    Payer par carte — <span class="btn-total">{{ gadget.price }} USD</span>
+                </button>
+                <p class="text-muted text-center mt-2" style="font-size:.8rem;">
+                    <i class="bi bi-shield-lock"></i> Sécurisé par Stripe — 3D Secure activé
+                </p>
+            </form>
+        </div>
+
+        {# Panel PayPal #}
+        <div class="provider-panel" id="panel-paypal">
+            <span class="zone-label zone-label--intl">International</span>
+            <form method="POST" action="{{ path('app_gadget_checkout', {id: gadget.id}) }}" class="checkout-form">
+                <input type="hidden" name="_token"    value="{{ csrf_token('gadget_checkout_' ~ gadget.id) }}">
+                <input type="hidden" name="provider"  value="paypal">
+                <input type="hidden" name="quantity"  class="input-quantity" value="1">
+                <input type="hidden" name="currency"  class="input-currency" value="USD">
+                <button type="submit" class="em-btn w-100 mt-2"
+                        style="background:#003087;color:#fff;border:none;padding:.75rem;">
+                    <i class="bi bi-paypal me-2"></i>
+                    Continuer avec PayPal — <span class="btn-total">{{ gadget.price }} USD</span>
+                </button>
+                <p class="text-muted text-center mt-2" style="font-size:.8rem;">
+                    Vous serez redirigé vers PayPal pour finaliser le paiement.
+                </p>
+            </form>
+        </div>
+
+        {# Panel Mobile Money #}
+        <div class="provider-panel" id="panel-mobile">
+            <span class="zone-label zone-label--rdc">RDC / Afrique</span>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                {% for key, info in mobileproviders %}
+                <label class="provider-tab" style="cursor:pointer;font-size:.8rem;">
+                    <input type="radio" name="mobile_provider_choice" value="{{ key }}"
+                           style="display:none;" {% if loop.first %}checked{% endif %}>
+                    <i class="bi bi-phone"></i> {{ info.label }}
+                </label>
+                {% endfor %}
+            </div>
+            <form method="POST" action="{{ path('app_gadget_checkout', {id: gadget.id}) }}" class="checkout-form" id="mobile-form">
+                <input type="hidden" name="_token"    value="{{ csrf_token('gadget_checkout_' ~ gadget.id) }}">
+                <input type="hidden" name="provider"  id="mobile-provider-input" value="pawapay">
+                <input type="hidden" name="quantity"  class="input-quantity" value="1">
+                <input type="hidden" name="currency"  class="input-currency" value="USD">
+                <button type="submit" class="em-btn em-btn--gold w-100 mt-2">
+                    <i class="bi bi-phone me-2"></i>
+                    Payer par Mobile Money — <span class="btn-total">{{ gadget.price }} USD</span>
+                </button>
+                <p class="text-muted text-center mt-2" style="font-size:.8rem;">
+                    M-Pesa · Airtel Money · Orange Money · PawaPay
+                </p>
+            </form>
+        </div>
+
+    </div>{# /.checkout-card #}
+
+    <a href="{{ path('app_gadget_shop') }}" class="d-block text-center text-muted text-decoration-none mt-2" style="font-size:.875rem;">
+        <i class="bi bi-arrow-left me-1"></i>Retour à la boutique
+    </a>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+(function() {
+    var unitPrice  = {{ gadget.price }};
+    var qty        = 1;
+    var currency   = 'USD';
+
+    function formatAmount(val) {
+        return val.toFixed(2) + ' ' + currency;
+    }
+
+    function updateUI() {
+        var total = unitPrice * qty;
+        document.getElementById('qty-display').textContent    = qty;
+        document.getElementById('qty-total-label').textContent = '= ' + formatAmount(total);
+        document.getElementById('sum-qty').textContent         = qty;
+        document.getElementById('sum-subtotal').textContent    = formatAmount(total);
+        document.getElementById('sum-total').textContent       = formatAmount(total);
+        document.querySelectorAll('.btn-total').forEach(function(el) {
+            el.textContent = formatAmount(total);
+        });
+        document.querySelectorAll('.input-quantity').forEach(function(el) {
+            el.value = qty;
+        });
+        document.querySelectorAll('.input-currency').forEach(function(el) {
+            el.value = currency;
+        });
+    }
+
+    document.getElementById('qty-minus').addEventListener('click', function() {
+        if (qty > 1) { qty--; updateUI(); }
+    });
+    document.getElementById('qty-plus').addEventListener('click', function() {
+        if (qty < 50) { qty++; updateUI(); }
+    });
+    document.getElementById('currency-select').addEventListener('change', function() {
+        currency = this.value;
+        updateUI();
+    });
+
+    // Tabs providers
+    document.querySelectorAll('.provider-tab[data-panel]').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.provider-tab[data-panel]').forEach(function(t) {
+                t.classList.remove('active');
+            });
+            document.querySelectorAll('.provider-panel').forEach(function(p) {
+                p.classList.remove('active');
+            });
+            this.classList.add('active');
+            document.getElementById('panel-' + this.dataset.panel).classList.add('active');
+        });
+    });
+
+    // Mobile Money — sélection provider
+    document.querySelectorAll('[name="mobile_provider_choice"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            document.getElementById('mobile-provider-input').value = this.value;
+            document.querySelectorAll('label.provider-tab').forEach(function(l) { l.classList.remove('active'); });
+            radio.closest('label').classList.add('active');
+        });
+    });
+    // Initialiser le premier radio comme "actif" visuellement
+    var firstLabel = document.querySelector('[name="mobile_provider_choice"]')?.closest('label');
+    if (firstLabel) firstLabel.classList.add('active');
+
+})();
+</script>
+{% endblock %}

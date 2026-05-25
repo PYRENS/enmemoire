@@ -101,6 +101,12 @@
              target="_blank" class="em-btn em-btn--outline em-btn--sm">
             <i class="bi bi-eye"></i> Voir
           </a>
+          <a href="{{ path('app_maker_event', {eventId: event.id}) }}"
+             class="em-btn em-btn--outline em-btn--sm"
+             style="border-color:var(--em-gold);color:var(--em-gold);"
+             title="Allouer des gadgets sur cet événement">
+            <i class="bi bi-magic"></i> MAKER
+          </a>
           <button onclick="openEditModal({{ event.id }}, {{ {
             type: event.type,
             title: event.title,

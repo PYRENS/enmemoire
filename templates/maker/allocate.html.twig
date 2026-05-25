@@ -1,0 +1,413 @@
+{% extends 'base.html.twig' %}
+{% block title %}Gadgets MAKER — {{ event.title }} — EnMémoire.com{% endblock %}
+
+{% block stylesheets %}
+<style>
+.maker-wrap   { max-width: 960px; margin: 2rem auto; padding: 0 1rem 4rem; }
+.maker-header { margin-bottom: 2rem; }
+.maker-header h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
+.maker-header p  { color: var(--em-muted); font-size: .875rem; margin: 0; }
+
+/* Onglets */
+.maker-tabs  { display: flex; gap: .5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.maker-tab   { padding: .5rem 1.1rem; border-radius: 8px; border: 2px solid var(--em-border);
+               background: var(--em-white); font-size: .875rem; font-weight: 600;
+               color: var(--em-navy); cursor: pointer; transition: .15s; }
+.maker-tab.active, .maker-tab:hover { border-color: var(--em-gold); background: rgba(201,168,76,.08); }
+.maker-panel { display: none; }
+.maker-panel.active { display: block; }
+
+/* Cards */
+.maker-card  { background: var(--em-white); border-radius: 14px;
+               padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,.06); margin-bottom: 1.5rem; }
+.maker-card h3 { font-size: 1rem; margin: 0 0 1rem; color: var(--em-navy); }
+
+/* Formulaire — champs uniformes, bordure arrondie */
+.maker-form-flow { display: flex; flex-direction: column; gap: 1rem; }
+.maker-field { display: flex; flex-direction: column; gap: .3rem; }
+.maker-field label {
+    font-size: .78rem; font-weight: 600; color: var(--em-navy); margin: 0;
+}
+.maker-field label small {
+    font-weight: 400; color: var(--em-muted); font-size: .72rem; margin-left: .35rem;
+}
+.maker-field select,
+.maker-field input {
+    width: 100%; padding: .55rem .85rem;
+    border: 1.5px solid var(--em-border); border-radius: 8px;
+    font-size: .875rem; background: var(--em-white);
+    color: var(--em-navy); outline: none;
+    transition: border-color .15s;
+    appearance: auto;
+}
+.maker-field select:focus,
+.maker-field input:focus { border-color: var(--em-gold); box-shadow: 0 0 0 3px rgba(201,168,76,.1); }
+.maker-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media(max-width:600px){ .maker-form-row { grid-template-columns: 1fr; } }
+
+/* Badges mode */
+.badge-mode { font-size: .72rem; font-weight: 700; padding: .2rem .55rem; border-radius: 20px; }
+.badge-exposed  { background: rgba(34,197,94,.12); color: #15803d; }
+.badge-direct   { background: rgba(59,130,246,.12); color: #1d4ed8; }
+.badge-maker    { background: rgba(201,168,76,.15); color: #92610a; }
+.badge-user     { background: rgba(107,114,128,.1); color: #374151; }
+.badge-inactive { background: rgba(239,68,68,.1); color: #b91c1c; }
+
+/* Table allocations */
+.alloc-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.alloc-table th { background: var(--em-cream); padding: .6rem .75rem; text-align: left;
+                  font-weight: 600; color: var(--em-muted); font-size: .78rem; }
+.alloc-table td { padding: .6rem .75rem; border-bottom: 1px solid var(--em-border); vertical-align: middle; }
+.alloc-table tr:last-child td { border-bottom: none; }
+
+/* Progress bar */
+.alloc-progress { height: 6px; background: var(--em-stone); border-radius: 3px; margin-top: .3rem; }
+.alloc-progress__fill { height: 6px; background: var(--em-gold); border-radius: 3px; transition: width .3s; }
+
+/* Recherche user */
+.user-search-wrap { position: relative; }
+.user-search-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--em-white);
+                       border: 1.5px solid var(--em-border); border-radius: 8px; z-index: 100;
+                       box-shadow: 0 4px 16px rgba(0,0,0,.1); max-height: 200px; overflow-y: auto; display: none; }
+.user-search-item { padding: .6rem 1rem; cursor: pointer; font-size: .85rem; }
+.user-search-item:hover { background: var(--em-cream); }
+.user-search-item strong { display: block; }
+.user-search-item span   { color: var(--em-muted); font-size: .78rem; }
+
+/* Admin badge */
+.admin-only { display: none; }
+{% if isAdmin %}.admin-only { display: block; }{% endif %}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="maker-wrap">
+
+    {# Breadcrumb #}
+    <nav style="font-size:.82rem;color:var(--em-muted);margin-bottom:1.25rem;">
+        <a href="{{ path('app_dashboard_memorial', {slug: page.slug}) }}" class="text-muted text-decoration-none">
+            <i class="bi bi-house me-1"></i>Dashboard
+        </a>
+        <i class="bi bi-chevron-right mx-2" style="font-size:.65rem;"></i>
+        <a href="{{ path('app_dashboard_events', {slug: page.slug}) }}" class="text-muted text-decoration-none">Événements</a>
+        <i class="bi bi-chevron-right mx-2" style="font-size:.65rem;"></i>
+        <span>Gadgets MAKER</span>
+    </nav>
+
+    <div class="maker-header">
+        <h1><i class="bi bi-magic me-2 text-gold"></i>Gadgets MAKER — {{ event.title }}</h1>
+        <p>
+            {{ page.deceasedFullName }} ·
+            {{ event.eventDate ? event.eventDate|date('d/m/Y') : '' }}
+            {% if event.locationName %} · {{ event.locationName }}{% endif %}
+        </p>
+    </div>
+
+    {# ── Onglets ──────────────────────────────────────────────── #}
+    <div class="maker-tabs">
+        <button class="maker-tab active" data-panel="allocations">
+            <i class="bi bi-list-ul me-1"></i>Allocations actives
+        </button>
+        <button class="maker-tab" data-panel="new-alloc">
+            <i class="bi bi-plus-circle me-1"></i>Nouvelle allocation
+        </button>
+        <button class="maker-tab" data-panel="nominate">
+            <i class="bi bi-person-check me-1"></i>Attribution nominative
+        </button>
+    </div>
+
+    {# =========================================================== #}
+    {# Panel 1 — Liste des allocations #}
+    {# =========================================================== #}
+    <div class="maker-panel active" id="panel-allocations">
+        <div class="maker-card">
+            <h3><i class="bi bi-grid-3x3-gap me-2"></i>Allocations sur cet événement</h3>
+
+            {% if allocations is empty %}
+            <div style="text-align:center;padding:2rem;color:var(--em-muted);">
+                <div style="font-size:2.5rem;margin-bottom:.75rem;">🎁</div>
+                <p>Aucune allocation créée. Créez-en une dans l'onglet "Nouvelle allocation".</p>
+            </div>
+            {% else %}
+            <div style="overflow-x:auto;">
+            <table class="alloc-table">
+                <thead>
+                    <tr>
+                        <th>Gadget</th>
+                        <th>Mode</th>
+                        <th>Source</th>
+                        <th>Stock</th>
+                        <th>Par visiteur</th>
+                        <th>Expiration</th>
+                        <th>Statut</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for alloc in allocations %}
+                {% set s = stats[alloc.id] ?? {} %}
+                <tr>
+                    <td>
+                        <strong>
+                            {% if alloc.gadget.type == 'flower' %}🌸
+                            {% elseif alloc.gadget.type == 'candle' %}🕯️
+                            {% elseif alloc.gadget.type == 'dove' %}🕊️
+                            {% else %}✨{% endif %}
+                            {{ alloc.gadget.name }}
+                        </strong>
+                    </td>
+                    <td>
+                        {% if alloc.distributionMode == 'exposed' %}
+                            <span class="badge-mode badge-exposed"><i class="bi bi-hand-index"></i> Exposé</span>
+                        {% elseif alloc.distributionMode == 'direct' %}
+                            <span class="badge-mode badge-direct"><i class="bi bi-send"></i> Direct</span>
+                        {% else %}
+                            <span class="badge-mode badge-user"><i class="bi bi-person"></i> Nominatif</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if alloc.sourceType == 'maker' %}
+                            <span class="badge-mode badge-maker">✨ MAKER</span>
+                        {% else %}
+                            <span class="badge-mode badge-user">👤 Portefeuille</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if s.unlimited ?? false %}
+                            <span style="color:var(--em-gold);">∞</span>
+                        {% else %}
+                            <div>{{ s.claimed ?? 0 }} / {{ s.total ?? '?' }}</div>
+                            {% if (s.total ?? 0) > 0 %}
+                            <div class="alloc-progress">
+                                <div class="alloc-progress__fill"
+                                     style="width:{{ s.rate ?? 0 }}%;"></div>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>{{ alloc.perVisitorLimit }}</td>
+                    <td>
+                        {% if alloc.expiresAt %}
+                            {{ alloc.expiresAt|date('d/m/Y') }}
+                        {% else %}
+                            <span style="color:var(--em-muted);">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if alloc.isActive %}
+                            <span class="badge-mode badge-exposed">Actif</span>
+                        {% else %}
+                            <span class="badge-mode badge-inactive">Inactif</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if alloc.isActive %}
+                        <form method="POST"
+                              action="{{ path('app_maker_deactivate', {eventId: event.id, allocationId: alloc.id}) }}"
+                              onsubmit="return confirm('Désactiver cette allocation ?')">
+                            <input type="hidden" name="_token"
+                                   value="{{ csrf_token('maker_deactivate_' ~ alloc.id) }}">
+                            <button type="submit" class="em-btn em-btn--ghost"
+                                    style="font-size:.78rem;padding:.3rem .6rem;color:var(--em-danger);">
+                                <i class="bi bi-pause-circle"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# =========================================================== #}
+    {# Panel 2 — Nouvelle allocation #}
+    {# =========================================================== #}
+    <div class="maker-panel" id="panel-new-alloc">
+        <div class="maker-card">
+            <form method="POST" action="{{ path('app_maker_allocate', {eventId: event.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('maker_allocate_' ~ event.id) }}">
+
+                <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+                    {# Ligne 1 : Gadget + Quantité #}
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+
+                        <div>
+                            <label class="em-form-label">Gadget *</label>
+                            <select name="gadget_id" required class="em-form-control" id="gadget-select">
+                                <option value="">— Choisir un gadget —</option>
+                                {% for gadget in gadgets %}
+                                    {# Admin → tous les gadgets. User/Owner → seulement ceux en portefeuille #}
+                                    {% if isAdmin or (wallet[gadget.id] is defined and wallet[gadget.id] > 0) %}
+                                    <option value="{{ gadget.id }}"
+                                            data-max="{{ isAdmin ? 9999 : wallet[gadget.id]|default(0) }}">
+                                        {% if gadget.type == 'flower' %}🌸
+                                        {% elseif gadget.type == 'candle' %}🕯️
+                                        {% elseif gadget.type == 'dove' %}🕊️
+                                        {% else %}✨{% endif %}
+                                        {{ gadget.name }}
+                                        {% if not isAdmin %} — {{ wallet[gadget.id] }} en portefeuille{% endif %}
+                                    </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            {% if not isAdmin %}
+                            <div id="wallet-hint" style="font-size:.75rem;color:var(--em-muted);margin-top:.3rem;display:none;">
+                                <i class="bi bi-wallet2 me-1"></i>
+                                Vous possédez <strong id="wallet-count">0</strong> de ce gadget.
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="em-form-label">
+                                Quantité
+                                {% if isAdmin %}<span class="text-muted fw-normal" style="font-size:.75rem;"> — vide = illimité</span>{% endif %}
+                            </label>
+                            <input type="number" name="quantity" id="quantity-input"
+                                   min="1" max="{{ isAdmin ? 9999 : 1 }}"
+                                   class="em-form-control"
+                                   placeholder="{% if isAdmin %}Illimite si vide{% else %}Choisir un gadget avant{% endif %}"
+                                   {% if not isAdmin %}required disabled{% endif %}>
+                            {% if not isAdmin %}
+                            <div id="qty-error" style="font-size:.75rem;color:var(--em-danger);margin-top:.3rem;display:none;">
+                                <i class="bi bi-exclamation-circle me-1"></i>
+                                Quantité maximale : <strong id="qty-max-label">0</strong>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                    </div>
+
+                    {# Ligne 2 : Mode distribution + Max par visiteur #}
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+
+                        <div>
+                            <label class="em-form-label">Mode de distribution *</label>
+                            <select name="dist_mode" id="dist-mode-select" required class="em-form-control">
+                                <option value="exposed">🖱️ Exposé — les visiteurs cliquent</option>
+                                <option value="direct">📨 Direct — envoi aux inscrits</option>
+                                <option value="nominated">👤 Nominatif — attribution manuelle</option>
+                            </select>
+                        </div>
+
+                        <div id="field-per-visitor">
+                            <label class="em-form-label">Max par visiteur <span class="text-muted fw-normal" style="font-size:.75rem;">mode exposé</span></label>
+                            <input type="number" name="per_visitor_limit" min="1" max="10" value="1" class="em-form-control">
+                        </div>
+
+                    </div>
+
+                    {# Ligne 3 : Expiration #}
+                    <div>
+                        <label class="em-form-label">Date d'expiration <span class="text-muted fw-normal" style="font-size:.75rem;">optionnel</span></label>
+                        <input type="datetime-local" name="expires_at" class="em-form-control">
+                    </div>
+
+                </div>
+
+                {# Résumé portefeuille #}
+                {% if not isAdmin %}
+                <p style="font-size:.78rem;color:var(--em-muted);margin:.75rem 0 1rem;"><i class="bi bi-wallet2 me-1 text-gold"></i>Portefeuille :
+                    {% for gadget in gadgets %}
+                        {% if wallet[gadget.id] is defined and wallet[gadget.id] > 0 %}
+                            {{ wallet[gadget.id] }}× {{ gadget.name }}{% if not loop.last %}, {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    {% set totalWallet = wallet|reduce((carry, v) => carry + v, 0) %}
+                    {% if totalWallet == 0 %}
+                        Portefeuille vide.
+                        <a href="{{ path('app_gadget_shop') }}" class="text-gold">Acheter →</a>
+                    {% endif %}</p>
+                {% else %}
+                <p style="font-size:.78rem;color:var(--em-muted);margin:.75rem 0 1rem;"><i class="bi bi-shield-star me-1 text-gold"></i>Mode Admin — allocation illimitée gratuite.</p>
+                {% endif %}
+
+                <button type="submit" class="em-btn em-btn--primary">
+                    <i class="bi bi-magic me-2"></i>Créer l'allocation
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {# =========================================================== #}
+    {# Panel 3 — Attribution nominative #}
+    {# =========================================================== #}
+    <div class="maker-panel" id="panel-nominate">
+        <div class="maker-card">
+            <h3><i class="bi bi-person-check me-2"></i>Attribution nominative</h3>
+            <p style="font-size:.875rem;color:var(--em-muted);margin-bottom:1.25rem;">
+                Recherchez un utilisateur et attribuez-lui directement un gadget depuis une allocation existante.
+            </p>
+
+            {% set activeAllocs = allocations|filter(a => a.isActive) %}
+            {% if activeAllocs is empty %}
+            <div style="color:var(--em-muted);font-size:.875rem;">
+                <i class="bi bi-info-circle me-1"></i>
+                Créez d'abord une allocation dans l'onglet "Nouvelle allocation".
+            </div>
+            {% else %}
+
+            {# Sélection de l'allocation #}
+            <div class="maker-field" style="margin-bottom:1rem;">
+                <label>Allocation source *</label>
+                <select id="nominate-allocation" style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--em-border);border-radius:8px;font-size:.875rem;">
+                    <option value="">— Choisir une allocation —</option>
+                    {% for alloc in activeAllocs %}
+                    <option value="{{ alloc.id }}">
+                        {{ alloc.gadget.name }}
+                        ({% if alloc.totalQuantity is null %}illimité{% else %}{{ alloc.remainingQuantity }}/{{ alloc.totalQuantity }} restants{% endif %})
+                        — {{ alloc.distributionMode == 'direct' ? 'Direct' : 'Exposé' }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Recherche utilisateur #}
+            <div class="maker-field" style="margin-bottom:1rem;">
+                <label>Rechercher un utilisateur *</label>
+                <div class="user-search-wrap">
+                    <input type="text" id="user-search-input"
+                           placeholder="Nom ou email…"
+                           autocomplete="off"
+                           style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--em-border);border-radius:8px;font-size:.875rem;">
+                    <div class="user-search-results" id="user-search-results"></div>
+                </div>
+                <input type="hidden" id="selected-user-id" value="">
+                <div id="selected-user-display" style="margin-top:.5rem;font-size:.82rem;color:var(--em-gold);display:none;">
+                    <i class="bi bi-check-circle-fill me-1"></i><span id="selected-user-name"></span>
+                </div>
+            </div>
+
+            {# Message personnalisé #}
+            <div class="maker-field" style="margin-bottom:1.25rem;">
+                <label>Message personnalisé <span style="font-weight:400;color:var(--em-muted);">(optionnel)</span></label>
+                <input type="text" id="nominate-text" maxlength="120"
+                       placeholder="Ex: En souvenir de ce beau moment…"
+                       style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--em-border);border-radius:8px;font-size:.875rem;">
+            </div>
+
+            <button type="button" id="btn-nominate" class="em-btn em-btn--gold">
+                <i class="bi bi-send me-2"></i>Attribuer le gadget
+            </button>
+            <div id="nominate-result" style="margin-top:1rem;font-size:.875rem;display:none;"></div>
+
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<div id="maker-config"
+     data-csrf="{{ csrf_token('maker_nominate') }}"
+     data-nominate-url="{{ path('app_maker_nominate', {eventId: event.id}) }}"
+     data-search-url="/maker/api/maker/search-users"
+     data-is-admin="{{ isAdmin ? '1' : '0' }}"></div>
+<script src="{{ asset('js/maker.js') }}"></script>
+{% endblock %}

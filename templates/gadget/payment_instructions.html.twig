@@ -1,0 +1,58 @@
+{# templates/gadget/payment_instructions.html.twig #}
+{% extends 'base.html.twig' %}
+{% block title %}Instructions de paiement — EnMémoire.com{% endblock %}
+
+{% block body %}
+<div class="em-section" style="min-height:70vh;display:flex;align-items:center;">
+  <div class="container-xl" style="max-width:560px;">
+    <div style="background:var(--em-white);border-radius:16px;padding:2rem;box-shadow:0 4px 20px rgba(0,0,0,.08);">
+
+      <div class="text-center mb-4">
+        <span style="font-size:3rem;">📱</span>
+        <h2 class="mt-2">{{ instructions.provider_label }}</h2>
+        <p class="text-muted">Suivez les étapes ci-dessous pour finaliser votre paiement.</p>
+      </div>
+
+      {# Récapitulatif #}
+      <div style="background:var(--em-cream);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem;">
+        <div style="display:flex;justify-content:space-between;font-size:.875rem;">
+          <span>Montant à payer</span>
+          <strong>{{ instructions.amount }} {{ instructions.currency }}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.875rem;margin-top:.4rem;">
+          <span>Référence obligatoire</span>
+          <strong style="color:var(--em-gold);letter-spacing:.05em;">{{ instructions.reference }}</strong>
+        </div>
+      </div>
+
+      {# Étapes #}
+      <ol style="padding-left:1.5rem;">
+        {% for step in instructions.steps %}
+        <li style="margin-bottom:.75rem;font-size:.9rem;">{{ step }}</li>
+        {% endfor %}
+      </ol>
+
+      {# Formulaire de confirmation #}
+      <form method="POST" action="{{ instructions.confirm_url }}" style="margin-top:1.5rem;">
+        <div class="mb-3">
+          <label style="font-weight:600;font-size:.875rem;">Votre numéro de téléphone</label>
+          <input type="tel" name="phone" class="form-control mt-1"
+                 placeholder="+243 XXX XXX XXX" required>
+        </div>
+        <div class="mb-3">
+          <label style="font-weight:600;font-size:.875rem;">ID de transaction (optionnel)</label>
+          <input type="text" name="tx_id" class="form-control mt-1"
+                 placeholder="Fourni par votre opérateur">
+        </div>
+        <button type="submit" class="em-btn em-btn--gold w-100">
+          <i class="bi bi-check-circle me-2"></i>J'ai effectué le paiement
+        </button>
+      </form>
+
+      <a href="{{ path('app_gadget_shop') }}" class="d-block text-center text-muted text-decoration-none mt-3" style="font-size:.85rem;">
+        <i class="bi bi-arrow-left me-1"></i>Retour à la boutique
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
